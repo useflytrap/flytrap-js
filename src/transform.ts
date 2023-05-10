@@ -34,16 +34,9 @@ export const FlytrapTransformPlugin = createUnplugin(() => {
 			return false
 		},
 		async transform(code, id) {
-			// if (id.includes('/node_modules/') || /* for dev purposes */ id.includes('flytrap-libs'))
-			if (id.includes('/node_modules/') || id.includes('flytrap-libs/dist')) return
-			if (code.includes('@flytrap-ignore'))
-				// if (id.includes('/node_modules/')) return
+			if (code.includes('@flytrap-ignore') || id.includes('/node_modules/')) {
 				return
-
-			console.log('Transforming file', id)
-			/* if (id.includes('page.tsx')) {
-				console.log('Transformed: ')
-			} */
+			}
 
 			const ss = new MagicString(code)
 			// add missing Flytrap imports
@@ -61,15 +54,10 @@ export const FlytrapTransformPlugin = createUnplugin(() => {
 				}).toString()
 			}
 
-			/* if (id.includes('page.tsx')) {
-				console.log('page.tsx transformed')
-				console.log(flytrapTransform(ss.toString(), id.replace(pkgDirPath, '')).code)
-			} */
-
 			try {
 				return flytrapTransform(ss.toString(), id.replace(pkgDirPath, ''))
 			} catch (e) {
-				console.warn('Oops! Something went wrong while trasforming your code, error:')
+				console.warn('Oops! Something went wrong while transforming your code, error:')
 				console.warn(e)
 			}
 		}
