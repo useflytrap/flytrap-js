@@ -1,0 +1,9 @@
+{
+	"private": true,
+	"scripts": {
+		"dev": "node index.mjs"
+	},
+	"dependencies": {
+		"useflytrap": "workspace:*"
+	}
+}

@@ -1,0 +1,83 @@
+{
+	"name": "useflytrap",
+	"version": "0.0.0",
+	"description": "Catch bugs in production and replay them in your local development environment.",
+	"repository": "useflytrap/flytrap",
+	"license": "MIT",
+	"sideEffects": false,
+	"exports": {
+		".": {
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.cjs",
+			"types": "./dist/index.d.ts"
+		},
+		"./transform": {
+			"import": "./dist/transform.mjs",
+			"require": "./dist/transform.cjs",
+			"types": "./dist/transform.d.ts"
+		}
+	},
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "unbuild",
+		"dev": "vitest dev",
+		"dev:playground": "jiti playground/index.ts",
+		"lint": "pnpm lint:all:eslint && pnpm lint:all:prettier",
+		"lint:all:eslint": "pnpm lint:eslint --ext .ts,.js,.mjs,.cjs \"{src,test}/**/*.{js,json,ts}\"",
+		"lint:all:prettier": "pnpm lint:prettier \"{src,test}/**/*.{js,json,ts}\"",
+		"lint:eslint": "eslint --fix",
+		"lint:prettier": "prettier --write --loglevel warn",
+		"prepublishOnly": "pnpm lint && pnpm test",
+		"release": "np",
+		"test": "vitest run",
+		"test:types": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@babel/parser": "^7.21.4",
+		"@babel/traverse": "^7.21.4",
+		"devalue": "^4.3.0",
+		"estree-walker": "^3.0.1",
+		"lilconfig": "^2.1.0",
+		"magic-string": "^0.30.0",
+		"mlly": "^1.0.0",
+		"pkg-dir": "^7.0.0",
+		"recast": "^0.22.0",
+		"serialize-error": "^11.0.0",
+		"superjson": "^1.12.2",
+		"tosource": "2.0.0-alpha.3",
+		"ufo": "^1.0.0",
+		"unplugin": "^1.0.0"
+	},
+	"devDependencies": {
+		"@babel/types": "^7.21.4",
+		"@nuxtjs/eslint-config-typescript": "latest",
+		"@supabase/supabase-js": "^2.21.0",
+		"@trpc/server": "^10.21.1",
+		"@types/babel__traverse": "^7.18.3",
+		"@types/estree": "1.0.0",
+		"@types/node": "18.15.3",
+		"@vitest/browser": "^0.30.1",
+		"acorn": "8.8.2",
+		"eslint": "8.36.0",
+		"eslint-config-prettier": "latest",
+		"eslint-plugin-prettier": "latest",
+		"expect-type": "0.15.0",
+		"jiti": "^1.18.2",
+		"prettier": "latest",
+		"recast": "^0.22.0",
+		"rollup": "3.19.1",
+		"safaridriver": "^0.0.4",
+		"typescript": "4.8.4",
+		"unbuild": "1.1.2",
+		"vite": "4.2.0",
+		"vitest": "^0.30.1",
+		"webdriverio": "^8.8.8",
+		"zod": "^3.21.4"
+	},
+	"packageManager": "pnpm@7.29.3"
+}
