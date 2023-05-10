@@ -46,11 +46,11 @@ Published under [MIT License](./LICENSE).
 <!-- Links -->
 
 [npm-href]: https://npmjs.com/package/useflytrap
-[github-actions-href]: https://github.com/useflytrap/flytrap/actions/workflows/ci.yml
+[github-actions-href]: https://github.com/useflytrap/flytrap-js/actions/workflows/ci.yml
 
 <!-- Badges -->
 
 [npm-version-src]: https://badgen.net/npm/v/useflytrap?color=black
 [npm-downloads-src]: https://badgen.net/npm/dw/useflytrap?color=black
 [prettier-src]: https://badgen.net/badge/style/prettier/black?icon=github
-[github-actions-src]: https://github.com/useflytrap/flytrap/actions/workflows/ci.yml/badge.svg
+[github-actions-src]: https://github.com/useflytrap/flytrap-js/actions/workflows/ci.yml/badge.svg
