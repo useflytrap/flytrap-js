@@ -49,7 +49,7 @@ export const liveFlytrapStorage: FlytrapStorage = {
 		loadedCaptures.set(captureId, undefined) // mark it as being loaded
 
 		const { data, error } = await get<DatabaseCapture>(
-			`http://localhost:3000/api/v1/captures/${captureId}`,
+			`https://www.useflytrap.com/api/v1/captures/${captureId}`,
 			undefined,
 			{
 				headers: new Headers({
@@ -178,7 +178,7 @@ export const liveFlytrapStorage: FlytrapStorage = {
 
 		// TODO: use something like `devalue` to get closer to reality
 		const { error: captureError } = await post(
-			`http://localhost:3000/api/v1/captures`,
+			`https://www.useflytrap.com/api/v1/captures`,
 			stringifiedPayload,
 			{
 				headers: new Headers({
