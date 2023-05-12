@@ -155,7 +155,7 @@ export function useFlytrapFunction<
 }
 
 async function executeFunctionAsync<T>(fn: T, name: string, args: any[]) {
-	log.info('call-execution', `Executing async function ${name}(). Args: ${String(args)}`)
+	log.info('call-execution', `Executing async function ${name}()`)
 	// @ts-ignore
 	if (fn?.[name]) {
 		if (typeof fn === 'object') {
@@ -172,7 +172,7 @@ async function executeFunctionAsync<T>(fn: T, name: string, args: any[]) {
 }
 
 function executeFunction<T>(fn: T, name: string, args: any[]) {
-	log.info('call-execution', `Executing function ${name}(). Args: ${String(args)}`)
+	log.info('call-execution', `Executing function ${name}()`)
 	// @ts-ignore
 	if (fn?.[name]) {
 		if (typeof fn === 'object') {
@@ -375,10 +375,7 @@ export const getUserId = () => _userId
 export const getExecutingFunction = (): CapturedFunction | undefined =>
 	_executingFunctions[_executingFunctions.length - 1]
 const addExecutingFunction = (wrappedFunction: CapturedFunction) => {
-	log.info(
-		'function-execution',
-		`Executing function ${wrappedFunction.name}. Args: ${String(wrappedFunction.args)}`
-	)
+	log.info('function-execution', `Executing function ${wrappedFunction.name}`)
 	const matchingExecutingFunction = _executingFunctions.find(
 		(execFn) => execFn.id === wrappedFunction.id
 	)
@@ -429,10 +426,7 @@ function saveErrorForFunctionCall(functionCallId: string, error: any, source: So
 		console.error(`Saving error for nonexistent function call with ID ${functionCallId}`)
 		return
 	}
-	log.info(
-		'call-execution',
-		`Saving error for function call ID ${functionCallId}. Error: ${String(error)}`
-	)
+	log.info('call-execution', `Saving error for function call ID ${functionCallId}.`)
 	call.error = {
 		source: { ...source },
 		...serializeError(error)
@@ -447,10 +441,7 @@ function saveErrorForFunction(functionId: string, error: any, source: SourceType
 		return
 	}
 
-	log.info(
-		'function-execution',
-		`Saving error for function ID ${functionId}. Error: ${String(error)}`
-	)
+	log.info('function-execution', `Saving error for function ID ${functionId}`)
 	func.error = {
 		source,
 		...serializeError(error)
