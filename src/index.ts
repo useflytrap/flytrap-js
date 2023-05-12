@@ -155,6 +155,7 @@ export function useFlytrapFunction<
 }
 
 async function executeFunctionAsync<T>(fn: T, name: string, args: any[]) {
+	log.info('call-execution', `Executing async function ${name}(). Args: ${String(args)}`)
 	// @ts-ignore
 	if (fn?.[name]) {
 		if (typeof fn === 'object') {
@@ -171,6 +172,7 @@ async function executeFunctionAsync<T>(fn: T, name: string, args: any[]) {
 }
 
 function executeFunction<T>(fn: T, name: string, args: any[]) {
+	log.info('call-execution', `Executing function ${name}(). Args: ${String(args)}`)
 	// @ts-ignore
 	if (fn?.[name]) {
 		if (typeof fn === 'object') {
@@ -375,7 +377,7 @@ export const getExecutingFunction = (): CapturedFunction | undefined =>
 const addExecutingFunction = (wrappedFunction: CapturedFunction) => {
 	log.info(
 		'function-execution',
-		`Executing function ${wrappedFunction.name}. Args: ${wrappedFunction.args}`
+		`Executing function ${wrappedFunction.name}. Args: ${String(wrappedFunction.args)}`
 	)
 	const matchingExecutingFunction = _executingFunctions.find(
 		(execFn) => execFn.id === wrappedFunction.id
@@ -427,7 +429,10 @@ function saveErrorForFunctionCall(functionCallId: string, error: any, source: So
 		console.error(`Saving error for nonexistent function call with ID ${functionCallId}`)
 		return
 	}
-	log.info('call-execution', `Saving error for function call ID ${functionCallId}. Error: ${error}`)
+	log.info(
+		'call-execution',
+		`Saving error for function call ID ${functionCallId}. Error: ${String(error)}`
+	)
 	call.error = {
 		source: { ...source },
 		...serializeError(error)
@@ -442,7 +447,10 @@ function saveErrorForFunction(functionId: string, error: any, source: SourceType
 		return
 	}
 
-	log.info('function-execution', `Saving error for function ID ${functionId}. Error: ${error}`)
+	log.info(
+		'function-execution',
+		`Saving error for function ID ${functionId}. Error: ${String(error)}`
+	)
 	func.error = {
 		source,
 		...serializeError(error)
