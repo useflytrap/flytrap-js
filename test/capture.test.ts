@@ -3,7 +3,8 @@ import {
 	useFlytrapCall,
 	_resetExecutingFunctions,
 	_resetFunctionCalls,
-	getFunctionCalls
+	getFunctionCalls,
+	getExecutingFunctions
 } from 'useflytrap'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
@@ -89,7 +90,37 @@ describe('useFlytrapCall capture', () => {
 	it.todo('captures errors inside the function call')
 })
 
+describe('storage', () => {
+	beforeEach(() => {
+		clearFlytrapStorage()
+	})
+
+	it('limits captures to 4mb', () => {
+		function mockFunction(...args: any[]) {
+			return args
+		}
+		for (let i = 0; i < 20000; i++) {
+			useFlytrapCall(mockFunction, {
+				args: [{ foo: 'foo', bar: 'bar', baz: 'baz' }],
+				filePath: '/',
+				lineNumber: 1,
+				id: 'mockFunction',
+				name: 'mockFunction',
+				scopes: []
+			})
+		}
+
+		const capture = preprocessCapture(getExecutingFunctions(), getFunctionCalls())
+		const captureStringified = SuperJSON.stringify(capture)
+
+		// whole capture less than 4mb
+		expect(captureStringified.length).toBeLessThan(4_000_000)
+	})
+})
+
 import { createClient } from '@supabase/supabase-js'
+import { preprocessCapture } from '../src/core/storage'
+import SuperJSON from 'superjson'
 
 describe('Supabase', () => {
 	it('database fetching works', async () => {

@@ -18,6 +18,7 @@ import {
 import { getFlytrapStorage } from './core/storage'
 import { createHumanLog } from './core/human-logs'
 import { NO_SOURCE } from './core/constants'
+import { log } from './core/logging'
 
 /**
  * All function definitions are wrapped with the useFlytrapFunction
@@ -372,7 +373,16 @@ export const getUserId = () => _userId
 export const getExecutingFunction = (): CapturedFunction | undefined =>
 	_executingFunctions[_executingFunctions.length - 1]
 const addExecutingFunction = (wrappedFunction: CapturedFunction) => {
-	if (_executingFunctions.find((execFn) => execFn.id === wrappedFunction.id)) {
+	log.info(
+		'function-execution',
+		`Executing function ${wrappedFunction.name}. Args: ${wrappedFunction.args}`
+	)
+	const matchingExecutingFunction = _executingFunctions.find(
+		(execFn) => execFn.id === wrappedFunction.id
+	)
+	if (matchingExecutingFunction) {
+		// Update timestamp of execution
+		matchingExecutingFunction.timestamp = Date.now()
 		return
 	}
 	_executingFunctions.push(wrappedFunction)
@@ -417,6 +427,7 @@ function saveErrorForFunctionCall(functionCallId: string, error: any, source: So
 		console.error(`Saving error for nonexistent function call with ID ${functionCallId}`)
 		return
 	}
+	log.info('call-execution', `Saving error for function call ID ${functionCallId}. Error: ${error}`)
 	call.error = {
 		source: { ...source },
 		...serializeError(error)
@@ -431,6 +442,7 @@ function saveErrorForFunction(functionId: string, error: any, source: SourceType
 		return
 	}
 
+	log.info('function-execution', `Saving error for function ID ${functionId}. Error: ${error}`)
 	func.error = {
 		source,
 		...serializeError(error)

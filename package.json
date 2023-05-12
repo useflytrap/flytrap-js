@@ -35,6 +35,7 @@
 		"prepublishOnly": "pnpm lint && pnpm test",
 		"release": "np",
 		"test": "vitest run",
+		"test:spec": "vitest test/stringify.test.ts",
 		"test:types": "tsc --noEmit"
 	},
 	"dependencies": {

@@ -83,6 +83,7 @@ export type VisitValues = {
 export class SyncWalker extends WalkerBase {
 	private readonly enter: SyncHandler | undefined
 	private readonly leave: SyncHandler | undefined
+	private readonly seen: WeakSet<Node> = new WeakSet()
 
 	constructor(enter?: SyncHandler, leave?: SyncHandler) {
 		super()
@@ -105,6 +106,10 @@ export class SyncWalker extends WalkerBase {
 	}
 
 	visit({ node, parent, prop, index }: VisitValues) {
+		if (this.seen.has(node)) {
+			return
+		}
+
 		if (node) {
 			if (this.enter) {
 				const _should_skip = this.should_skip

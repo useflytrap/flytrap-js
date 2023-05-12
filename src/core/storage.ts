@@ -12,6 +12,7 @@ import { createHumanLog } from './human-logs'
 import SuperJSON from 'superjson'
 import { FLYTRAP_UNSERIALIZABLE_VALUE, NO_SOURCE } from './constants'
 import { decrypt, encrypt } from './encryption'
+import { log } from './logging'
 
 const loadedCaptures = new Map<string, CaptureDecrypted | undefined>()
 
@@ -38,11 +39,13 @@ export const liveFlytrapStorage: FlytrapStorage = {
 			!secretApiKey ||
 			empty(publicApiKey, captureId, projectId, secretApiKey, privateKey)
 		) {
-			throw createHumanLog({
+			const errorLog = createHumanLog({
 				event: 'replay_failed',
 				explanation: 'replay_missing_config_values',
 				solution: 'configuration_fix'
-			}).toString()
+			})
+			log.error('storage', errorLog.toString())
+			throw errorLog.toString()
 		}
 
 		if (loadedCaptures.has(captureId)) return
@@ -95,10 +98,12 @@ export const liveFlytrapStorage: FlytrapStorage = {
 			})
 		}
 
+		log.info('storage', `Loaded capture ID "${captureId}".`)
+
 		loadedCaptures.set(captureId, decryptedCapture)
 		return decryptedCapture
 	},
-	async saveCapture(functions, calls, error?: any) {
+	async saveCapture(functions, calls, error?) {
 		// Here error if
 		const { publicApiKey, projectId } = await getFlytrapConfig()
 
@@ -113,42 +118,20 @@ export const liveFlytrapStorage: FlytrapStorage = {
 			return
 		}
 
-		function isSerializable(input: any) {
-			const { error } = tryCatchSync(() => SuperJSON.stringify(input))
-			return error === null
-		}
-
-		// Iterate over calls and functions
-		const funcsCopy = [...functions]
-		const callsCopy = [...calls]
-
-		for (let i = 0; i < callsCopy.length; i++) {
-			if (!isSerializable(callsCopy[i])) {
-				if (!isSerializable(callsCopy[i].args)) {
-					callsCopy[i].args = [FLYTRAP_UNSERIALIZABLE_VALUE]
-				}
-				if (!isSerializable(callsCopy[i].output)) {
-					callsCopy[i].output = FLYTRAP_UNSERIALIZABLE_VALUE
-				}
-			}
-		}
-
-		for (let i = 0; i < funcsCopy.length; i++) {
-			if (!isSerializable(funcsCopy[i])) {
-				if (!isSerializable(funcsCopy[i].args)) {
-					funcsCopy[i].args = [FLYTRAP_UNSERIALIZABLE_VALUE]
-				}
-			}
-		}
+		const [processedFunctions, processedCalls, processededError] = preprocessCapture(
+			functions,
+			calls,
+			error
+		)
 
 		const { data: payload, error: encryptError } = await tryCatch<CapturePayload>({
 			capturedUserId: getUserId(),
 			projectId,
 			functionName: getExecutingFunction()?.name ?? 'unknown',
 			source: getExecutingFunction()?.source ?? NO_SOURCE,
-			calls: await encrypt(publicApiKey, SuperJSON.stringify(callsCopy)),
-			functions: await encrypt(publicApiKey, SuperJSON.stringify(funcsCopy)),
-			...(error && { error: await encrypt(publicApiKey, SuperJSON.stringify(error)) })
+			calls: await encrypt(publicApiKey, SuperJSON.stringify(processedCalls)),
+			functions: await encrypt(publicApiKey, SuperJSON.stringify(processedFunctions)),
+			...(error && { error: await encrypt(publicApiKey, SuperJSON.stringify(processededError)) })
 		})
 
 		if (!payload || encryptError) {
@@ -204,4 +187,47 @@ export const liveFlytrapStorage: FlytrapStorage = {
 
 export function getFlytrapStorage(flytrapStorage?: FlytrapStorage) {
 	return flytrapStorage ?? liveFlytrapStorage
+}
+
+function isSerializable(input: any) {
+	const { error } = tryCatchSync(() => SuperJSON.stringify(input))
+	return error === null
+}
+
+export function preprocessCapture(
+	functions: CapturedFunction[],
+	calls: CapturedCall[],
+	error?: any
+) {
+	// Iterate over calls and functions
+	const funcsCopy = [...functions]
+	let callsCopy = [...calls].sort((callA, callB) => callA.timestamp - callB.timestamp).reverse()
+
+	let size = 0
+	for (let i = 0; i < callsCopy.length; i++) {
+		if (!isSerializable(callsCopy[i])) {
+			if (!isSerializable(callsCopy[i].args)) {
+				callsCopy[i].args = [FLYTRAP_UNSERIALIZABLE_VALUE]
+			}
+			if (!isSerializable(callsCopy[i].output)) {
+				callsCopy[i].output = FLYTRAP_UNSERIALIZABLE_VALUE
+			}
+		}
+		tryCatchSync(() => {
+			size += SuperJSON.stringify(callsCopy[i]).length
+			if (size >= 3_000_000) {
+				// Remove the rest
+				callsCopy = callsCopy.slice(0, i)
+			}
+		})
+	}
+
+	for (let i = 0; i < funcsCopy.length; i++) {
+		if (!isSerializable(funcsCopy[i])) {
+			if (!isSerializable(funcsCopy[i].args)) {
+				funcsCopy[i].args = [FLYTRAP_UNSERIALIZABLE_VALUE]
+			}
+		}
+	}
+	return [funcsCopy, callsCopy, error] as const
 }

@@ -7,6 +7,9 @@ import { flytrapTransform } from './transform/index'
 
 import { packageDirectorySync } from 'pkg-dir'
 import { createHumanLog } from './core/human-logs'
+import { loadConfig } from './transform/config'
+import { setFlytrapConfig } from './core/config'
+import { log } from './core/logging'
 
 export const FlytrapTransformPlugin = createUnplugin(() => {
 	return {
@@ -38,6 +41,11 @@ export const FlytrapTransformPlugin = createUnplugin(() => {
 				return
 			}
 
+			// Logging config
+			const config = await loadConfig()
+			if (config) setFlytrapConfig(config)
+			log.info('transform', `Transforming file ${id}`)
+
 			const ss = new MagicString(code)
 			// add missing Flytrap imports
 			addMissingFlytrapImports(ss)
@@ -57,7 +65,7 @@ export const FlytrapTransformPlugin = createUnplugin(() => {
 			try {
 				return flytrapTransform(ss.toString(), id.replace(pkgDirPath, ''))
 			} catch (e) {
-				console.warn('Oops! Something went wrong while transforming your code, error:')
+				console.warn(`Oops! Something went wrong while transforming file ${id}. Error:`)
 				console.warn(e)
 			}
 		}

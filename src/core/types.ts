@@ -3,6 +3,15 @@ export type FlytrapSecretKey = `sk_${string}`
 
 export type FlytrapMode = 'capture' | 'replay'
 
+export type LogGroup =
+	| 'storage'
+	| 'function-execution'
+	| 'call-execution'
+	| 'api-calls'
+	| 'identify'
+	| 'capture'
+	| 'transform'
+
 export type FlytrapConfig = {
 	projectId: string
 	publicApiKey: string
@@ -10,6 +19,7 @@ export type FlytrapConfig = {
 	secretApiKey?: string
 	captureId?: string
 	mode?: FlytrapMode
+	logging?: LogGroup[]
 }
 
 export type ErrorType = {
