@@ -159,6 +159,14 @@ export const liveFlytrapStorage: FlytrapStorage = {
 			return
 		}
 
+		log.info(
+			'api-calls',
+			`[POST] https://www.useflytrap.com/api/v1/captures - Payload size ~${stringifiedPayload.length} bytes.`
+		)
+		log.info(
+			'storage',
+			`[POST] https://www.useflytrap.com/api/v1/captures - Payload size ~${stringifiedPayload.length} bytes.`
+		)
 		// TODO: use something like `devalue` to get closer to reality
 		const { error: captureError } = await post(
 			`https://www.useflytrap.com/api/v1/captures`,

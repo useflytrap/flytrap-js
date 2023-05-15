@@ -161,6 +161,7 @@ export function flytrapTransform(code: string, filePath: string) {
 
 	const takenCallIds: string[] = []
 	const takenFunctionIds: string[] = []
+	const takenFunctionNames: string[] = []
 
 	_babelInterop(babelTraverse)(ast, {
 		ArrowFunctionExpression(path) {
@@ -207,10 +208,35 @@ export function flytrapTransform(code: string, filePath: string) {
 			const useFunctionName = 'useFlytrapFunction'
 			const scopes = getScopes(path)
 
-			const functionName = (path.node.id as Identifier).name
+			const functionName = path.node.id ? path.node.id.name : 'anonymous'
+
 			// derive function ID
 			const functionId = getAvailableFunctionId(filePath, scopes, functionName, takenFunctionIds)
 			takenFunctionIds.push(functionId)
+
+			// case for default exports
+			if (path.parent.type === 'ExportDefaultDeclaration') {
+				const newNode = callExpression(identifier(useFunctionName), [
+					toExpression(path.node),
+					objectExpression([
+						objectProperty(identifier('id'), stringLiteral(functionId)),
+						// @ts-ignore
+						// objectProperty(identifier('name'), stringLiteral(path.node.id.name)),
+						objectProperty(
+							identifier('name'),
+							path.node.id ? stringLiteral(path.node.id.name) : stringLiteral(functionName)
+						),
+						objectProperty(identifier('filePath'), stringLiteral(filePath)),
+						objectProperty(identifier('lineNumber'), numericLiteral(getLineNumber(path.node))),
+						objectProperty(
+							identifier('scopes'),
+							arrayExpression(scopes.map((scope) => stringLiteral(scope)))
+						)
+					])
+				])
+				path.replaceWith(newNode)
+				return
+			}
 
 			const newNode = variableDeclaration('const', [
 				variableDeclarator(

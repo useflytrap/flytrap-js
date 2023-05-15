@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { flytrapTransform } from '../src/transform'
+import { flytrapTransform } from '../src/transform/index'
 import { deriveAnonymousFunctionName } from '../src/core/util'
 import {
 	addMissingFlytrapImports,
@@ -252,6 +252,55 @@ it.skip('wraps functions with scopes', () => {
 			;useFlytrapFunction(() => {}, { name: 'SomeComponent/anonymous-2', filePath: '/file.js', lineNumber: 10, scopes: ['SomeComponent'] });
 		}, { name: 'SomeComponent', filePath: '/file.js', lineNumber: 5, scopes: [] });
 		`)
+	)
+})
+
+/* const x = function () {
+
+} */
+
+it('transforms default exports', () => {
+	expect(
+		transform(`
+	export default function getAllConfigs() {}
+	`)
+	).toStrictEqual(
+		toOneLine(`
+	export default useFlytrapFunction(function getAllConfigs() {}, {
+		id: '/file.js-getAllConfigs',
+		name: 'getAllConfigs',
+		filePath: '/file.js',
+		lineNumber: 2,
+		scopes: []
+	});
+	`)
+	)
+
+	// Anonymous default function
+	expect(
+		transform(`
+	export default function() {}
+	`)
+	).toStrictEqual(
+		toOneLine(`
+	export default useFlytrapFunction(function() {}, {
+		id: '/file.js-anonymous',
+		name: 'anonymous',
+		filePath: '/file.js',
+		lineNumber: 2,
+		scopes: []
+	});
+	`)
+	)
+
+	expect(
+		transform(`
+	export default {}
+	`)
+	).toStrictEqual(
+		toOneLine(`
+	export default {}
+	`)
 	)
 })
 

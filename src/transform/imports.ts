@@ -2,15 +2,18 @@ import MagicString from 'magic-string'
 import { findStaticImports } from 'mlly'
 import { FLYTRAP_PACKAGE_NAME } from '../core/config'
 import { loadConfig } from './config'
-import * as flytrapExports from '../index'
 import { parse } from '@babel/parser'
 
 export function getCoreExports(): string[] {
-	return Object.keys(flytrapExports)
+	return ['useFlytrapCall', 'useFlytrapCallAsync', 'useFlytrapFunction', 'capture', 'identify']
 }
 
 export function findStartingIndex(s: MagicString) {
 	const ast = parse(s.toString(), { sourceType: 'module', plugins: ['jsx', 'typescript'] })
+
+	if (ast.program.interpreter && ast.program.interpreter.end) {
+		return ast.program.interpreter.end
+	}
 
 	if (ast.program.directives && ast.program.directives[0]?.type === 'Directive') {
 		return ast.program.directives[0].end ?? 0

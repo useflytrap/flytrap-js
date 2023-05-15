@@ -1,5 +1,4 @@
 import { lilconfig } from 'lilconfig'
-import { join } from 'path'
 import { tryCatch } from '../core/util'
 import { createHumanLog } from '../core/human-logs'
 import { FlytrapConfig } from '../core/types'
@@ -10,7 +9,6 @@ export async function loadConfig(): Promise<FlytrapConfig | undefined> {
 	const moduleName = 'flytrap'
 
 	const { search } = lilconfig('flytrap', {
-		stopDir: join(process.cwd(), '..'),
 		searchPlaces: [
 			'package.json',
 			`.${moduleName}rc.json`,
