@@ -12,6 +12,7 @@
 
 - [🐛 &nbsp;Changelog](https://www.useflytrap.com/changelog)
 - [📖 &nbsp;Documentation](https://docs.useflytrap.com)
+- [👥 &nbsp;Discord](https://discord.gg/q2Qn4WY5Xw)
 
 ## Features
 

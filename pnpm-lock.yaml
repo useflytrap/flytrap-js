@@ -62,6 +62,9 @@ importers:
       '@types/babel__traverse':
         specifier: ^7.18.3
         version: 7.18.3
+      '@types/degit':
+        specifier: ^2.8.3
+        version: 2.8.3
       '@types/estree':
         specifier: 1.0.0
         version: 1.0.0
@@ -2952,6 +2955,10 @@ packages:
 
   /@types/cookie@0.5.1:
     resolution: {integrity: sha512-COUnqfB2+ckwXXSFInsFdOAWQzCCx+a5hq2ruyj+Vjund94RJQd4LG2u9hnvJrTgunKAaax7ancBYlDrNYxA0g==}
+    dev: true
+
+  /@types/degit@2.8.3:
+    resolution: {integrity: sha512-CL7y71j2zaDmtPLD5Xq5S1Gv2dFoHl0/GBZm6s39Mj/ls28L3NzAOqf7H4H0/2TNVMgMjMVf9CAFYSjmXhi3bw==}
     dev: true
 
   /@types/eslint-scope@3.7.4:
