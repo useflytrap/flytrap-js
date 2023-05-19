@@ -20,6 +20,18 @@ export type FlytrapConfig = {
 	captureId?: string
 	mode?: FlytrapMode
 	logging?: LogGroup[]
+	/**
+	 * Set this to `true` to not push artifacts
+	 * to the Flytrap API during builds. [Learn more](https://docs.useflytrap.com/config/introduction)
+	 */
+	disableArtifacts?: true
+	/**
+	 * Define packages to ignore when transforming function calls.
+	 * Packages such as Zod, where there are many function calls that
+	 * do not add any additional relevant context are usually good candidates
+	 * to ignore. [Learn more](https://docs.useflytrap.com/config/introduction)
+	 */
+	packageIgnores?: string[]
 }
 
 export type ErrorType = {
@@ -40,78 +52,39 @@ export type SourceType = {
 export type AddCaptureDetails<T> = T & {
 	args: any[]
 	timestamp: number
-	source: SourceType
 	error?: ErrorType
 }
 
-export type CapturedFunction = AddCaptureDetails<
-	Omit<FlytrapFunctionOptions, 'filePath' | 'lineNumber'>
->
-export type CapturedCall = AddCaptureDetails<
-	Omit<FlytrapCallOptions, 'filePath' | 'lineNumber'>
-> & {
+export type CapturedFunction = AddCaptureDetails<FlytrapFunctionOptions> & {
+	output?: any
+}
+export type CapturedCall = AddCaptureDetails<FlytrapCallOptions> & {
 	output?: any
 }
 
-/* export interface CapturedFunction extends Omit<FlytrapFunctionOptions, 'filePath' | 'lineNumber'> {
-	// unix timestamp
-	timestamp: number;
-	source: SourceType;
-	error?: ErrorType;
+export type EncryptedCapturedCall = Omit<CapturedCall, 'output' | 'args' | 'error'> & {
+	output?: string
+	args: string
+	error?: string
 }
 
-export interface CapturedCall extends Omit<FlytrapCallOptions, 'filePath' | 'lineNumber'> {
-	timestamp: number;
-	source: SourceType;
-	error?: ErrorType;
-} */
-
-/* export type CapturedCall = {
-
-} */
-
-/* export type WrappedFunction = {
-	functionId: string
-	name: string
-	input: any[]
-	source: SourceType
-	scopes: string[]
-	calls: WrappedFunctionCall[]
-	error?: ErrorType
-} */
-
-/* export type WrappedFunctionCall = {
-	name: string
-	scopes: string[]
-	input: any[]
-	output: any
-	source: SourceType
-	params: string
-	functionCallId?: string
-	error?: ErrorType
-} */
+export type EncryptedCapturedFunction = Omit<CapturedFunction, 'output' | 'args' | 'error'> & {
+	output?: string
+	args: string
+	error?: string
+}
 
 // `useFlytrapFunction` options
 export type FlytrapFunctionOptions = {
 	id: string
-	filePath: string
-	lineNumber: number
-	name: string
-	scopes: string[]
-	// functionId?: string
 }
 
 // `useFlytrapCall` options
 export type FlytrapCallOptions = {
 	id: string
-	args: any[]
-	// params: string
-	filePath: string
-	lineNumber: number
-	scopes: string[]
-	name: string
 	functionId?: string
-	// functionCallId?: string
+	args: any[]
+	name: string
 }
 
 // Storage
@@ -122,8 +95,12 @@ export type DatabaseCapture = {
 	status: string
 	pinned: boolean
 	functionName: string
-	calls: string // encrypted
-	functions: string // encrypted
+	/* calls: string // encrypted
+	functions: string // encrypted */
+
+	calls: EncryptedCapturedCall[]
+	functions: EncryptedCapturedFunction[]
+
 	error?: string // encrypted
 	capturedUserId?: string
 	source?: SourceType

@@ -3,13 +3,17 @@ import { UnpluginOptions, createUnplugin } from 'unplugin'
 import { parseURL, parseQuery } from 'ufo'
 import MagicString from 'magic-string'
 import { addFlytrapInit, addMissingFlytrapImports } from './transform/imports'
-import { flytrapTransform } from './transform/index'
-
+import { flytrapTransformArtifacts } from './transform/index'
 import { packageDirectorySync } from 'pkg-dir'
 import { createHumanLog } from './core/human-logs'
 import { loadConfig } from './transform/config'
 import { setFlytrapConfig } from './core/config'
 import { log } from './core/logging'
+import { Artifact, extractArtifacts } from './transform/artifacts'
+import { post } from './core/util'
+import { readFileSync } from 'node:fs'
+
+const transformedFiles: string[] = []
 
 export const unpluginOptions: UnpluginOptions = {
 	name: 'FlytrapTransformPlugin',
@@ -28,6 +32,10 @@ export const unpluginOptions: UnpluginOptions = {
 			return true
 		}
 
+		if (pathname.endsWith('.d.ts')) {
+			return false
+		}
+
 		// js files
 		if (pathname.match(/\.((c|m)?j|t)sx?$/g)) {
 			return true
@@ -36,7 +44,11 @@ export const unpluginOptions: UnpluginOptions = {
 		return false
 	},
 	async transform(code, id) {
-		if (code.includes('@flytrap-ignore') || id.includes('/node_modules/')) {
+		if (
+			code.includes('@flytrap-ignore') ||
+			id.includes('/node_modules/') ||
+			id.includes('flytrap-libs/dist')
+		) {
 			return
 		}
 
@@ -51,7 +63,7 @@ export const unpluginOptions: UnpluginOptions = {
 
 		// add Flytrap init
 		if (process.env.NODE_ENV !== 'test') {
-			await addFlytrapInit(ss)
+			await addFlytrapInit(ss, config)
 		}
 
 		// Find package root
@@ -64,22 +76,85 @@ export const unpluginOptions: UnpluginOptions = {
 		}
 
 		try {
-			return flytrapTransform(ss.toString(), id.replace(pkgDirPath, ''))
-		} catch (e) {
-			console.log('TRANSFORMED FILE CODE: ')
-			console.log(ss.toString())
-			console.log(
-				' errorr  -- errorr  -- errorr  -- errorr  -- errorr  -- errorr  -- errorr  --  errorr  -- errorr  -- errorr  -- errorr  -- errorr  -- errorr  -- errorr  --  errorr  -- errorr  -- errorr  -- errorr  -- errorr  -- errorr  -- errorr  --  errorr  -- errorr  -- errorr  -- errorr  -- errorr  -- errorr  -- errorr  --  errorr  -- errorr  -- errorr  -- errorr  -- errorr  -- errorr  -- errorr  --  errorr  -- errorr  -- errorr  -- errorr  -- errorr  -- errorr  -- errorr  -- '
+			transformedFiles.push(id)
+			return flytrapTransformArtifacts(
+				ss.toString(),
+				id.replace(pkgDirPath, ''),
+				config?.packageIgnores
 			)
-			console.log('filepath ', id)
-			console.log(JSON.stringify(e))
-			console.log(e)
-			console.log('FILE ', id)
+		} catch (e) {
 			if (process.env.NODE_ENV === 'test') {
 				throw e
 			}
-			console.warn(`Oops! Something went wrong while transforming file ${id}. Error:`)
-			console.warn(e)
+			if (!String(e).includes("reading 'buildError'")) {
+				console.warn(`Oops! Something went wrong while transforming file ${id}. Error:`)
+				console.warn(e)
+			}
+		}
+	},
+	async buildEnd() {
+		const config = await loadConfig()
+		if (!config) return
+		// Find package root
+		const pkgDirPath = packageDirectorySync()
+		if (!pkgDirPath) {
+			throw createHumanLog({
+				event: 'transform_failed',
+				explanation: 'transform_pkg_not_found'
+			}).toString()
+		}
+
+		if (!config.disableArtifacts && process?.env?.NODE_ENV === 'production') {
+			// Push artifacts
+			log.info(
+				'storage',
+				`Generating artifacts for ${transformedFiles.length} transformed source files.`
+			)
+			const artifacts: Artifact[] = []
+			for (let i = 0; i < transformedFiles.length; i++) {
+				const code = readFileSync(transformedFiles[i]).toString()
+				try {
+					artifacts.push(...extractArtifacts(code, transformedFiles[i].replace(pkgDirPath, '')))
+				} catch (e) {
+					console.warn(`Extracting artifacts failed for file ${transformedFiles[i]}`)
+				}
+			}
+
+			log.info(
+				'storage',
+				`Created ${artifacts.length} artifacts. Size: ${JSON.stringify(artifacts).length}`
+			)
+			log.info(
+				'api-calls',
+				`Pushing ${artifacts.length} artifacts to the Flytrap API. Payload size: ${
+					JSON.stringify(artifacts).length
+				}`
+			)
+
+			const { data, error } = await post(
+				`http://localhost:3000/api/v1/artifacts/${config?.projectId}`,
+				JSON.stringify({
+					artifacts
+				}),
+				{
+					headers: new Headers({
+						Authorization: `Bearer ${config?.secretApiKey}`,
+						'Content-Type': 'application/json'
+					})
+				}
+			)
+			if (error) {
+				console.error(
+					`Oops! Something went wrong while pushing artifacts to the Flytrap API. Error:`
+				)
+				console.error(error)
+			}
+			if (data) {
+				log.info(
+					'api-calls',
+					`Successfully pushed ${artifacts.length} artifacts to the Flytrap API.`
+				)
+			}
 		}
 	}
 }

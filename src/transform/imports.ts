@@ -3,9 +3,17 @@ import { findStaticImports } from 'mlly'
 import { FLYTRAP_PACKAGE_NAME } from '../core/config'
 import { loadConfig } from './config'
 import { parse } from '@babel/parser'
+import { FlytrapConfig } from '../core/types'
 
 export function getCoreExports(): string[] {
-	return ['useFlytrapCall', 'useFlytrapCallAsync', 'useFlytrapFunction', 'capture', 'identify']
+	return [
+		'useFlytrapCall',
+		'useFlytrapCallAsync',
+		'useFlytrapFunction',
+		'setFlytrapConfig',
+		'capture',
+		'identify'
+	]
 }
 
 export function findStartingIndex(s: MagicString) {
@@ -41,19 +49,20 @@ export function addMissingFlytrapImports(s: MagicString) {
 	return s
 }
 
-export async function addFlytrapInit(s: MagicString) {
-	const config = await loadConfig()
+export async function addFlytrapInit(s: MagicString, config: FlytrapConfig | undefined) {
 	if (!config) return s
+
+	const copiedConfig = { ...config }
 
 	// Safeguard against slipping replaying config to prod or staging
 	if (process?.env?.NODE_ENV !== 'development') {
-		delete config['secretApiKey']
-		delete config['privateKey']
-		config['mode'] = 'capture'
+		delete copiedConfig['secretApiKey']
+		delete copiedConfig['privateKey']
+		copiedConfig['mode'] = 'capture'
 	}
 
 	// Append flytrap init
-	s.appendLeft(findStartingIndex(s), `\n\nsetFlytrapConfig(${JSON.stringify(config)});\n\n`)
+	s.appendLeft(findStartingIndex(s), `\n\nsetFlytrapConfig(${JSON.stringify(copiedConfig)});\n\n`)
 
 	return s
 }

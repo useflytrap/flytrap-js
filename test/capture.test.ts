@@ -41,10 +41,7 @@ describe('useFlytrapCall capture', () => {
 		useFlytrapCall(console, {
 			id: '/file.js-console.log',
 			args: ['hello', worldString],
-			name: 'log',
-			filePath: '/file.js',
-			lineNumber: 1,
-			scopes: []
+			name: 'log'
 		})
 
 		expect(getFunctionCalls()).toStrictEqual([
@@ -67,11 +64,7 @@ describe('useFlytrapCall capture', () => {
 		const fixture = {
 			hello: {
 				world: useFlytrapFunction(() => 2, {
-					id: 'someid',
-					filePath: '/',
-					lineNumber: 3,
-					name: 'world',
-					scopes: []
+					id: 'someid'
 				})
 			}
 		}
@@ -79,10 +72,7 @@ describe('useFlytrapCall capture', () => {
 		const returnVal = useFlytrapCall(fixture.hello, {
 			id: '/file.js-hello.world',
 			args: [],
-			name: 'world',
-			filePath: '/',
-			lineNumber: 1,
-			scopes: []
+			name: 'world'
 		})
 		expect(returnVal).toBe(2)
 	})
@@ -102,11 +92,8 @@ describe('storage', () => {
 		for (let i = 0; i < 20000; i++) {
 			useFlytrapCall(mockFunction, {
 				args: [{ foo: 'foo', bar: 'bar', baz: 'baz' }],
-				filePath: '/',
-				lineNumber: 1,
 				id: 'mockFunction',
-				name: 'mockFunction',
-				scopes: []
+				name: 'mockFunction'
 			})
 		}
 

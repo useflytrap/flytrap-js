@@ -13,6 +13,8 @@ import SuperJSON from 'superjson'
 import { FLYTRAP_UNSERIALIZABLE_VALUE, NO_SOURCE } from './constants'
 import { decrypt, encrypt } from './encryption'
 import { log } from './logging'
+import { serializeError } from 'serialize-error'
+import { stringify } from './stringify'
 
 const loadedCaptures = new Map<string, CaptureDecrypted | undefined>()
 
@@ -88,11 +90,38 @@ export const liveFlytrapStorage: FlytrapStorage = {
 			throw errorLog.toString()
 		}
 
+		log.info(
+			'api-calls',
+			`[GET] https://www.useflytrap.com/api/v1/captures/${captureId} - Received ${data}`
+		)
+
 		// Decrypt capture
 		const decryptedCapture: CaptureDecrypted = {
 			...data,
-			calls: SuperJSON.parse(await decrypt(privateKey, data.calls)),
-			functions: SuperJSON.parse(await decrypt(privateKey, data.functions)),
+			calls: await Promise.all(
+				data.calls.map(async (encryptedCall) => ({
+					...encryptedCall,
+					args: SuperJSON.parse(await decrypt(privateKey, encryptedCall.args)),
+					...(encryptedCall.output && {
+						output: SuperJSON.parse(await decrypt(privateKey, encryptedCall.output))
+					}),
+					...(encryptedCall.error && {
+						error: SuperJSON.parse<any>(await decrypt(privateKey, encryptedCall.error))
+					})
+				}))
+			),
+			functions: await Promise.all(
+				data.functions.map(async (encryptedFunction) => ({
+					...encryptedFunction,
+					args: SuperJSON.parse(await decrypt(privateKey, encryptedFunction.args)),
+					...(encryptedFunction.output && {
+						output: SuperJSON.parse(await decrypt(privateKey, encryptedFunction.output))
+					}),
+					...(encryptedFunction.error && {
+						error: SuperJSON.parse<any>(await decrypt(privateKey, encryptedFunction.error))
+					})
+				}))
+			),
 			...(data.error && {
 				error: SuperJSON.parse(await decrypt(privateKey, data.error)) as any
 			})
@@ -127,11 +156,24 @@ export const liveFlytrapStorage: FlytrapStorage = {
 		const { data: payload, error: encryptError } = await tryCatch<CapturePayload>({
 			capturedUserId: getUserId(),
 			projectId,
-			functionName: getExecutingFunction()?.name ?? 'unknown',
-			source: getExecutingFunction()?.source ?? NO_SOURCE,
-			calls: await encrypt(publicApiKey, SuperJSON.stringify(processedCalls)),
-			functions: await encrypt(publicApiKey, SuperJSON.stringify(processedFunctions)),
-			...(error && { error: await encrypt(publicApiKey, SuperJSON.stringify(processededError)) })
+			functionName:
+				serializeError(processededError)?.message ??
+				serializeError(processededError)?.error ??
+				'unknown',
+			source: NO_SOURCE,
+			calls: await Promise.all(
+				processedCalls.map(
+					async (processedCall) => await encryptCapturedCall(processedCall, publicApiKey)
+				)
+			),
+			functions: await Promise.all(
+				processedFunctions.map(
+					async (processedFunc) => await encryptCapturedFunction(processedFunc, publicApiKey)
+				)
+			),
+			...(error && {
+				error: await encrypt(publicApiKey, stringify(serializeError(processededError)))
+			})
 		})
 
 		if (!payload || encryptError) {
@@ -146,7 +188,7 @@ export const liveFlytrapStorage: FlytrapStorage = {
 		}
 
 		const { data: stringifiedPayload, error: stringifyError } = tryCatchSync(() =>
-			SuperJSON.stringify(payload)
+			stringify(payload)
 		)
 		if (stringifyError || !stringifiedPayload) {
 			const errorLog = createHumanLog({
@@ -202,6 +244,35 @@ function isSerializable(input: any) {
 	return error === null
 }
 
+function getEventType(event: Event): string {
+	return event?.constructor?.name ?? FLYTRAP_UNSERIALIZABLE_VALUE
+}
+
+export async function encryptCapturedFunction(
+	capturedFunction: CapturedFunction,
+	publicApiKey: string
+) {
+	const { args, error, output, ...rest } = capturedFunction
+
+	return {
+		args: await encrypt(publicApiKey, stringify(args)),
+		...(error && { error: await encrypt(publicApiKey, stringify(error)) }),
+		...(output && { output: await encrypt(publicApiKey, stringify(output)) }),
+		...rest
+	}
+}
+
+export async function encryptCapturedCall(capturedCall: CapturedCall, publicApiKey: string) {
+	const { args, error, output, ...rest } = capturedCall
+
+	return {
+		args: await encrypt(publicApiKey, stringify(args)),
+		...(error && { error: await encrypt(publicApiKey, stringify(error)) }),
+		...(output && { output: await encrypt(publicApiKey, stringify(output)) }),
+		...rest
+	}
+}
+
 export function preprocessCapture(
 	functions: CapturedFunction[],
 	calls: CapturedCall[],
@@ -215,10 +286,10 @@ export function preprocessCapture(
 	for (let i = 0; i < callsCopy.length; i++) {
 		if (!isSerializable(callsCopy[i])) {
 			if (!isSerializable(callsCopy[i].args)) {
-				callsCopy[i].args = [FLYTRAP_UNSERIALIZABLE_VALUE]
+				callsCopy[i].args = callsCopy[i].args.map((arg) => getEventType(arg))
 			}
 			if (!isSerializable(callsCopy[i].output)) {
-				callsCopy[i].output = FLYTRAP_UNSERIALIZABLE_VALUE
+				callsCopy[i].output = getEventType(callsCopy[i].output)
 			}
 		}
 		tryCatchSync(() => {
@@ -233,7 +304,10 @@ export function preprocessCapture(
 	for (let i = 0; i < funcsCopy.length; i++) {
 		if (!isSerializable(funcsCopy[i])) {
 			if (!isSerializable(funcsCopy[i].args)) {
-				funcsCopy[i].args = [FLYTRAP_UNSERIALIZABLE_VALUE]
+				funcsCopy[i].args = funcsCopy[i].args.map((arg) => getEventType(arg))
+			}
+			if (!isSerializable(funcsCopy[i].output)) {
+				funcsCopy[i].output = getEventType(funcsCopy[i].output)
 			}
 		}
 	}

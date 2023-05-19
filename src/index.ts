@@ -26,26 +26,12 @@ import { log } from './core/logging'
 export function useFlytrapFunction<
 	T extends ((...args: any) => Promise<any>) | ((...args: any) => any)
 >(fn: T, opts: FlytrapFunctionOptions) {
-	const functionName = opts.name ?? fn.name
-	const source: SourceType =
-		!opts?.filePath || !opts?.lineNumber
-			? extractCallerSource() ?? NO_SOURCE
-			: { filePath: opts.filePath, lineNumber: opts.lineNumber }
-	if (source.lineNumber === -1) {
-		console.error(
-			`Failed to extract caller source. You should use useflytrap/transform to transform all your code, or pass in the correct file name and line number in all useFlytrapFunction() calls.`
-		)
-	}
-
 	if (isAsyncFunction(fn)) {
 		// Return async function
 		return async (...args: any[]) => {
 			addExecutingFunction({
 				id: opts.id,
-				name: functionName,
 				args: [...args],
-				source,
-				scopes: opts.scopes,
 				timestamp: Date.now()
 			})
 
@@ -70,14 +56,16 @@ export function useFlytrapFunction<
 			}
 			// Capturing bugs
 			try {
-				return await fn(...args)
+				const output = await fn(...args)
+				saveOutputForFunction(opts.id, output)
+				return output
 			} catch (error) {
 				/**
 				 * Oops! We found a bug, let's send the current
 				 * executing function along with its data to the
 				 * Flytrap API.
 				 */
-				saveErrorForFunction(opts.id, error, source)
+				saveErrorForFunction(opts.id, error)
 
 				const { error: saveError } = await tryCatch(
 					getFlytrapStorage().saveCapture(_executingFunctions, _functionCalls, error)
@@ -102,10 +90,7 @@ export function useFlytrapFunction<
 	return (...args: any[]) => {
 		addExecutingFunction({
 			id: opts.id,
-			name: functionName,
 			args: [...args],
-			source,
-			scopes: opts.scopes,
 			timestamp: Date.now()
 		})
 
@@ -128,14 +113,16 @@ export function useFlytrapFunction<
 
 		// We're capturing
 		try {
-			return fn(...args)
+			const output = fn(...args)
+			saveOutputForFunction(opts.id, output)
+			return output
 		} catch (error) {
 			/**
 			 * Oops! We found a bug, let's send the current
 			 * executing function along with its data to the
 			 * Flytrap API.
 			 */
-			saveErrorForFunction(opts.id, error, source)
+			saveErrorForFunction(opts.id, error)
 
 			const { error: saveError } = tryCatchSync(() =>
 				getFlytrapStorage().saveCapture(_executingFunctions, _functionCalls, error)
@@ -189,16 +176,6 @@ function executeFunction<T>(fn: T, name: string, args: any[]) {
 }
 
 export function useFlytrapCall<T>(fnOrNamespace: T, opts: FlytrapCallOptions): any {
-	const source: SourceType =
-		!opts?.filePath || !opts?.lineNumber
-			? extractCallerSource() ?? NO_SOURCE
-			: { filePath: opts.filePath, lineNumber: opts.lineNumber }
-	if (source.lineNumber === -1) {
-		console.error(
-			`useFlytrapCall(): Failed to extract caller source. You should use useflytrap/transform to transform all your code, or pass in the correct file name and line number in all useFlytrapCall() calls.`
-		)
-	}
-
 	try {
 		// Save input
 		saveFunctionCall(opts)
@@ -233,7 +210,7 @@ export function useFlytrapCall<T>(fnOrNamespace: T, opts: FlytrapCallOptions): a
 		 * executing function along with its data to the
 		 * Flytrap API.
 		 */
-		saveErrorForFunctionCall(opts.id, error, source)
+		saveErrorForFunctionCall(opts.id, error)
 
 		throw error
 	}
@@ -243,16 +220,6 @@ export async function useFlytrapCallAsync<T extends (...args: any[]) => Promise<
 	fn: T,
 	opts: FlytrapCallOptions
 ) {
-	const source: SourceType =
-		!opts?.filePath || !opts?.lineNumber
-			? extractCallerSource() ?? NO_SOURCE
-			: { filePath: opts.filePath, lineNumber: opts.lineNumber }
-	if (source.lineNumber === -1) {
-		console.error(
-			`useFlytrapCallAsync(): Failed to extract caller source. You should use useflytrap/transform to transform all your code, or pass in the correct file name and line number in all useFlytrapCallAsync() calls.`
-		)
-	}
-
 	try {
 		// Save input
 		saveFunctionCall(opts)
@@ -288,7 +255,7 @@ export async function useFlytrapCallAsync<T extends (...args: any[]) => Promise<
 		 * executing function along with its data to the
 		 * Flytrap API.
 		 */
-		saveErrorForFunctionCall(opts.id, error, source)
+		saveErrorForFunctionCall(opts.id, error)
 
 		throw error
 	}
@@ -340,18 +307,19 @@ export async function loadCapture() {
 
 	if (capture) {
 		_loadedCapture = capture
-		console.log('🐛 Flytrap - Replay data loaded!')
+		log.info('storage', '🐛 Flytrap - Replay data loaded!')
 	}
 }
 
 export async function capture(error: any) {
+	log.info('capture', `Manually captured error.`)
 	/**
 	 * We're manually capturing an error. Let's send the current
 	 * executing function along with its data to the Flytrap API.
 	 */
 	const executingFunction = getExecutingFunction()
 	if (executingFunction) {
-		saveErrorForFunction(executingFunction.id, error, executingFunction.source)
+		saveErrorForFunction(executingFunction.id, error)
 	}
 
 	// Let's save it
@@ -369,13 +337,14 @@ export async function capture(error: any) {
 }
 
 export function identify(userId: string) {
+	log.info('identify', `Identified current user as "${userId}"`)
 	_userId = userId
 }
 export const getUserId = () => _userId
 export const getExecutingFunction = (): CapturedFunction | undefined =>
 	_executingFunctions[_executingFunctions.length - 1]
 const addExecutingFunction = (wrappedFunction: CapturedFunction) => {
-	log.info('function-execution', `Executing function ${wrappedFunction.name}`)
+	log.info('function-execution', `Executing function with ID "${wrappedFunction.id}"`)
 	const matchingExecutingFunction = _executingFunctions.find(
 		(execFn) => execFn.id === wrappedFunction.id
 	)
@@ -388,19 +357,14 @@ const addExecutingFunction = (wrappedFunction: CapturedFunction) => {
 }
 
 function saveFunctionCall(opts: FlytrapCallOptions) {
-	const { filePath, lineNumber, ...restOpts } = opts
 	_functionCalls.push({
-		...restOpts,
-		timestamp: Date.now(),
-		source: {
-			filePath,
-			lineNumber
-		}
+		...opts,
+		timestamp: Date.now()
 	})
 }
 
 function saveOutputForFunctionCall<T>(functionCallId: string, output: T) {
-	// @ts-ignore
+	// @ts-ignore for some reason this isn't included
 	const functionCallIndex = _functionCalls.findLastIndex((call) => call.id === functionCallId)
 
 	if (functionCallIndex === -1) {
@@ -411,6 +375,18 @@ function saveOutputForFunctionCall<T>(functionCallId: string, output: T) {
 	_functionCalls[functionCallIndex].output = output
 }
 
+function saveOutputForFunction<T>(functionId: string, output: T) {
+	// @ts-ignore for some reason this isn't included
+	const functionIndex = _executingFunctions.findLastIndex((func) => func.id === functionId)
+
+	if (functionIndex === -1) {
+		console.error(`Saving output for nonexistent function with ID ${functionId}`)
+		return
+	}
+
+	_executingFunctions[functionIndex].output = output
+}
+
 function getFunctionCallById(functionCallId: string): CapturedCall | undefined {
 	return _functionCalls.find((call) => call.id === functionCallId)
 }
@@ -419,7 +395,7 @@ function getFunctionById(functionId: string): CapturedFunction | undefined {
 	return _executingFunctions.find((func) => func.id === functionId)
 }
 
-function saveErrorForFunctionCall(functionCallId: string, error: any, source: SourceType) {
+function saveErrorForFunctionCall(functionCallId: string, error: any) {
 	const call = getFunctionCallById(functionCallId)
 
 	if (!call) {
@@ -427,13 +403,10 @@ function saveErrorForFunctionCall(functionCallId: string, error: any, source: So
 		return
 	}
 	log.info('call-execution', `Saving error for function call ID ${functionCallId}.`)
-	call.error = {
-		source: { ...source },
-		...serializeError(error)
-	}
+	call.error = serializeError(error)
 }
 
-function saveErrorForFunction(functionId: string, error: any, source: SourceType) {
+function saveErrorForFunction(functionId: string, error: any) {
 	const func = getFunctionById(functionId)
 
 	if (!func) {
@@ -442,10 +415,7 @@ function saveErrorForFunction(functionId: string, error: any, source: SourceType
 	}
 
 	log.info('function-execution', `Saving error for function ID ${functionId}`)
-	func.error = {
-		source,
-		...serializeError(error)
-	}
+	func.error = serializeError(error)
 }
 
 // Export

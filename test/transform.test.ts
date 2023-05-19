@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { flytrapTransform } from '../src/transform/index'
+import { flytrapTransformArtifacts } from '../src/transform/index'
 import { deriveAnonymousFunctionName } from '../src/core/util'
 import {
 	addMissingFlytrapImports,
@@ -21,7 +21,7 @@ export const HelloWorld = useFlytrapFunction(function HelloWorld({ children }: a
 	return (
 		<h1>{children}</h1>
 	)
-}, { id: '/file.js-HelloWorld', name: 'HelloWorld', filePath: '/file.js', lineNumber: 2, scopes: [] });
+}, { id: '/file.js-_HelloWorld' });
 `
 
 describe('useFlytrapFunction transform', () => {
@@ -31,48 +31,34 @@ describe('useFlytrapFunction transform', () => {
 
 	it('transforms arrow function expressions', () => {
 		expect(transform('() => {}')).toStrictEqual(
-			toOneLine(
-				toOneLine(
-					`useFlytrapFunction(() => {}, { id: '/file.js-anonymous', name: 'anonymous', filePath: '/file.js', lineNumber: 1, scopes: [] })`
-				)
-			)
+			toOneLine(toOneLine(`useFlytrapFunction(() => {}, { id: '/file.js-_anonymous' })`))
 		)
 		expect(transform('async () => {}')).toStrictEqual(
-			toOneLine(
-				`useFlytrapFunction(async () => {}, { id: '/file.js-anonymous', name: 'anonymous', filePath: '/file.js', lineNumber: 1, scopes: [] })`
-			)
+			toOneLine(`useFlytrapFunction(async () => {}, { id: '/file.js-_anonymous' })`)
 		)
 
 		expect(transform(`const hello = () => {}`)).toStrictEqual(
-			toOneLine(
-				`const hello = useFlytrapFunction(() => {}, { id: '/file.js-hello', name: 'hello', filePath: '/file.js', lineNumber: 1, scopes: [] })`
-			)
+			toOneLine(`const hello = useFlytrapFunction(() => {}, { id: '/file.js-_hello' })`)
 		)
 	})
 
 	it('transforms function declarations', async () => {
 		expect(transform('function hello() {}')).toStrictEqual(
-			toOneLine(
-				`const hello = useFlytrapFunction(function hello() {}, { id: '/file.js-hello', name: 'hello', filePath: '/file.js', lineNumber: 1, scopes: [] });`
-			)
+			toOneLine(`const hello = useFlytrapFunction(function hello() {}, { id: '/file.js-_hello' });`)
 		)
 		expect(transform('async function hello() {}')).toStrictEqual(
 			toOneLine(
-				`const hello = useFlytrapFunction(async function hello() {}, { id: '/file.js-hello', name: 'hello', filePath: '/file.js', lineNumber: 1, scopes: [] });`
+				`const hello = useFlytrapFunction(async function hello() {}, { id: '/file.js-_hello' });`
 			)
 		)
 	})
 
 	it('transforms function expressions', async () => {
 		expect(transform('const hello = function() {}')).toStrictEqual(
-			toOneLine(
-				`const hello = useFlytrapFunction(function() {}, { id: '/file.js-hello', name: 'hello', filePath: '/file.js', lineNumber: 1, scopes: [] })`
-			)
+			toOneLine(`const hello = useFlytrapFunction(function() {}, { id: '/file.js-_hello' })`)
 		)
 		expect(transform('const hello = async function() {}')).toStrictEqual(
-			toOneLine(
-				`const hello = useFlytrapFunction(async function() {}, { id: '/file.js-hello', name: 'hello', filePath: '/file.js', lineNumber: 1, scopes: [] })`
-			)
+			toOneLine(`const hello = useFlytrapFunction(async function() {}, { id: '/file.js-_hello' })`)
 		)
 	})
 
@@ -86,19 +72,17 @@ describe('useFlytrapFunction transform', () => {
 
 		expect(transform(objExprCode)).toStrictEqual(
 			toOneLine(`const x = {
-			hello: useFlytrapFunction(() => {}, { id: '/file.js-hello', name: 'hello', filePath: '/file.js', lineNumber: 2, scopes: [] }),
-			world: useFlytrapFunction(() => {}, { id: '/file.js-world', name: 'world', filePath: '/file.js', lineNumber: 3, scopes: [] }),
+			hello: useFlytrapFunction(() => {}, { id: '/file.js-_hello' }),
+			world: useFlytrapFunction(() => {}, { id: '/file.js-_world' }),
 		}`)
 		)
 		expect(transform(deepObjExprCode)).toStrictEqual(
 			toOneLine(
-				`const x = { hello: { world: useFlytrapFunction(() => {}, { id: '/file.js-world', name: 'world', filePath: '/file.js', lineNumber: 1, scopes: [] }) } }`
+				`const x = { hello: { world: useFlytrapFunction(() => {}, { id: '/file.js-_world' }) } }`
 			)
 		)
 		expect(transform(arrayCode)).toStrictEqual(
-			toOneLine(
-				`[useFlytrapFunction(() => {}, { id: '/file.js-anonymous', name: 'anonymous', filePath: '/file.js', lineNumber: 1, scopes: [] })]`
-			)
+			toOneLine(`[useFlytrapFunction(() => {}, { id: '/file.js-_anonymous' })]`)
 		)
 	})
 
@@ -108,7 +92,7 @@ describe('useFlytrapFunction transform', () => {
 				`
 			const helloWorld = useFlytrapFunction(function helloWorld() {
 	
-			}, { id: '/file.js-helloWorld', name: 'helloWorld', filePath: '/file.js', lineNumber: 1, scopes: [] });
+			}, { id: '/file.js-_helloWorld' });
 			`
 			)
 		)
@@ -128,12 +112,12 @@ describe('useFlytrapFunction transform', () => {
 			{
 				const helloWorld = useFlytrapFunction(function helloWorld() {
 	
-				}, { id: '/file.js-BlockStatement-helloWorld', name: 'helloWorld', filePath: '/file.js', lineNumber: 3, scopes: ['BlockStatement'] });
+				}, { id: '/file.js-_helloWorld' });
 			}
 			{
 				const helloWorld = useFlytrapFunction(function helloWorld() {
 	
-				}, { id: '/file.js-BlockStatement-helloWorld-2', name: 'helloWorld', filePath: '/file.js', lineNumber: 6, scopes: ['BlockStatement'] });
+				}, { id: '/file.js-_helloWorld2' });
 			}
 			`
 			)
@@ -150,19 +134,11 @@ describe('useFlytrapFunction transform', () => {
 		expect(transform(someFixture)).toStrictEqual(
 			toOneLine(`
 			;(useFlytrapFunction((() => {}), {
-				id: '/file.js-anonymous',
-				name: 'anonymous',
-				filePath: '/file.js',
-				lineNumber: 2,
-				scopes: []
+				id: '/file.js-_anonymous',
 			}))
 
 			;(useFlytrapFunction((() => {}), {
-				id: '/file.js-anonymous-2',
-				name: 'anonymous',
-				filePath: '/file.js',
-				lineNumber: 4,
-				scopes: []
+				id: '/file.js-_anonymous2',
 			}));
 			`)
 		)
@@ -170,21 +146,6 @@ describe('useFlytrapFunction transform', () => {
 })
 
 it.skip('derives anonymous function names', () => {
-	/* Testing a following setup:
-	;() => {};
-	;() => {};
-
-	function Scope1() {
-		;() => {};
-		{
-			;() => {};
-		}
-		;() => {};
-	}
-	`;
-
-	*/
-
 	const usedAnonymousFunctionNames: string[] = []
 
 	// No scopes
@@ -234,8 +195,8 @@ it.skip('wraps functions with scopes', () => {
 	expect(transform(scopeFixtureWithArrowFunction)).toStrictEqual(
 		toOneLine(
 			`const SomeComponent = useFlytrapFunction(() => {
-				const { data } = useFlytrapCall(useSession, { args: [], name: 'useSession', filePath: '/file.js', lineNumber: 3, scopes: ['SomeComponent'] })
-			}, { name: 'SomeComponent', filePath: '/file.js', lineNumber: 2, scopes: [] })`
+				const { data } = useFlytrapCall(useSession, { id: '/file.js-call-_useSession', args: [], name: 'useSession' })
+			}, { id: '/file.js-_SomeComponent' })`
 		)
 	)
 
@@ -254,10 +215,6 @@ it.skip('wraps functions with scopes', () => {
 		`)
 	)
 })
-
-/* const x = function () {
-
-} */
 
 it('transforms default exports', () => {
 	expect(
@@ -615,6 +572,6 @@ export function toOneLine(code: string) {
 }
 
 export function transform(code: string) {
-	const { code: transformedCode } = flytrapTransform(code, '/file.js')
+	const { code: transformedCode } = flytrapTransformArtifacts(code, '/file.js')
 	return toOneLine(transformedCode)
 }
