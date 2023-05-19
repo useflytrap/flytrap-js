@@ -50,11 +50,6 @@ describe('useFlytrapCall capture', () => {
 				id: '/file.js-console.log',
 				name: 'log',
 				output: undefined,
-				scopes: [],
-				source: {
-					filePath: '/file.js',
-					lineNumber: 1
-				},
 				timestamp: 0
 			}
 		])
