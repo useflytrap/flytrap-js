@@ -132,7 +132,7 @@ export const unpluginOptions: UnpluginOptions = {
 			)
 
 			const { data, error } = await post(
-				`http://localhost:3000/api/v1/artifacts/${config?.projectId}`,
+				`https://www.useflytrap.com/api/v1/artifacts/${config?.projectId}`,
 				JSON.stringify({
 					artifacts
 				}),
