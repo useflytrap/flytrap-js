@@ -1,7 +1,6 @@
 import MagicString from 'magic-string'
 import { findStaticImports } from 'mlly'
 import { FLYTRAP_PACKAGE_NAME } from '../core/config'
-import { loadConfig } from './config'
 import { parse } from '@babel/parser'
 import { FlytrapConfig } from '../core/types'
 

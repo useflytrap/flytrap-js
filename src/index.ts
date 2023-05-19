@@ -4,11 +4,9 @@ import {
 	CapturedCall,
 	CapturedFunction,
 	FlytrapCallOptions,
-	FlytrapFunctionOptions,
-	SourceType
+	FlytrapFunctionOptions
 } from './core/types'
 import {
-	extractCallerSource,
 	fillUnserializableFlytrapValues,
 	getMode,
 	isAsyncFunction,
@@ -17,7 +15,6 @@ import {
 } from './core/util'
 import { getFlytrapStorage } from './core/storage'
 import { createHumanLog } from './core/human-logs'
-import { NO_SOURCE } from './core/constants'
 import { log } from './core/logging'
 
 /**
