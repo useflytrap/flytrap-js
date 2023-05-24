@@ -13,9 +13,10 @@ import {
 	tryCatch,
 	tryCatchSync
 } from './core/util'
-import { getFlytrapStorage } from './core/storage'
+import { getFlytrapStorage, getLoadedCapture, loadAndPersist } from './core/storage'
 import { createHumanLog } from './core/human-logs'
 import { log } from './core/logging'
+import { getFlytrapConfig } from './core/config'
 
 /**
  * All function definitions are wrapped with the useFlytrapFunction
@@ -34,11 +35,11 @@ export function useFlytrapFunction<
 
 			// Replaying code
 			if (getMode() === 'replay') {
-				// const replayArgs = getInputArgsByFunctionId(opts.id, args)
 				const replayArgs = getReplayFunctionArgs(opts.id)
+				const replayOutput = getReplayFunctionOutput(opts.id)
 
 				if (!replayArgs) {
-					if (_loadedCapture) {
+					if (getLoadedCapture()) {
 						console.warn(
 							`Could not find replay input arguments for function with ID ${opts.id}, either this is a function you have added, or something has gone wrong during the capture process. If this is the case, contact us.`
 						)
@@ -48,8 +49,8 @@ export function useFlytrapFunction<
 
 				// Merge replay args & real args
 				const mergedArgs = fillUnserializableFlytrapValues(replayArgs, args)
-
-				return await fn(...mergedArgs)
+				const realOutput = await fn(...mergedArgs)
+				return fillUnserializableFlytrapValues(replayOutput, realOutput)
 			}
 			// Capturing bugs
 			try {
@@ -94,8 +95,9 @@ export function useFlytrapFunction<
 		// Replaying code
 		if (getMode() === 'replay') {
 			const replayArgs = getReplayFunctionArgs(opts.id)
+			const replayOutput = getReplayFunctionOutput(opts.id)
 			if (!replayArgs) {
-				if (_loadedCapture) {
+				if (getLoadedCapture()) {
 					console.warn(
 						`Could not find replay input arguments for function with ID ${opts.id}, either this is a function you have added, or something has gone wrong during the capture process. If this is the case, contact us.`
 					)
@@ -105,7 +107,8 @@ export function useFlytrapFunction<
 
 			// Merge replay args & real args
 			const mergedArgs = fillUnserializableFlytrapValues(replayArgs, args)
-			return fn(...mergedArgs)
+			const realOutput = fn(...mergedArgs)
+			return fillUnserializableFlytrapValues(replayOutput, realOutput)
 		}
 
 		// We're capturing
@@ -179,10 +182,10 @@ export function useFlytrapCall<T>(fnOrNamespace: T, opts: FlytrapCallOptions): a
 
 		// We're replaying
 		if (getMode() === 'replay') {
-			// const replayArgs = getInputArgsByFunctionCallId(opts.id)
 			const replayArgs = getReplayCallArgs(opts.id)
+			const replayOutput = getReplayCallOutput(opts.id)
 			if (!replayArgs) {
-				if (_loadedCapture) {
+				if (getLoadedCapture()) {
 					console.warn(
 						`Could not find replay input arguments for function call with ID ${opts.id}, either this is a new function call you have added, or something has gone wrong during the capture process. If this is the case, contact us.`
 					)
@@ -193,8 +196,8 @@ export function useFlytrapCall<T>(fnOrNamespace: T, opts: FlytrapCallOptions): a
 
 			// Merge args replay & real args
 			const mergedArgs = fillUnserializableFlytrapValues(replayArgs, opts.args)
-
-			return executeFunction(fnOrNamespace, opts.name, mergedArgs)
+			const realOutput = executeFunction(fnOrNamespace, opts.name, mergedArgs)
+			return fillUnserializableFlytrapValues(replayOutput, realOutput)
 		}
 		// We're capturing
 		const output = executeFunction(fnOrNamespace, opts.name, opts.args)
@@ -224,21 +227,20 @@ export async function useFlytrapCallAsync<T extends (...args: any[]) => Promise<
 		// We're replaying
 		if (getMode() === 'replay') {
 			const replayArgs = getReplayCallArgs(opts.id)
+			const replayOutput = getReplayCallOutput(opts.id)
 			if (!replayArgs) {
-				if (_loadedCapture) {
+				if (getLoadedCapture()) {
 					console.warn(
 						`Could not find replay input arguments for function call with ID ${opts.id}, either this is a function call you have added, or something has gone wrong during the capture process. If this is the case, contact us.`
 					)
 				}
-				//return await fn(...opts.args)
 				return await executeFunctionAsync(fn, opts.name, opts.args)
 			}
 
 			// Merge replay args & real args
 			const mergedArgs = fillUnserializableFlytrapValues(replayArgs, opts.args)
-			// return await fn(...replayArgs)
-			return await executeFunctionAsync(fn, opts.name, mergedArgs)
-			// return await executeFunctionAsync(fn, opts.name, replayArgs)
+			const realOutput = await executeFunctionAsync(fn, opts.name, mergedArgs)
+			return fillUnserializableFlytrapValues(replayOutput, realOutput)
 		}
 		// We're capturing
 		// const output = await fn(...opts.args)
@@ -259,31 +261,57 @@ export async function useFlytrapCallAsync<T extends (...args: any[]) => Promise<
 }
 
 function getReplayCallArgs(functionCallId: string): any[] | undefined {
-	if (!_loadedCapture) {
+	const loadedCapture = getLoadedCapture()
+	if (!loadedCapture) {
 		loadCapture()
 		return undefined
 	}
 
-	const matchingFunctionCalls = _loadedCapture.calls.filter((call) => call.id === functionCallId)
-	return matchingFunctionCalls[matchingFunctionCalls.length - 1]?.args ?? undefined
+	const matchingFunctionCalls = loadedCapture.calls
+		.filter((call) => call.id === functionCallId)
+		.sort((a, b) => b.timestamp - a.timestamp)
+	return matchingFunctionCalls[0]?.args
+}
+
+function getReplayCallOutput(functionCallId: string): any | undefined {
+	const loadedCapture = getLoadedCapture()
+	if (!loadedCapture) {
+		loadCapture()
+		return undefined
+	}
+
+	const matchingFunctionCalls = loadedCapture.calls
+		.filter((call) => call.id === functionCallId)
+		.sort((a, b) => b.timestamp - a.timestamp)
+	return matchingFunctionCalls[0]?.output
 }
 
 function getReplayFunctionArgs(functionId: string): any[] | undefined {
-	if (!_loadedCapture) {
+	const loadedCapture = getLoadedCapture()
+	if (!loadedCapture) {
 		loadCapture()
 		return undefined
 	}
 
-	for (let i = 0; i < _loadedCapture.functions.length; i++) {
-		if (_loadedCapture.functions[i].id === functionId) {
-			return _loadedCapture.functions[i].args
-		}
-	}
-
-	return undefined
+	const matchingFunctionCalls = loadedCapture.functions
+		.filter((func) => func.id === functionId)
+		.sort((a, b) => b.timestamp - a.timestamp)
+	return matchingFunctionCalls?.[0]?.args
 }
 
-let _loadedCapture: CaptureDecrypted | undefined = undefined
+function getReplayFunctionOutput(functionId: string): any | undefined {
+	const loadedCapture = getLoadedCapture()
+	if (!loadedCapture) {
+		loadCapture()
+		return undefined
+	}
+
+	const matchingFunctionCalls = loadedCapture.functions
+		.filter((func) => func.id === functionId)
+		.sort((a, b) => b.timestamp - a.timestamp)
+	return matchingFunctionCalls?.[0]?.output
+}
+
 let _executingFunctions: CapturedFunction[] = []
 let _functionCalls: CapturedCall[] = []
 let _userId: string | undefined = undefined
@@ -300,11 +328,20 @@ export const _resetFunctionCalls = () => {
 }
 
 export async function loadCapture() {
-	const capture = await getFlytrapStorage().loadCapture()
+	const { privateKey, secretApiKey, captureId } = await getFlytrapConfig()
+	if (!captureId || !secretApiKey || !privateKey) {
+		log.error(
+			'storage',
+			`Failed to load capture, because captureId, secretApiKey or privateKey is undefined.`
+		)
+		return
+	}
+	const success = await loadAndPersist(captureId, secretApiKey, privateKey)
 
-	if (capture) {
-		_loadedCapture = capture
+	if (success) {
 		log.info('storage', '🐛 Flytrap - Replay data loaded!')
+	} else {
+		log.error('storage', `Could not load replay data for capture ID ${captureId}`)
 	}
 }
 

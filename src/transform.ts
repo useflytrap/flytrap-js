@@ -7,7 +7,7 @@ import { flytrapTransformArtifacts } from './transform/index'
 import { packageDirectorySync } from 'pkg-dir'
 import { createHumanLog } from './core/human-logs'
 import { loadConfig } from './transform/config'
-import { setFlytrapConfig } from './core/config'
+import { FLYTRAP_API_BASE, setFlytrapConfig } from './core/config'
 import { log } from './core/logging'
 import { Artifact, extractArtifacts } from './transform/artifacts'
 import { post } from './core/util'
@@ -132,7 +132,7 @@ export const unpluginOptions: UnpluginOptions = {
 			)
 
 			const { data, error } = await post(
-				`https://www.useflytrap.com/api/v1/artifacts/${config?.projectId}`,
+				`${FLYTRAP_API_BASE}/api/v1/artifacts/${config?.projectId}`,
 				JSON.stringify({
 					artifacts
 				}),

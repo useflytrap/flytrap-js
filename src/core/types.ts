@@ -113,3 +113,9 @@ export type CaptureDecrypted = Omit<DatabaseCapture, 'calls' | 'functions' | 'er
 }
 
 export type CapturePayload = Omit<DatabaseCapture, 'id' | 'createdAt' | 'status' | 'pinned'>
+
+export type Storage = {
+	getItem(captureId: string): CaptureDecrypted | null
+	removeItem(captureId: string): void
+	setItem(captureId: string, capture: CaptureDecrypted): void
+}

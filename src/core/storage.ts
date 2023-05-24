@@ -3,9 +3,10 @@ import type {
 	CapturePayload,
 	CapturedCall,
 	CapturedFunction,
-	DatabaseCapture
+	DatabaseCapture,
+	Storage
 } from './types'
-import { getFlytrapConfig } from './config'
+import { FLYTRAP_API_BASE, getFlytrapConfig, getLoadedConfig } from './config'
 import { getExecutingFunction, getUserId } from '../index'
 import { empty, get, post, tryCatch, tryCatchSync } from './util'
 import { createHumanLog } from './human-logs'
@@ -14,47 +15,111 @@ import { FLYTRAP_UNSERIALIZABLE_VALUE, NO_SOURCE } from './constants'
 import { decrypt, encrypt } from './encryption'
 import { log } from './logging'
 import { serializeError } from 'serialize-error'
-import { stringify } from './stringify'
+import { parse, stringify } from './stringify'
 
 const loadedCaptures = new Map<string, CaptureDecrypted | undefined>()
 
+export const browserStorage: Storage = {
+	getItem(captureId) {
+		const captureStringified = localStorage.getItem(captureId)
+		if (!captureStringified) return null
+		return parse<CaptureDecrypted>(captureStringified)
+	},
+	removeItem(captureId) {
+		return localStorage.removeItem(captureId)
+	},
+	setItem(captureId, capture) {
+		return localStorage.setItem(captureId, stringify(capture))
+	}
+}
+
+const isBrowser = new Function('try {return this===window;}catch(e){return false;}')
+
+export const fileStorage: Storage = {
+	getItem(captureId) {
+		const { readFileSync } = require('fs')
+		const { join } = require('path')
+		const { homedir } = require('os')
+		const getCacheDir = () => join(homedir(), '.flytrap-cache')
+		try {
+			const captureStringified = readFileSync(join(getCacheDir(), `${captureId}.json`), 'utf-8')
+			if (!captureStringified) return null
+			return parse<CaptureDecrypted>(captureStringified)
+		} catch (e) {
+			return null
+		}
+	},
+	removeItem(captureId) {
+		const { rmSync } = require('fs')
+		const { join } = require('path')
+		const { homedir } = require('os')
+		const getCacheDir = () => join(homedir(), '.flytrap-cache')
+		return rmSync(join(getCacheDir(), `${captureId}.json`))
+	},
+	setItem(captureId, capture) {
+		const { writeFileSync, mkdirSync } = require('fs')
+		const { join } = require('path')
+		const { homedir } = require('os')
+		const getCacheDir = () => join(homedir(), '.flytrap-cache')
+		mkdirSync(getCacheDir(), { recursive: true })
+		return writeFileSync(join(getCacheDir(), `${captureId}.json`), stringify(capture))
+	}
+}
+
+function getStorage(): Storage {
+	if (isBrowser()) {
+		return browserStorage
+	}
+
+	return fileStorage
+}
+
+export function getLoadedCapture() {
+	const { captureId } = getLoadedConfig() ?? {}
+	if (!captureId) return null
+	return getFlytrapStorage().getCapture(captureId)
+}
+
+export async function loadAndPersist(
+	captureId: string,
+	secretApiKey: string,
+	privateKey: string
+): Promise<boolean> {
+	const capture = await getFlytrapStorage().loadCapture(captureId, secretApiKey, privateKey)
+	if (capture) {
+		getStorage().setItem(captureId, capture)
+		return true
+	}
+	return false
+}
+
 export type FlytrapStorage = {
+	getCapture: (captureId: string) => CaptureDecrypted | null
 	/**
 	 * Load the wrapped functions from the API. These are decrypted before
 	 * returning them.
 	 * @returns
 	 */
-	loadCapture: () => Promise<CaptureDecrypted | undefined>
+	loadCapture: (
+		captureId: string,
+		secretApiKey: string,
+		privateKey: string
+	) => Promise<CaptureDecrypted | undefined>
 	saveCapture: (functions: CapturedFunction[], calls: CapturedCall[], error?: any) => Promise<void>
 }
 
 export const liveFlytrapStorage: FlytrapStorage = {
-	async loadCapture() {
-		const { publicApiKey, secretApiKey, privateKey, captureId, projectId } =
-			await getFlytrapConfig()
-
-		if (
-			!publicApiKey ||
-			!captureId ||
-			!projectId ||
-			!privateKey ||
-			!secretApiKey ||
-			empty(publicApiKey, captureId, projectId, secretApiKey, privateKey)
-		) {
-			const errorLog = createHumanLog({
-				event: 'replay_failed',
-				explanation: 'replay_missing_config_values',
-				solution: 'configuration_fix'
-			})
-			log.error('storage', errorLog.toString())
-			throw errorLog.toString()
+	getCapture(captureId) {
+		return getStorage().getItem(captureId)
+	},
+	async loadCapture(captureId, secretApiKey, privateKey) {
+		if (loadedCaptures.has(captureId)) {
+			return loadedCaptures.get(captureId)
 		}
-
-		if (loadedCaptures.has(captureId)) return
 		loadedCaptures.set(captureId, undefined) // mark it as being loaded
 
 		const { data, error } = await get<DatabaseCapture>(
-			`https://www.useflytrap.com/api/v1/captures/${captureId}`,
+			`${FLYTRAP_API_BASE}/api/v1/captures/${captureId}`,
 			undefined,
 			{
 				headers: new Headers({
@@ -92,7 +157,7 @@ export const liveFlytrapStorage: FlytrapStorage = {
 
 		log.info(
 			'api-calls',
-			`[GET] https://www.useflytrap.com/api/v1/captures/${captureId} - Received ${data}`
+			`[GET] ${FLYTRAP_API_BASE}/api/v1/captures/${captureId} - Received ${data}`
 		)
 
 		// Decrypt capture
@@ -101,29 +166,29 @@ export const liveFlytrapStorage: FlytrapStorage = {
 			calls: await Promise.all(
 				data.calls.map(async (encryptedCall) => ({
 					...encryptedCall,
-					args: SuperJSON.parse(await decrypt(privateKey, encryptedCall.args)),
+					args: parse(await decrypt(privateKey, encryptedCall.args)),
 					...(encryptedCall.output && {
-						output: SuperJSON.parse(await decrypt(privateKey, encryptedCall.output))
+						output: parse(await decrypt(privateKey, encryptedCall.output))
 					}),
 					...(encryptedCall.error && {
-						error: SuperJSON.parse<any>(await decrypt(privateKey, encryptedCall.error))
+						error: parse<any>(await decrypt(privateKey, encryptedCall.error))
 					})
 				}))
 			),
 			functions: await Promise.all(
 				data.functions.map(async (encryptedFunction) => ({
 					...encryptedFunction,
-					args: SuperJSON.parse(await decrypt(privateKey, encryptedFunction.args)),
+					args: parse(await decrypt(privateKey, encryptedFunction.args)),
 					...(encryptedFunction.output && {
-						output: SuperJSON.parse(await decrypt(privateKey, encryptedFunction.output))
+						output: parse(await decrypt(privateKey, encryptedFunction.output))
 					}),
 					...(encryptedFunction.error && {
-						error: SuperJSON.parse<any>(await decrypt(privateKey, encryptedFunction.error))
+						error: parse<any>(await decrypt(privateKey, encryptedFunction.error))
 					})
 				}))
 			),
 			...(data.error && {
-				error: SuperJSON.parse(await decrypt(privateKey, data.error)) as any
+				error: parse<any>(await decrypt(privateKey, data.error))
 			})
 		}
 
@@ -147,6 +212,7 @@ export const liveFlytrapStorage: FlytrapStorage = {
 			return
 		}
 
+		// TODO: Rewrite this
 		const [processedFunctions, processedCalls, processededError] = preprocessCapture(
 			functions,
 			calls,
@@ -203,15 +269,15 @@ export const liveFlytrapStorage: FlytrapStorage = {
 
 		log.info(
 			'api-calls',
-			`[POST] https://www.useflytrap.com/api/v1/captures - Payload size ~${stringifiedPayload.length} bytes.`
+			`[POST] ${FLYTRAP_API_BASE}/api/v1/captures - Payload size ~${stringifiedPayload.length} bytes.`
 		)
 		log.info(
 			'storage',
-			`[POST] https://www.useflytrap.com/api/v1/captures - Payload size ~${stringifiedPayload.length} bytes.`
+			`[POST] ${FLYTRAP_API_BASE}/api/v1/captures - Payload size ~${stringifiedPayload.length} bytes.`
 		)
 		// TODO: use something like `devalue` to get closer to reality
 		const { error: captureError } = await post(
-			`https://www.useflytrap.com/api/v1/captures`,
+			`${FLYTRAP_API_BASE}/api/v1/captures`,
 			stringifiedPayload,
 			{
 				headers: new Headers({
@@ -245,7 +311,7 @@ function isSerializable(input: any) {
 }
 
 function getEventType(event: Event): string {
-	return event?.constructor?.name ?? FLYTRAP_UNSERIALIZABLE_VALUE
+	return FLYTRAP_UNSERIALIZABLE_VALUE
 }
 
 export async function encryptCapturedFunction(

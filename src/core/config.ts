@@ -2,6 +2,7 @@ import { FlytrapConfig, FlytrapPublicKey } from './types'
 import { empty } from './util'
 
 export const FLYTRAP_PACKAGE_NAME = 'useflytrap'
+export const FLYTRAP_API_BASE = 'https://www.useflytrap.com'
 
 /**
  * Define your Flytrap configuration. `projectId` and `publicApiKey` are required.
