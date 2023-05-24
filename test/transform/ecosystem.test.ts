@@ -26,7 +26,7 @@ const targets: Record<string, Target> = {
 
 beforeAll(async () => {
 	await generateFixtures(targets)
-})
+}, 30_000)
 
 afterAll(() => {
 	cleanupTargets()
