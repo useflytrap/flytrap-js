@@ -176,7 +176,7 @@ export const createHumanLog = createHumanLogs({
 			action: [
 				{
 					text: 'Join our Discord',
-					href: 'https://discord.gg/q2Qn4WY5Xw'
+					href: 'https://discord.gg/tQaADUfdeP'
 				},
 				{
 					text: 'contact our support engineer',
@@ -206,7 +206,7 @@ export const createHumanLog = createHumanLogs({
 				},
 				{
 					text: 'Join our Discord',
-					href: 'https://discord.gg/q2Qn4WY5Xw'
+					href: 'https://discord.gg/tQaADUfdeP'
 				}
 			]
 		},
