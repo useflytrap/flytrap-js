@@ -6,7 +6,7 @@ import type {
 	DatabaseCapture,
 	Storage
 } from './types'
-import { FLYTRAP_API_BASE, getFlytrapConfig, getLoadedConfig } from './config'
+import { FLYTRAP_API_BASE, getLoadedConfig } from './config'
 import { getExecutingFunction, getUserId } from '../index'
 import { empty, get, post, tryCatch, tryCatchSync } from './util'
 import { createHumanLog } from './human-logs'
@@ -199,7 +199,7 @@ export const liveFlytrapStorage: FlytrapStorage = {
 	},
 	async saveCapture(functions, calls, error?) {
 		// Here error if
-		const { publicApiKey, projectId } = await getFlytrapConfig()
+		const { publicApiKey, projectId } = (await getLoadedConfig()) ?? {}
 
 		if (!publicApiKey || !projectId || empty(publicApiKey, projectId)) {
 			console.error(

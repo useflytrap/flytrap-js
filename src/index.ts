@@ -16,7 +16,7 @@ import {
 import { getFlytrapStorage, getLoadedCapture, loadAndPersist } from './core/storage'
 import { createHumanLog } from './core/human-logs'
 import { log } from './core/logging'
-import { getFlytrapConfig } from './core/config'
+import { getLoadedConfig } from './core/config'
 
 /**
  * All function definitions are wrapped with the useFlytrapFunction
@@ -328,7 +328,7 @@ export const _resetFunctionCalls = () => {
 }
 
 export async function loadCapture() {
-	const { privateKey, secretApiKey, captureId } = await getFlytrapConfig()
+	const { privateKey, secretApiKey, captureId } = (await getLoadedConfig()) ?? {}
 	if (!captureId || !secretApiKey || !privateKey) {
 		log.error(
 			'storage',

@@ -10,8 +10,8 @@ describe('logging', () => {
 	it('logging disabled', () => {
 		const consoleLogSpy = vi.spyOn(console, 'log')
 		setFlytrapConfig({
-			projectId: '',
-			publicApiKey: ''
+			projectId: 'mock-id',
+			publicApiKey: 'mock-api-key'
 		})
 
 		log.info('api-calls', `Downloaded capture data from API.`)
@@ -21,8 +21,8 @@ describe('logging', () => {
 	it('only logs chosen log groups', () => {
 		const consoleLogSpy = vi.spyOn(console, 'log')
 		setFlytrapConfig({
-			projectId: '',
-			publicApiKey: '',
+			projectId: 'mock-id',
+			publicApiKey: 'mock-api-key',
 			logging: ['api-calls']
 		})
 

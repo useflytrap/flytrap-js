@@ -1,4 +1,3 @@
-// import { getFlytrapConfig, getLoadedConfig } from './config'
 import { getLoadedConfig } from './config'
 import { FLYTRAP_UNSERIALIZABLE_VALUE } from './constants'
 import { SourceType } from './types'

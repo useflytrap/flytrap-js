@@ -1,62 +1,20 @@
-import { lilconfig } from 'lilconfig'
-import { tryCatch } from '../core/util'
 import { createHumanLog } from '../core/human-logs'
 import { FlytrapConfig } from '../core/types'
-
-const esmLoader = (filePath: string) => import(filePath)
+import { loadConfig as c12LoadConfig } from 'c12'
 
 export async function loadConfig(): Promise<FlytrapConfig | undefined> {
-	const moduleName = 'flytrap'
+	const loadedConfig = await c12LoadConfig<FlytrapConfig>({ name: 'flytrap' })
 
-	const { search } = lilconfig('flytrap', {
-		searchPlaces: [
-			'package.json',
-			`.${moduleName}rc.json`,
-			`.${moduleName}rc.js`,
-			`.${moduleName}rc.cjs`,
-			`.config/${moduleName}rc`,
-			`.config/${moduleName}rc.json`,
-			`.config/${moduleName}rc.js`,
-			`.config/${moduleName}rc.cjs`,
-			`${moduleName}.config.js`,
-			`${moduleName}.config.mjs`,
-			`${moduleName}.config.cjs`
-		],
-		loaders: {
-			// '.ts':
-			'.js': esmLoader,
-			'.mjs': esmLoader
-		}
-	})
-
-	const { data: configResult, error } = await tryCatch(search())
-	if (error) {
-		const { message } = error as Error
-		if (message.includes('Cannot use import statement outside a module')) {
-			const errorLog = createHumanLog({
-				event: 'config_load_failed',
-				explanation: 'config_esm_inside_commonjs',
-				solution: 'config_esm_inside_commonjs'
-			})
-
-			console.error('🐛 [FLYTRAP]' + errorLog.toString())
-			process.exit(1)
-		}
-		return undefined
-	}
-
-	if (!configResult) return
-	const loadedConfig = await configResult.config
-
-	if (!loadedConfig.default) {
+	if (Object.keys(loadedConfig).length === 0) {
 		const errorLog = createHumanLog({
 			event: 'config_load_failed',
-			explanation: 'config_no_default_export',
-			solution: 'config_default_export'
+			explanation: 'config_not_found',
+			solution: 'define_flytrap_config'
 		})
+
 		console.error('🐛 [FLYTRAP]' + errorLog.toString())
 		process.exit(1)
 	}
 
-	return loadedConfig.default
+	return loadedConfig.config ?? undefined
 }

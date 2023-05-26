@@ -125,6 +125,7 @@ export const createHumanLog = createHumanLogs({
 		replay_missing_config_values:
 			'because your Flytrap configuration is missing one or more values. Required values are `publicApiKey` and `projectId`.',
 		invalid_config: 'because your config file is invalid.',
+		config_not_found: 'because we could not find a configuration file.',
 		config_esm_inside_commonjs:
 			'because your configuration file is using ESM, but your package is using CommonJS.',
 		config_no_default_export: 'because you forgot to export your config as a default export.',
@@ -147,7 +148,7 @@ export const createHumanLog = createHumanLogs({
 			action: [
 				{
 					text: 'Go to instructions &rarr;',
-					href: 'https://www.useflytrap.com/docs/guides/configuration'
+					href: 'https://docs.useflytrap.com/config/introduction'
 				}
 			]
 		},
@@ -167,7 +168,7 @@ export const createHumanLog = createHumanLogs({
 			action: [
 				{
 					text: 'Flytrap configuration docs',
-					href: 'https://www.useflytrap.com/docs/configuration'
+					href: 'https://docs.useflytrap.com/config/introduction'
 				}
 			]
 		},
@@ -189,7 +190,7 @@ export const createHumanLog = createHumanLogs({
 			action: [
 				{
 					text: 'Learn more on the Flytrap configuration docs',
-					href: 'https://www.useflytrap.com/docs/configuration'
+					href: 'https://docs.useflytrap.com/config/introduction'
 				}
 			]
 		},

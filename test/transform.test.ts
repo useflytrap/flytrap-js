@@ -8,6 +8,7 @@ import {
 } from '../src/transform/imports'
 import MagicString from 'magic-string'
 import { FLYTRAP_PACKAGE_NAME } from '../src/core/config'
+import { loadConfig } from '../src/transform/config'
 
 const jsxFixture = `
 export function HelloWorld({ children }: any) {
@@ -519,6 +520,17 @@ describe('useFlytrapCall(Async) transform', () => {
 		}, { id: '/file.js-_helloWorld' })
 		`)
 		)
+	})
+})
+
+it('loads config', async () => {
+	const config = await loadConfig()
+
+	expect(config).toEqual({
+		projectId: 'flytrap',
+		publicApiKey: 'pk_some_api_key',
+		secretApiKey: 'sk_some_secret_key',
+		mode: 'capture'
 	})
 })
 
