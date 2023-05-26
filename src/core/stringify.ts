@@ -1,5 +1,6 @@
 import SuperJSON from 'superjson'
 import { FLYTRAP_UNSERIALIZABLE_VALUE } from './constants'
+import { ignoreCircularReferences } from './util'
 
 /**
  * Stringifies an object, and removes all cyclical dependencies. When parsing, cyclical values become `null`.
@@ -22,7 +23,7 @@ export function stringify(obj: any): string {
 		delete serialized.meta.referentialEqualities
 	}
 
-	return JSON.stringify(serialized)
+	return JSON.stringify(serialized, ignoreCircularReferences())
 }
 
 export function parse<T = unknown>(stringified: string): T {

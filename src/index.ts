@@ -145,7 +145,7 @@ async function executeFunctionAsync<T>(fn: T, name: string, args: any[]) {
 	log.info('call-execution', `Executing async function ${name}()`)
 	// @ts-ignore
 	if (fn?.[name]) {
-		if (typeof fn === 'object') {
+		if (typeof fn === 'object' && typeof (fn as any)?.[name] === 'function') {
 			// @ts-ignore
 			return await fn[name].call(fn, ...args)
 		}
@@ -162,7 +162,7 @@ function executeFunction<T>(fn: T, name: string, args: any[]) {
 	log.info('call-execution', `Executing function ${name}()`)
 	// @ts-ignore
 	if (fn?.[name]) {
-		if (typeof fn === 'object') {
+		if (typeof fn === 'object' && typeof (fn as any)?.[name] === 'function') {
 			// @ts-ignore
 			return fn[name].call(fn, ...args)
 		}

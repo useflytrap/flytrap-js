@@ -345,7 +345,7 @@ export function preprocessCapture(
 	error?: any
 ) {
 	// Iterate over calls and functions
-	const funcsCopy = [...functions]
+	let funcsCopy = [...functions]
 	let callsCopy = [...calls].sort((callA, callB) => callA.timestamp - callB.timestamp).reverse()
 
 	let size = 0
@@ -376,6 +376,13 @@ export function preprocessCapture(
 				funcsCopy[i].output = getEventType(funcsCopy[i].output)
 			}
 		}
+		tryCatchSync(() => {
+			size += stringify(funcsCopy[i]).length
+			if (size >= 1_000_000) {
+				// Remove the rest
+				funcsCopy = funcsCopy.slice(0, 1)
+			}
+		})
 	}
 	return [funcsCopy, callsCopy, error] as const
 }

@@ -137,7 +137,7 @@ export function ignoreCircularReferences() {
 	return (key: any, value: any) => {
 		if (key.startsWith('_')) return // Don't compare React's internal props.
 		if (typeof value === 'object' && value !== null) {
-			if (seen.has(value)) return
+			if (seen.has(value)) return FLYTRAP_UNSERIALIZABLE_VALUE
 			seen.add(value)
 		}
 		return value

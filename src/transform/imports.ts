@@ -11,7 +11,11 @@ export function getCoreExports(): string[] {
 		'useFlytrapFunction',
 		'setFlytrapConfig',
 		'capture',
-		'identify'
+		'identify',
+		'encrypt',
+		'decrypt',
+		'defineFlytrapConfig',
+		'generateKeyPair'
 	]
 }
 
