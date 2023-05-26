@@ -12,6 +12,7 @@ import { log } from './core/logging'
 import { Artifact, extractArtifacts } from './transform/artifacts'
 import { post } from './core/util'
 import { readFileSync } from 'node:fs'
+import { excludeDirectoriesIncludeFilePath } from './transform/excludes'
 
 const transformedFiles: string[] = []
 
@@ -55,6 +56,14 @@ export const unpluginOptions: UnpluginOptions = {
 		// Logging config
 		const config = await loadConfig()
 		if (config) setFlytrapConfig(config)
+
+		// Exclude directories
+		if (config && config.excludeDirectories) {
+			if (excludeDirectoriesIncludeFilePath(id, config.excludeDirectories)) {
+				return
+			}
+		}
+
 		log.info('transform', `Transforming file ${id}`)
 
 		const ss = new MagicString(code)

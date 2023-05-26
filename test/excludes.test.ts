@@ -4,6 +4,48 @@ import babelTsParser from 'recast/parsers/babel-ts.js'
 import { _babelInterop } from '../src/transform/artifacts'
 import babelTraverse from '@babel/traverse'
 import { findIgnoredImports, shouldIgnoreCall } from '../src/transform/packageIgnores'
+import { excludeDirectoriesIncludeFilePath } from '../src/transform/excludes'
+
+describe('excludeDirectories', () => {
+	it('excludeDirectoriesIncludeFilePath', () => {
+		const trueFilePathFixtures = [
+			'/root/src/components/ui/logo.tsx',
+			'./src/components/ui/logo.tsx',
+			'src/components/ui/logo.tsx'
+		]
+		const falseFilePathFixtures = [
+			// absolute
+			'/src/pages/index.js',
+			// relative
+			'./src/pages/index.js',
+			'src/pages/index.js'
+		]
+
+		const excludeDirectoryFixtures = [
+			// absolute path
+			'/root/src/components/ui',
+			// relative
+			'./src/components/ui',
+			'src/components/ui'
+		]
+
+		for (let i = 0; i < excludeDirectoryFixtures.length; i++) {
+			// true assertions
+			for (let j = 0; j < trueFilePathFixtures.length; j++) {
+				expect(
+					excludeDirectoriesIncludeFilePath(trueFilePathFixtures[j], excludeDirectoryFixtures)
+				).toBe(true)
+			}
+
+			// false assertions
+			for (let j = 0; j < falseFilePathFixtures.length; j++) {
+				expect(
+					excludeDirectoriesIncludeFilePath(falseFilePathFixtures[j], excludeDirectoryFixtures)
+				).toBe(false)
+			}
+		}
+	})
+})
 
 describe('packageIgnores', () => {
 	it('findIgnoredImports', () => {

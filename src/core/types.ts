@@ -32,6 +32,20 @@ export type FlytrapConfig = {
 	 * to ignore. [Learn more](https://docs.useflytrap.com/config/introduction)
 	 */
 	packageIgnores?: string[]
+	/**
+	 * Define directories to ignore when transforming function calls.
+	 * Directories that contain stateless or simple UI components are
+	 * usually good candidates to ignore, so we don't send useless context.
+	 *
+	 * @example
+	 * ```typescript
+	 * defineFlytrapConfig({
+	 * 	excludeDirectories: ['./src/components/ui']
+	 * })
+	 * ```
+	 * [Learn more](https://docs.useflytrap.com/config/introduction)
+	 */
+	excludeDirectories?: string[]
 }
 
 export type ErrorType = {
