@@ -13,6 +13,7 @@ import { Artifact, extractArtifacts } from './transform/artifacts'
 import { post } from './core/util'
 import { readFileSync } from 'node:fs'
 import { excludeDirectoriesIncludeFilePath } from './transform/excludes'
+import { containsScriptTags, parseScriptTags } from './transform/parseScriptTags'
 
 const transformedFiles: string[] = []
 
@@ -66,7 +67,24 @@ export const unpluginOptions: UnpluginOptions = {
 
 		log.info('transform', `Transforming file ${id}`)
 
-		const ss = new MagicString(code)
+		// Additional logic for Vue & SvelteKit
+		if (containsScriptTags(code)) {
+			const scriptTags = parseScriptTags(code)
+			if (scriptTags.length > 1) {
+				log.warn(
+					'transform',
+					`Found multiple "script" blocks in source file "${id}", only the first one will get transformed.`
+				)
+			}
+		}
+
+		const scriptTags = parseScriptTags(code)
+		const scriptContent = scriptTags[0]?.content
+		const scriptStartIndex = scriptTags[0]?.start
+		const scriptEndIndex = scriptTags[0]?.end
+
+		const wholeSourceFile = new MagicString(code)
+		const ss = scriptContent ? new MagicString(scriptContent) : new MagicString(code)
 		// add missing Flytrap imports
 		addMissingFlytrapImports(ss)
 
@@ -86,6 +104,26 @@ export const unpluginOptions: UnpluginOptions = {
 
 		try {
 			transformedFiles.push(id)
+
+			// Accomodating for script tags
+			if (scriptStartIndex && scriptEndIndex) {
+				const transformedScriptTagContents = flytrapTransformArtifacts(
+					ss.toString(),
+					id.replace(pkgDirPath, ''),
+					config?.packageIgnores
+				)
+				wholeSourceFile.overwrite(
+					scriptStartIndex,
+					scriptEndIndex,
+					transformedScriptTagContents.code
+				)
+
+				return {
+					code: wholeSourceFile.toString(),
+					map: wholeSourceFile.generateMap()
+				}
+			}
+
 			return flytrapTransformArtifacts(
 				ss.toString(),
 				id.replace(pkgDirPath, ''),
@@ -123,7 +161,21 @@ export const unpluginOptions: UnpluginOptions = {
 			for (let i = 0; i < transformedFiles.length; i++) {
 				const code = readFileSync(transformedFiles[i]).toString()
 				try {
-					artifacts.push(...extractArtifacts(code, transformedFiles[i].replace(pkgDirPath, '')))
+					// Script tags support
+					const scriptTags = parseScriptTags(code)
+					const scriptStartIndex = scriptTags[0]?.start
+					const scriptEndIndex = scriptTags[0]?.end
+
+					if (scriptStartIndex && scriptEndIndex) {
+						artifacts.push(
+							...extractArtifacts(
+								code.substring(scriptStartIndex, scriptEndIndex),
+								transformedFiles[i].replace(pkgDirPath, '')
+							)
+						)
+					} else {
+						artifacts.push(...extractArtifacts(code, transformedFiles[i].replace(pkgDirPath, '')))
+					}
 				} catch (e) {
 					console.warn(`Extracting artifacts failed for file ${transformedFiles[i]}`)
 				}

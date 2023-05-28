@@ -48,6 +48,7 @@ for (const [targetName] of Object.entries(targets)) {
 							await unpluginOptions.transform(code.toString(), filePath)
 						} catch (e) {
 							console.error(`Failed to transform file ${filePath}`)
+							console.error(e)
 							throw new Error(`Transforming ${targetName} failed for file ${filePath}`)
 						}
 					}

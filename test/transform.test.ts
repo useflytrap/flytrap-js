@@ -9,6 +9,8 @@ import {
 import MagicString from 'magic-string'
 import { FLYTRAP_PACKAGE_NAME } from '../src/core/config'
 import { loadConfig } from '../src/transform/config'
+import { parseScriptTags } from '../src/transform/parseScriptTags'
+import { unpluginOptions } from '../src/transform'
 
 const jsxFixture = `
 export function HelloWorld({ children }: any) {
@@ -532,6 +534,133 @@ it('loads config', async () => {
 		secretApiKey: 'sk_some_secret_key',
 		mode: 'capture'
 	})
+})
+
+it('transforms .vue files', async () => {
+	const fixture = `
+	<script setup>
+	function foo() {
+	}
+	</script>
+
+	<template>
+		<div>
+			hello world
+		</div>
+	</template>
+	`
+
+	// @ts-expect-error
+	expect(toOneLine((await unpluginOptions.transform(fixture, '/file.js')).code)).toEqual(
+		toOneLine(`
+			<script setup>
+			import { useFlytrapCall, useFlytrapCallAsync, useFlytrapFunction, setFlytrapConfig, capture, identify, encrypt, decrypt, defineFlytrapConfig, generateKeyPair } from 'useflytrap'
+
+			const foo = useFlytrapFunction(function foo() {
+			}, {
+				id: '/file.js-_foo'
+			});
+      </script>
+
+      <template>
+        <div>
+          hello world
+        </div>
+      </template>
+		`)
+	)
+})
+
+it('parses script tags from .vue & .svelte files', () => {
+	const fixtures = [
+		{
+			code: `<script>foo()</script>`,
+			start: 8,
+			end: 13,
+			content: 'foo()'
+		},
+		{
+			code: `<script >foo()</script>`,
+			start: 9,
+			end: 14,
+			content: 'foo()'
+		},
+		{
+			code: `<script	>foo()</script>`,
+			start: 9,
+			end: 14,
+			content: 'foo()'
+		},
+		{
+			code: `<script>foo()</script	>`,
+			start: 8,
+			end: 13,
+			content: 'foo()'
+		},
+		{
+			code: `<script	>foo()</script	>`,
+			start: 9,
+			end: 14,
+			content: 'foo()'
+		},
+
+		// Vue specific
+		{
+			code: `<script setup>foo()</script>`,
+			start: 14,
+			end: 19,
+			content: 'foo()'
+		},
+		// Svelte
+		{
+			code: `<script lang="ts">foo()</script>`,
+			start: 18,
+			end: 23,
+			content: 'foo()'
+		},
+		{
+			code: `<script	lang="ts">foo()</script>`,
+			start: 18,
+			end: 23,
+			content: 'foo()'
+		},
+		{
+			code: `<script	lang="ts" context="module">foo()</script>`,
+			start: 35,
+			end: 40,
+			content: 'foo()'
+		}
+	]
+
+	for (let i = 0; i < fixtures.length; i++) {
+		expect(parseScriptTags(fixtures[i].code)).toEqual([
+			{
+				start: fixtures[i].start,
+				end: fixtures[i].end,
+				content: fixtures[i].content
+			}
+		])
+	}
+
+	// Multiple  script tags
+	expect(
+		parseScriptTags(`
+	<script>foo()</script>
+	<h1>hello world</h1>
+	<script>bar()</script>
+	`)
+	).toEqual([
+		{
+			start: 10,
+			end: 15,
+			content: 'foo()'
+		},
+		{
+			start: 56,
+			end: 61,
+			content: 'bar()'
+		}
+	])
 })
 
 export function toOneLine(code: string) {

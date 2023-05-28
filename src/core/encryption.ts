@@ -9,6 +9,29 @@ export interface KeyPair {
 	privateKey: string
 }
 
+function isomorphicEncodeBase64(publicKey: ArrayBuffer) {
+	if (typeof Buffer !== 'undefined' && typeof Buffer.from === 'function') {
+		return Buffer.from(publicKey).toString('base64')
+	}
+	return btoa(new Uint8Array(publicKey).reduce((acc, byte) => acc + String.fromCharCode(byte), ''))
+}
+
+function isomorphicDecodeBase64(base64: string): ArrayBuffer {
+	if (typeof Buffer !== 'undefined' && typeof Buffer.from === 'function') {
+		return Buffer.from(base64, 'base64')
+	}
+
+	const binaryString = atob(base64)
+	const arrayBuffer = new ArrayBuffer(binaryString.length)
+	const uint8Array = new Uint8Array(arrayBuffer)
+
+	for (let i = 0; i < binaryString.length; i++) {
+		uint8Array[i] = binaryString.charCodeAt(i)
+	}
+
+	return arrayBuffer
+}
+
 export async function generateKeyPair(): Promise<KeyPair> {
 	const keyPair = await crypto.subtle.generateKey(
 		{
@@ -25,9 +48,14 @@ export async function generateKeyPair(): Promise<KeyPair> {
 	const privateKey = await crypto.subtle.exportKey('pkcs8', keyPair.privateKey)
 
 	return {
+		publicKey: 'pk_' + isomorphicEncodeBase64(publicKey),
+		privateKey: 'sk_' + isomorphicEncodeBase64(privateKey)
+	}
+
+	/* return {
 		publicKey: 'pk_' + Buffer.from(publicKey).toString('base64'),
 		privateKey: 'sk_' + Buffer.from(privateKey).toString('base64')
-	}
+	} */
 }
 
 async function encryptChunk(publicKey: CryptoKey, chunk: Uint8Array): Promise<ArrayBuffer> {
@@ -63,7 +91,10 @@ export async function encrypt(publicKeyString: string, plaintext: string): Promi
 
 	const [, publicKeyBase64] = publicKeyString.split('pk_')
 
-	const publicKeyBuffer = Buffer.from(publicKeyBase64, 'base64')
+	// const publicKeyBuffer = Buffer.from(publicKeyBase64, 'base64')
+	const publicKeyBuffer = isomorphicDecodeBase64(publicKeyBase64)
+
+	// console.log("IS SAME BUFFER ?", new Uint8Array(x).toString() === new Uint8Array(publicKeyBuffer).toString())
 
 	const publicKey = await crypto.subtle.importKey(
 		'spki',
@@ -82,7 +113,8 @@ export async function encrypt(publicKeyString: string, plaintext: string): Promi
 	for (let i = 0; i < data.length; i += MAX_CHUNK_SIZE) {
 		const chunk = data.subarray(i, i + MAX_CHUNK_SIZE)
 		const encryptedChunk = await encryptChunk(publicKey, chunk)
-		const base64Chunk = Buffer.from(encryptedChunk).toString('base64')
+		// const base64Chunk = Buffer.from(encryptedChunk).toString('base64')
+		const base64Chunk = isomorphicEncodeBase64(encryptedChunk)
 		chunks.push(base64Chunk)
 	}
 
@@ -104,7 +136,8 @@ export async function decrypt(privateKeyString: string, ciphertext: string): Pro
 
 	const [, privateKeyBase64] = privateKeyString.split('sk_')
 
-	const privateKeyBuffer = Buffer.from(privateKeyBase64, 'base64')
+	// const privateKeyBuffer = Buffer.from(privateKeyBase64, 'base64')
+	const privateKeyBuffer = isomorphicDecodeBase64(privateKeyBase64)
 	const privateKey = await crypto.subtle.importKey(
 		'pkcs8',
 		privateKeyBuffer,
@@ -120,7 +153,8 @@ export async function decrypt(privateKeyString: string, ciphertext: string): Pro
 	const decryptedChunks = []
 
 	for (const base64Chunk of base64Chunks) {
-		const chunkBuffer = Buffer.from(base64Chunk, 'base64')
+		// const chunkBuffer = Buffer.from(base64Chunk, 'base64')
+		const chunkBuffer = isomorphicDecodeBase64(base64Chunk)
 		const decryptedChunk = await decryptChunk(privateKey, chunkBuffer)
 		decryptedChunks.push(new Uint8Array(decryptedChunk))
 	}
