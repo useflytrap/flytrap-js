@@ -10,10 +10,11 @@ import { loadConfig } from './transform/config'
 import { FLYTRAP_API_BASE, setFlytrapConfig } from './core/config'
 import { log } from './core/logging'
 import { Artifact, extractArtifacts } from './transform/artifacts'
-import { post } from './core/util'
+import { tryCatch } from './core/util'
 import { readFileSync } from 'node:fs'
 import { excludeDirectoriesIncludeFilePath } from './transform/excludes'
 import { containsScriptTags, parseScriptTags } from './transform/parseScriptTags'
+import { batchedArtifactsUpload } from './transform/batchedArtifactsUpload'
 
 const transformedFiles: string[] = []
 
@@ -141,7 +142,23 @@ export const unpluginOptions: UnpluginOptions = {
 	},
 	async buildEnd() {
 		const config = await loadConfig()
-		if (!config) return
+		if (!config) {
+			const log = createHumanLog({
+				event: 'transform_failed',
+				explanation: 'config_not_found',
+				solution: 'define_flytrap_config'
+			})
+			throw log.toString()
+		}
+
+		if (!config.projectId || !config.secretApiKey) {
+			const log = createHumanLog({
+				event: 'transform_failed',
+				explanation: 'invalid_config',
+				solution: 'configuration_fix'
+			})
+			throw log.toString()
+		}
 		// Find package root
 		const pkgDirPath = packageDirectorySync()
 		if (!pkgDirPath) {
@@ -185,24 +202,9 @@ export const unpluginOptions: UnpluginOptions = {
 				'storage',
 				`Created ${artifacts.length} artifacts. Size: ${JSON.stringify(artifacts).length}`
 			)
-			log.info(
-				'api-calls',
-				`Pushing ${artifacts.length} artifacts to the Flytrap API. Payload size: ${
-					JSON.stringify(artifacts).length
-				}`
-			)
 
-			const { data, error } = await post(
-				`${FLYTRAP_API_BASE}/api/v1/artifacts/${config?.projectId}`,
-				JSON.stringify({
-					artifacts
-				}),
-				{
-					headers: new Headers({
-						Authorization: `Bearer ${config?.secretApiKey}`,
-						'Content-Type': 'application/json'
-					})
-				}
+			const { data: uploadedBatches, error } = await tryCatch(
+				batchedArtifactsUpload(artifacts, config.secretApiKey, config.projectId)
 			)
 			if (error) {
 				console.error(
@@ -210,12 +212,12 @@ export const unpluginOptions: UnpluginOptions = {
 				)
 				console.error(error)
 			}
-			if (data) {
-				log.info(
-					'api-calls',
-					`Successfully pushed ${artifacts.length} artifacts to the Flytrap API.`
-				)
-			}
+			log.info(
+				'api-calls',
+				`Pushed ${artifacts.length} artifacts in ${
+					uploadedBatches?.length
+				} batches to the Flytrap API. Payload size: ${JSON.stringify(artifacts).length}`
+			)
 		}
 	}
 }
