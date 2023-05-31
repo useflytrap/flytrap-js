@@ -1,6 +1,9 @@
 import { expect, it } from 'vitest'
-import { stringify } from '../src/core/stringify'
+import { parse, stringify } from '../src/core/stringify'
 import SuperJSON from 'superjson'
+import { FLYTRAP_DOM_EVENT } from '../src/core/constants'
+import { GlobalRegistrator } from '@happy-dom/global-registrator'
+GlobalRegistrator.register()
 
 it('removes cyclical dependencies', () => {
 	const a = {
@@ -25,4 +28,8 @@ it('removes cyclical dependencies', () => {
 			}
 		}
 	})
+})
+
+it('doesnt stringify DOM events', () => {
+	expect(parse(stringify(new MouseEvent('click')))).toEqual(FLYTRAP_DOM_EVENT)
 })

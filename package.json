@@ -54,6 +54,7 @@
 	},
 	"devDependencies": {
 		"@babel/types": "^7.21.4",
+		"@happy-dom/global-registrator": "^9.20.3",
 		"@nuxtjs/eslint-config-typescript": "latest",
 		"@supabase/supabase-js": "^2.21.0",
 		"@trpc/server": "^10.21.1",
