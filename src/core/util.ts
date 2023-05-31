@@ -1,5 +1,5 @@
 import { getLoadedConfig } from './config'
-import { FLYTRAP_UNSERIALIZABLE_VALUE } from './constants'
+import { FLYTRAP_REPLACE_VALUES, FLYTRAP_UNSERIALIZABLE_VALUE } from './constants'
 import { SourceType } from './types'
 
 /**
@@ -175,13 +175,14 @@ export function tryCatchSync<DType = unknown, EType = unknown>(
 // function fillMissingFlytrapValues(lackingObject: any, fullObject: any) {}
 
 type ReplaceValue = any
-type InputValue = ReplaceValue | typeof FLYTRAP_UNSERIALIZABLE_VALUE
+type InputValue = ReplaceValue | (typeof FLYTRAP_REPLACE_VALUES)[number]
 
 export function fillUnserializableFlytrapValues(
 	input: InputValue,
 	replaceValue: ReplaceValue
 ): ReplaceValue {
-	if (input === FLYTRAP_UNSERIALIZABLE_VALUE) {
+	// if (input === FLYTRAP_UNSERIALIZABLE_VALUE) {
+	if (FLYTRAP_REPLACE_VALUES.includes(input)) {
 		if (replaceValue === undefined) throw new Error(`Replace value is undefined.`)
 		return replaceValue
 	}

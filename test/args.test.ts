@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { fillUnserializableFlytrapValues } from '../src/core/util'
-import { FLYTRAP_UNSERIALIZABLE_VALUE } from '../src/core/constants'
+import { FLYTRAP_REPLACE_VALUES, FLYTRAP_UNSERIALIZABLE_VALUE } from '../src/core/constants'
 
 describe('Replay args', () => {
 	const mockReplaceValue = {
@@ -8,25 +8,31 @@ describe('Replay args', () => {
 	}
 
 	it('fills strings', () => {
-		expect(
-			fillUnserializableFlytrapValues(FLYTRAP_UNSERIALIZABLE_VALUE, 'hello world')
-		).toStrictEqual('hello world')
+		FLYTRAP_REPLACE_VALUES.forEach((replaceValue) => {
+			expect(fillUnserializableFlytrapValues(replaceValue, 'hello world')).toStrictEqual(
+				'hello world'
+			)
+		})
 	})
 
 	it('fills numbers', () => {
-		expect(fillUnserializableFlytrapValues(FLYTRAP_UNSERIALIZABLE_VALUE, 1)).toStrictEqual(1)
+		FLYTRAP_REPLACE_VALUES.forEach((replaceValue) => {
+			expect(fillUnserializableFlytrapValues(replaceValue, 1)).toStrictEqual(1)
+		})
 	})
 
 	it('fills arrays', () => {
-		expect(
-			fillUnserializableFlytrapValues([FLYTRAP_UNSERIALIZABLE_VALUE], [mockReplaceValue])
-		).toStrictEqual([mockReplaceValue])
-		expect(
-			fillUnserializableFlytrapValues(
-				[FLYTRAP_UNSERIALIZABLE_VALUE, FLYTRAP_UNSERIALIZABLE_VALUE],
-				[mockReplaceValue, mockReplaceValue]
-			)
-		).toStrictEqual([mockReplaceValue, mockReplaceValue])
+		FLYTRAP_REPLACE_VALUES.forEach((replaceValue) => {
+			expect(fillUnserializableFlytrapValues([replaceValue], [mockReplaceValue])).toStrictEqual([
+				mockReplaceValue
+			])
+			expect(
+				fillUnserializableFlytrapValues(
+					[replaceValue, replaceValue],
+					[mockReplaceValue, mockReplaceValue]
+				)
+			).toStrictEqual([mockReplaceValue, mockReplaceValue])
+		})
 	})
 
 	it('works with null and undefined', () => {
@@ -39,47 +45,45 @@ describe('Replay args', () => {
 	})
 
 	it('throws when matching keys not same shape', () => {
-		expect(() =>
-			fillUnserializableFlytrapValues(
-				{ hello: [FLYTRAP_UNSERIALIZABLE_VALUE] },
-				{ hello: mockReplaceValue }
-			)
-		).toThrow()
+		FLYTRAP_REPLACE_VALUES.forEach((replaceValue) => {
+			expect(() =>
+				fillUnserializableFlytrapValues({ hello: [replaceValue] }, { hello: mockReplaceValue })
+			).toThrow()
 
-		expect(() =>
-			fillUnserializableFlytrapValues(
-				{ hello: [FLYTRAP_UNSERIALIZABLE_VALUE], world: [] },
-				{ hello: [mockReplaceValue] }
-			)
-		).not.toThrow()
+			expect(() =>
+				fillUnserializableFlytrapValues(
+					{ hello: [replaceValue], world: [] },
+					{ hello: [mockReplaceValue] }
+				)
+			).not.toThrow()
 
-		expect(() =>
-			fillUnserializableFlytrapValues(
-				{ hello: FLYTRAP_UNSERIALIZABLE_VALUE, world: [] },
-				{ mockReplaceValue }
-			)
-		).toThrow()
+			expect(() =>
+				fillUnserializableFlytrapValues({ hello: replaceValue, world: [] }, { mockReplaceValue })
+			).toThrow()
+		})
 	})
 
 	it('fills objects', () => {
-		const lackingObj = { hello: FLYTRAP_UNSERIALIZABLE_VALUE, otherKey: '' }
-		expect(
-			fillUnserializableFlytrapValues(lackingObj, { hello: mockReplaceValue, otherKey: '' })
-		).toStrictEqual({
-			hello: mockReplaceValue,
-			otherKey: ''
-		})
+		FLYTRAP_REPLACE_VALUES.forEach((replaceValue) => {
+			const lackingObj = { hello: replaceValue, otherKey: '' }
+			expect(
+				fillUnserializableFlytrapValues(lackingObj, { hello: mockReplaceValue, otherKey: '' })
+			).toStrictEqual({
+				hello: mockReplaceValue,
+				otherKey: ''
+			})
 
-		const lackingObjDeep = {
-			hello: { world: { deep: FLYTRAP_UNSERIALIZABLE_VALUE } },
-			otherKey: ''
-		}
-		const fillObjDeep = { hello: { world: { deep: { hello: 'world' } } }, otherKey: '' }
-		const fillObjDeepWrong = { deep: { hello: 'world' } }
-		expect(fillUnserializableFlytrapValues(lackingObjDeep, fillObjDeep)).toStrictEqual({
-			...fillObjDeep,
-			otherKey: ''
+			const lackingObjDeep = {
+				hello: { world: { deep: replaceValue } },
+				otherKey: ''
+			}
+			const fillObjDeep = { hello: { world: { deep: { hello: 'world' } } }, otherKey: '' }
+			const fillObjDeepWrong = { deep: { hello: 'world' } }
+			expect(fillUnserializableFlytrapValues(lackingObjDeep, fillObjDeep)).toStrictEqual({
+				...fillObjDeep,
+				otherKey: ''
+			})
+			expect(() => fillUnserializableFlytrapValues(lackingObjDeep, fillObjDeepWrong)).toThrow()
 		})
-		expect(() => fillUnserializableFlytrapValues(lackingObjDeep, fillObjDeepWrong)).toThrow()
 	})
 })
