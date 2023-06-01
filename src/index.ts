@@ -1,6 +1,5 @@
 import { serializeError } from 'serialize-error'
 import {
-	CaptureDecrypted,
 	CapturedCall,
 	CapturedFunction,
 	FlytrapCallOptions,

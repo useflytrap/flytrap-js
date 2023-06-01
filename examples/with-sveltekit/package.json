@@ -8,9 +8,9 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
-	"dependencies": {
-		"useflytrap": "workspace:*"
-	},
+  "dependencies": {
+    "useflytrap": "workspace:*"
+  },
 	"devDependencies": {
 		"@fontsource/fira-mono": "^4.5.10",
 		"@neoconfetti/svelte": "^1.0.0",

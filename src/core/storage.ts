@@ -7,7 +7,7 @@ import type {
 	Storage
 } from './types'
 import { FLYTRAP_API_BASE, getLoadedConfig } from './config'
-import { getExecutingFunction, getUserId } from '../index'
+import { getUserId } from '../index'
 import { empty, get, post, tryCatch, tryCatchSync } from './util'
 import { createHumanLog } from './human-logs'
 import SuperJSON from 'superjson'
@@ -310,10 +310,6 @@ function isSerializable(input: any) {
 	return error === null
 }
 
-function getEventType(event: Event): string {
-	return FLYTRAP_UNSERIALIZABLE_VALUE
-}
-
 export async function encryptCapturedFunction(
 	capturedFunction: CapturedFunction,
 	publicApiKey: string
@@ -352,10 +348,10 @@ export function preprocessCapture(
 	for (let i = 0; i < callsCopy.length; i++) {
 		if (!isSerializable(callsCopy[i])) {
 			if (!isSerializable(callsCopy[i].args)) {
-				callsCopy[i].args = callsCopy[i].args.map((arg) => getEventType(arg))
+				callsCopy[i].args = callsCopy[i].args.map(() => FLYTRAP_UNSERIALIZABLE_VALUE)
 			}
 			if (!isSerializable(callsCopy[i].output)) {
-				callsCopy[i].output = getEventType(callsCopy[i].output)
+				callsCopy[i].output = FLYTRAP_UNSERIALIZABLE_VALUE
 			}
 		}
 		tryCatchSync(() => {
@@ -370,10 +366,10 @@ export function preprocessCapture(
 	for (let i = 0; i < funcsCopy.length; i++) {
 		if (!isSerializable(funcsCopy[i])) {
 			if (!isSerializable(funcsCopy[i].args)) {
-				funcsCopy[i].args = funcsCopy[i].args.map((arg) => getEventType(arg))
+				funcsCopy[i].args = funcsCopy[i].args.map(() => FLYTRAP_UNSERIALIZABLE_VALUE)
 			}
 			if (!isSerializable(funcsCopy[i].output)) {
-				funcsCopy[i].output = getEventType(funcsCopy[i].output)
+				funcsCopy[i].output = FLYTRAP_UNSERIALIZABLE_VALUE
 			}
 		}
 		tryCatchSync(() => {

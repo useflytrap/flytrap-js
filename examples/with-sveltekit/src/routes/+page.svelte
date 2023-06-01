@@ -2,6 +2,14 @@
 	import Counter from './Counter.svelte';
 	import welcome from '$lib/images/svelte-welcome.webp';
 	import welcome_fallback from '$lib/images/svelte-welcome.png';
+
+	let value = ''
+
+	function handleSubmit() {
+		if (value === 'wrong') {
+			throw new Error(`Input value "${value}" is wrong!`)
+		}
+	}
 </script>
 
 <svelte:head>
@@ -24,6 +32,9 @@
 	<h2>
 		try editing <strong>src/routes/+page.svelte</strong>
 	</h2>
+
+	<input bind:value={value} />
+	<button on:click={handleSubmit}>submit</button>
 
 	<Counter />
 </section>

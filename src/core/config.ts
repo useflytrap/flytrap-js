@@ -1,4 +1,4 @@
-import { FlytrapConfig, FlytrapPublicKey } from './types'
+import { FlytrapConfig } from './types'
 import { empty } from './util'
 
 export const FLYTRAP_PACKAGE_NAME = 'useflytrap'

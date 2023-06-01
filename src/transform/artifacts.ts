@@ -61,7 +61,7 @@ export function extractFunctionName(
 	return 'anonymous'
 }
 
-export function extractFunctionCallName(node: CallExpression, filePath?: string): string {
+export function extractFunctionCallName(node: CallExpression): string {
 	if (node.callee.type === 'Identifier') {
 		return node.callee.name
 	}

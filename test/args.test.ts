@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { fillUnserializableFlytrapValues } from '../src/core/util'
-import { FLYTRAP_REPLACE_VALUES, FLYTRAP_UNSERIALIZABLE_VALUE } from '../src/core/constants'
+import { FLYTRAP_REPLACE_VALUES } from '../src/core/constants'
 
 describe('Replay args', () => {
 	const mockReplaceValue = {

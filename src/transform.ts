@@ -7,14 +7,16 @@ import { flytrapTransformArtifacts } from './transform/index'
 import { packageDirectorySync } from 'pkg-dir'
 import { createHumanLog } from './core/human-logs'
 import { loadConfig } from './transform/config'
-import { FLYTRAP_API_BASE, setFlytrapConfig } from './core/config'
+import { setFlytrapConfig } from './core/config'
 import { log } from './core/logging'
 import { Artifact, extractArtifacts } from './transform/artifacts'
-import { tryCatch } from './core/util'
+import { tryCatch, tryCatchSync } from './core/util'
 import { readFileSync } from 'node:fs'
 import { excludeDirectoriesIncludeFilePath } from './transform/excludes'
 import { containsScriptTags, parseScriptTags } from './transform/parseScriptTags'
 import { batchedArtifactsUpload } from './transform/batchedArtifactsUpload'
+import { getFileExtension } from './transform/util'
+import { serializeError } from 'serialize-error'
 
 const transformedFiles: string[] = []
 
@@ -66,8 +68,6 @@ export const unpluginOptions: UnpluginOptions = {
 			}
 		}
 
-		log.info('transform', `Transforming file ${id}`)
-
 		// Additional logic for Vue & SvelteKit
 		if (containsScriptTags(code)) {
 			const scriptTags = parseScriptTags(code)
@@ -77,7 +77,14 @@ export const unpluginOptions: UnpluginOptions = {
 					`Found multiple "script" blocks in source file "${id}", only the first one will get transformed.`
 				)
 			}
+		} else {
+			/**
+			 * If we're transforming a .svelte or .vue file without script tags, don't
+			 */
+			if (['.svelte', '.vue'].includes(getFileExtension(id))) return
 		}
+
+		log.info('transform', `Transforming file ${id}`)
 
 		const scriptTags = parseScriptTags(code)
 		const scriptContent = scriptTags[0]?.content
@@ -86,6 +93,7 @@ export const unpluginOptions: UnpluginOptions = {
 
 		const wholeSourceFile = new MagicString(code)
 		const ss = scriptContent ? new MagicString(scriptContent) : new MagicString(code)
+
 		// add missing Flytrap imports
 		addMissingFlytrapImports(ss)
 
@@ -104,9 +112,7 @@ export const unpluginOptions: UnpluginOptions = {
 		}
 
 		try {
-			transformedFiles.push(id)
-
-			// Accomodating for script tags
+			// Accomodating for script tags TODO Dont transform if .svelte file for example,without script tag
 			if (scriptStartIndex && scriptEndIndex) {
 				const transformedScriptTagContents = flytrapTransformArtifacts(
 					ss.toString(),
@@ -119,12 +125,14 @@ export const unpluginOptions: UnpluginOptions = {
 					transformedScriptTagContents.code
 				)
 
+				transformedFiles.push(id)
 				return {
 					code: wholeSourceFile.toString(),
 					map: wholeSourceFile.generateMap()
 				}
 			}
 
+			transformedFiles.push(id)
 			return flytrapTransformArtifacts(
 				ss.toString(),
 				id.replace(pkgDirPath, ''),
@@ -176,7 +184,18 @@ export const unpluginOptions: UnpluginOptions = {
 			)
 			const artifacts: Artifact[] = []
 			for (let i = 0; i < transformedFiles.length; i++) {
-				const code = readFileSync(transformedFiles[i]).toString()
+				const { data: code, error } = tryCatchSync(() =>
+					readFileSync(transformedFiles[i]).toString()
+				)
+				if (error || !code) {
+					log.error(
+						'transform',
+						`An error occurred while reading file at path "${
+							transformedFiles[i]
+						}". Error: ${JSON.stringify(serializeError(error))}`
+					)
+					continue
+				}
 				try {
 					// Script tags support
 					const scriptTags = parseScriptTags(code)
