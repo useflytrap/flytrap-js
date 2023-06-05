@@ -342,7 +342,7 @@ export function preprocessCapture(
 	error?: any
 ) {
 	// Iterate over calls and functions
-	let funcsCopy = [...functions]
+	const funcsCopy = [...functions]
 	let callsCopy = [...calls].sort((callA, callB) => callA.timestamp - callB.timestamp).reverse()
 
 	let size = 0
@@ -373,13 +373,6 @@ export function preprocessCapture(
 				funcsCopy[i].output = FLYTRAP_UNSERIALIZABLE_VALUE
 			}
 		}
-		tryCatchSync(() => {
-			size += stringify(funcsCopy[i]).length
-			if (size >= 1_000_000) {
-				// Remove the rest
-				funcsCopy = funcsCopy.slice(0, 1)
-			}
-		})
 	}
 	return [funcsCopy, callsCopy, error] as const
 }
