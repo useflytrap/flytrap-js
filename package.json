@@ -35,7 +35,8 @@
 		"prepublishOnly": "pnpm lint && pnpm test",
 		"release": "np",
 		"test": "vitest run",
-		"test:types": "tsc --noEmit"
+		"test:types": "tsc --noEmit",
+		"test:ecosystem": "vitest run test/transform/generate.test.ts && vitest run test/transform/generated-fixtures"
 	},
 	"dependencies": {
 		"@babel/parser": "^7.21.4",

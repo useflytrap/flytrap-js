@@ -132,12 +132,12 @@ export function flytrapTransformArtifacts(
 		CallExpression(path) {
 			if (!shouldBeWrapped(path)) return
 
-			// Package ignores
-			if (ignoredImports && shouldIgnoreCall(path, ignoredImports)) {
+			// Ingored calls (eg. packageIgnores & reserved words)
+			if (shouldIgnoreCall(path, ignoredImports ?? [])) {
 				return
 			}
 
-			const functionCallName = extractFunctionCallName(path.node, filePath)
+			const functionCallName = extractFunctionCallName(path.node)
 			const scopes = extractCurrentScope(path)
 			const functionCallId = extractFunctionCallId(path, filePath, functionCallName, scopes)
 			const useFunctionName = isAwaitExpression(path.parent)

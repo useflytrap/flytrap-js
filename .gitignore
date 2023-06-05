@@ -2,4 +2,5 @@ dist
 node_modules
 coverage
 .DS_Store
-
+/test/transform/generated-*/
+/test/transform/ecosystem-repos

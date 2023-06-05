@@ -8,21 +8,29 @@ import { readFileSync } from 'fs'
 const targets: Record<string, Target> = {
 	zod: {
 		repo: 'colinhacks/zod',
-		sourcePath: 'src'
+		sourcePaths: ['src']
 	},
 	trpc: {
 		repo: 'trpc/trpc',
-		sourcePath: 'packages'
+		sourcePaths: ['packages']
 	},
 	['supabase-js']: {
 		repo: 'supabase/supabase-js',
-		sourcePath: 'src'
+		sourcePaths: ['src']
 	},
 	tailwindcss: {
 		repo: 'tailwindlabs/tailwindcss',
-		sourcePath: 'src'
+		sourcePaths: ['src']
 	}
-} as const
+	/* svelte: {
+		repo: 'sveltejs/svelte',
+		sourcePaths: ['src']
+	},
+	vue: {
+		repo: 'vuejs/core',
+		sourcePaths: ['packages']
+	} */
+}
 
 beforeAll(async () => {
 	await generateFixtures(targets)
@@ -37,19 +45,21 @@ for (const [targetName] of Object.entries(targets)) {
 		it(
 			`transforms ${targetName} without error`,
 			async () => {
-				for await (const filePath of walk(
-					join(targetPath, targetName, targets[targetName].sourcePath)
-				)) {
-					const shouldTransform = unpluginOptions.transformInclude!(filePath)
-					if (shouldTransform) {
-						const code = readFileSync(filePath)
-						try {
-							// @ts-expect-error
-							await unpluginOptions.transform(code.toString(), filePath)
-						} catch (e) {
-							console.error(`Failed to transform file ${filePath}`)
-							console.error(e)
-							throw new Error(`Transforming ${targetName} failed for file ${filePath}`)
+				for (let i = 0; i < targets[targetName].sourcePaths.length; i++) {
+					for await (const filePath of walk(
+						join(targetPath, targetName, targets[targetName].sourcePaths[i])
+					)) {
+						const shouldTransform = unpluginOptions.transformInclude!(filePath)
+						if (shouldTransform) {
+							const code = readFileSync(filePath)
+							try {
+								// @ts-expect-error
+								await unpluginOptions.transform(code.toString(), filePath)
+							} catch (e) {
+								console.error(`Failed to transform file ${filePath}`)
+								console.error(e)
+								throw new Error(`Transforming ${targetName} failed for file ${filePath}`)
+							}
 						}
 					}
 				}

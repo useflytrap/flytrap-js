@@ -25,7 +25,7 @@ export function useFlytrapFunction<
 >(fn: T, opts: FlytrapFunctionOptions) {
 	if (isAsyncFunction(fn)) {
 		// Return async function
-		return async (...args: any[]) => {
+		return async function (...args: any[]) {
 			addExecutingFunction({
 				id: opts.id,
 				args: [...args],
@@ -48,12 +48,16 @@ export function useFlytrapFunction<
 
 				// Merge replay args & real args
 				const mergedArgs = fillUnserializableFlytrapValues(replayArgs, args)
-				const realOutput = await fn(...mergedArgs)
+				// const realOutput = await fn(...mergedArgs)
+				// @ts-expect-error for some reason `this as any` still gives error
+				const realOutput = executeFunctionAsync(fn, this as any, mergedArgs)
 				return fillUnserializableFlytrapValues(replayOutput, realOutput)
 			}
 			// Capturing bugs
 			try {
-				const output = await fn(...args)
+				// const output = await fn(...args)
+				// @ts-expect-error for some reason `this as any` still gives error
+				const output = executeFunctionAsync(fn, this as any, args)
 				saveOutputForFunction(opts.id, output)
 				return output
 			} catch (error) {
@@ -84,7 +88,7 @@ export function useFlytrapFunction<
 	}
 
 	// Return normal function
-	return (...args: any[]) => {
+	return function (...args: any[]) {
 		addExecutingFunction({
 			id: opts.id,
 			args: [...args],
@@ -101,18 +105,23 @@ export function useFlytrapFunction<
 						`Could not find replay input arguments for function with ID ${opts.id}, either this is a function you have added, or something has gone wrong during the capture process. If this is the case, contact us.`
 					)
 				}
-				return fn(...args)
+				// return fn(...args)
+				// @ts-expect-error for some reason `this as any` still gives error
+				return executeFunction(fn, this as any, args)
 			}
 
 			// Merge replay args & real args
 			const mergedArgs = fillUnserializableFlytrapValues(replayArgs, args)
-			const realOutput = fn(...mergedArgs)
+			// const realOutput = fn(...mergedArgs)
+			// @ts-expect-error for some reason `this as any` still gives error
+			const realOutput = executeFunction(fn, this as any, mergedArgs)
 			return fillUnserializableFlytrapValues(replayOutput, realOutput)
 		}
 
 		// We're capturing
 		try {
-			const output = fn(...args)
+			// @ts-expect-error for some reason `this as any` still gives error
+			const output = executeFunction(fn, this as any, args)
 			saveOutputForFunction(opts.id, output)
 			return output
 		} catch (error) {
@@ -140,7 +149,17 @@ export function useFlytrapFunction<
 	}
 }
 
-async function executeFunctionAsync<T>(fn: T, name: string, args: any[]) {
+async function executeFunctionAsync<T extends Function>(fn: T, thisArg: any, args: any[]) {
+	log.info('function-execution', `Executing function ${fn.name ?? 'anonymous'}()`)
+	return await fn.call(thisArg, ...args)
+}
+
+function executeFunction<T extends Function>(fn: T, thisArg: any, args: any[]) {
+	log.info('function-execution', `Executing function ${fn.name ?? 'anonymous'}()`)
+	return fn.call(thisArg, ...args)
+}
+
+async function executeFunctionCallAsync<T>(fn: T, name: string, args: any[]) {
 	log.info('call-execution', `Executing async function ${name}()`)
 	// @ts-ignore
 	if (fn?.[name]) {
@@ -157,7 +176,7 @@ async function executeFunctionAsync<T>(fn: T, name: string, args: any[]) {
 	}
 }
 
-function executeFunction<T>(fn: T, name: string, args: any[]) {
+function executeFunctionCall<T>(fn: T, name: string, args: any[]) {
 	log.info('call-execution', `Executing function ${name}()`)
 	// @ts-ignore
 	if (fn?.[name]) {
@@ -190,16 +209,16 @@ export function useFlytrapCall<T>(fnOrNamespace: T, opts: FlytrapCallOptions): a
 					)
 				}
 				// return fn(...opts.args)
-				return executeFunction(fnOrNamespace, opts.name, opts.args)
+				return executeFunctionCall(fnOrNamespace, opts.name, opts.args)
 			}
 
 			// Merge args replay & real args
 			const mergedArgs = fillUnserializableFlytrapValues(replayArgs, opts.args)
-			const realOutput = executeFunction(fnOrNamespace, opts.name, mergedArgs)
+			const realOutput = executeFunctionCall(fnOrNamespace, opts.name, mergedArgs)
 			return fillUnserializableFlytrapValues(replayOutput, realOutput)
 		}
 		// We're capturing
-		const output = executeFunction(fnOrNamespace, opts.name, opts.args)
+		const output = executeFunctionCall(fnOrNamespace, opts.name, opts.args)
 		saveOutputForFunctionCall(opts.id, output)
 
 		return output
@@ -233,17 +252,17 @@ export async function useFlytrapCallAsync<T extends (...args: any[]) => Promise<
 						`Could not find replay input arguments for function call with ID ${opts.id}, either this is a function call you have added, or something has gone wrong during the capture process. If this is the case, contact us.`
 					)
 				}
-				return await executeFunctionAsync(fn, opts.name, opts.args)
+				return await executeFunctionCallAsync(fn, opts.name, opts.args)
 			}
 
 			// Merge replay args & real args
 			const mergedArgs = fillUnserializableFlytrapValues(replayArgs, opts.args)
-			const realOutput = await executeFunctionAsync(fn, opts.name, mergedArgs)
+			const realOutput = await executeFunctionCallAsync(fn, opts.name, mergedArgs)
 			return fillUnserializableFlytrapValues(replayOutput, realOutput)
 		}
 		// We're capturing
 		// const output = await fn(...opts.args)
-		const output = await executeFunctionAsync(fn, opts.name, opts.args)
+		const output = await executeFunctionCallAsync(fn, opts.name, opts.args)
 		saveOutputForFunctionCall(opts.id, output)
 
 		return output

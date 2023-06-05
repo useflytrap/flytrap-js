@@ -536,6 +536,32 @@ it('loads config', async () => {
 	})
 })
 
+describe('classes', () => {
+	it('doesnt transform class functions', () => {
+		const classWithFunctions = `
+		class Foo {
+			constructor() {}
+		
+			helloWorld() {}
+		}`
+
+		expect(transform(classWithFunctions)).toEqual(`classFoo{constructor(){}helloWorld(){}}`)
+	})
+})
+
+const superFixture = `
+class Foo extends Bar {
+	constructor() {
+		super()
+	}
+}
+`
+
+it('doesnt transform reserved words', () => {
+	expect(transform(superFixture)).toEqual(`classFooextendsBar{constructor(){super()}}`)
+	expect(transform(`import('foo')`)).toEqual(`import('foo')`)
+})
+
 it('transforms .vue files', async () => {
 	const fixture = `
 	<script setup>
@@ -551,14 +577,14 @@ it('transforms .vue files', async () => {
 	`
 
 	// @ts-expect-error
-	expect(toOneLine((await unpluginOptions.transform(fixture, '/file.js')).code)).toEqual(
+	expect(toOneLine((await unpluginOptions.transform(fixture, '/app.vue')).code)).toEqual(
 		toOneLine(`
 			<script setup>
 			import { useFlytrapCall, useFlytrapCallAsync, useFlytrapFunction, setFlytrapConfig, capture, identify, encrypt, decrypt, defineFlytrapConfig, generateKeyPair } from 'useflytrap'
 
 			const foo = useFlytrapFunction(function foo() {
 			}, {
-				id: '/file.js-_foo'
+				id: '/app.vue-_foo'
 			});
       </script>
 

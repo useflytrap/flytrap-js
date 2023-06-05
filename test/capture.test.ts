@@ -5,11 +5,27 @@ import {
 	_resetFunctionCalls,
 	getFunctionCalls,
 	getExecutingFunctions
-} from 'useflytrap'
+} from '../src/index'
+import { preprocessCapture } from '../src/core/storage'
+import SuperJSON from 'superjson'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { z } from 'zod'
 
 describe('useFlytrapFunction capture', () => {
+	it('this', () => {
+		const thisObj = {
+			hello: () => 'world'
+		}
+
+		const wrappedFuction = useFlytrapFunction(
+			function () {
+				// @ts-expect-error
+				return (this as any)?.hello?.()
+			},
+			{ id: '/file.js-_wrappedFunction' }
+		)
+
+		expect(wrappedFuction.bind(thisObj)()).toEqual('world')
+	})
 	it.todo('captures errors inside the wrapped function')
 })
 
@@ -97,30 +113,5 @@ describe('storage', () => {
 
 		// whole capture less than 4mb
 		expect(captureStringified.length).toBeLessThan(4_000_000)
-	})
-})
-
-import { createClient } from '@supabase/supabase-js'
-import { preprocessCapture } from '../src/core/storage'
-import SuperJSON from 'superjson'
-
-describe('Supabase', () => {
-	it('database fetching works', async () => {
-		const supabase = createClient('https://kaxxpswcdwvhjgozvedt.supabase.co', 'invalid api key')
-		const { error } = await supabase.from('Capture').select('*')
-
-		expect(error).toStrictEqual({
-			message: 'Invalid API key',
-			hint: 'Double check your Supabase `anon` or `service_role` API key.'
-		})
-	})
-})
-
-describe('Zod', () => {
-	it('handles chained schemas', () => {
-		const urlSchema = z.string().url()
-
-		expect(urlSchema.safeParse('invalid url').success).toBe(false)
-		expect(urlSchema.safeParse('https://www.useflytrap.com').success).toBe(true)
 	})
 })

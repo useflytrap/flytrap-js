@@ -15,7 +15,7 @@ import { FLYTRAP_UNSERIALIZABLE_VALUE, NO_SOURCE } from './constants'
 import { decrypt, encrypt } from './encryption'
 import { log } from './logging'
 import { serializeError } from 'serialize-error'
-import { parse, stringify } from './stringify'
+import { parse, stringify, superJsonRegisterCustom } from './stringify'
 
 const loadedCaptures = new Map<string, CaptureDecrypted | undefined>()
 
@@ -306,6 +306,7 @@ export function getFlytrapStorage(flytrapStorage?: FlytrapStorage) {
 }
 
 function isSerializable(input: any) {
+	superJsonRegisterCustom()
 	const { error } = tryCatchSync(() => SuperJSON.stringify(input))
 	return error === null
 }

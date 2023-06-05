@@ -92,7 +92,10 @@ export const unpluginOptions: UnpluginOptions = {
 		const scriptEndIndex = scriptTags[0]?.end
 
 		const wholeSourceFile = new MagicString(code)
-		const ss = scriptContent ? new MagicString(scriptContent) : new MagicString(code)
+		const ss =
+			scriptContent && ['.svelte', '.vue'].includes(getFileExtension(id))
+				? new MagicString(scriptContent)
+				: new MagicString(code)
 
 		// add missing Flytrap imports
 		addMissingFlytrapImports(ss)
@@ -112,8 +115,12 @@ export const unpluginOptions: UnpluginOptions = {
 		}
 
 		try {
-			// Accomodating for script tags TODO Dont transform if .svelte file for example,without script tag
-			if (scriptStartIndex && scriptEndIndex) {
+			// Accomodating for script tags
+			if (
+				scriptStartIndex &&
+				scriptEndIndex &&
+				['.svelte', '.vue'].includes(getFileExtension(id))
+			) {
 				const transformedScriptTagContents = flytrapTransformArtifacts(
 					ss.toString(),
 					id.replace(pkgDirPath, ''),

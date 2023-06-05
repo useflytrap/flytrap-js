@@ -204,7 +204,7 @@ export function extractArtifacts(code: string, filePath: string): Artifact[] {
 			})
 		},
 		CallExpression(path) {
-			const functionCallName = extractFunctionCallName(path.node, filePath)
+			const functionCallName = extractFunctionCallName(path.node)
 			const scopes = extractCurrentScope(path)
 			const functionCallId = extractFunctionCallId(path, filePath, functionCallName, scopes)
 			const wrappedFunctionId = getWrappingFunctionId(path, functionIdMap)

@@ -6,6 +6,7 @@
 	let value = ''
 
 	function handleSubmit() {
+		console.log("Value", value)
 		if (value === 'wrong') {
 			throw new Error(`Input value "${value}" is wrong!`)
 		}

@@ -17,7 +17,7 @@ export function cleanupTargets() {
 
 export type Target = {
 	repo: string
-	sourcePath: string
+	sourcePaths: string[]
 }
 
 export async function generateFixtures(targets: Record<string, Target>) {

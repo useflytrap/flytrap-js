@@ -1,7 +1,7 @@
 import SuperJSON from 'superjson'
 import { FLYTRAP_CIRCULAR, FLYTRAP_DOM_EVENT, FLYTRAP_FUNCTION } from './constants'
 
-function superJsonRegisterCustom() {
+export function superJsonRegisterCustom() {
 	// handle functions
 	SuperJSON.registerCustom<any, string>(
 		{
