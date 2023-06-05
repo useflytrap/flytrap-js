@@ -6,30 +6,30 @@ function formatLogMessage(logGroup: LogGroup, message: string) {
 }
 
 export const log = {
-	info: (logGroup: LogGroup, message: string) => {
+	info: (logGroup: LogGroup, message: string, ...optionalParams: any[]) => {
 		const currentLogGroup = getLoadedConfig()?.logging
 		if (!currentLogGroup || !currentLogGroup.includes(logGroup)) {
 			return
 		}
 
-		console.log(formatLogMessage(logGroup, message))
+		console.log(formatLogMessage(logGroup, message), ...optionalParams)
 	},
 
-	warn: (logGroup: LogGroup, message: string) => {
+	warn: (logGroup: LogGroup, message: string, ...optionalParams: any[]) => {
 		const currentLogGroup = getLoadedConfig()?.logging
 		if (!currentLogGroup || !currentLogGroup.includes(logGroup)) {
 			return
 		}
 
-		console.warn(formatLogMessage(logGroup, message))
+		console.warn(formatLogMessage(logGroup, message), ...optionalParams)
 	},
 
-	error: (logGroup: LogGroup, message: string) => {
+	error: (logGroup: LogGroup, message: string, ...optionalParams: any[]) => {
 		const currentLogGroup = getLoadedConfig()?.logging
 		if (!currentLogGroup || !currentLogGroup.includes(logGroup)) {
 			return
 		}
 
-		console.log(formatLogMessage(logGroup, message))
+		console.log(formatLogMessage(logGroup, message), ...optionalParams)
 	}
 }

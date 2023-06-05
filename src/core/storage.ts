@@ -157,7 +157,8 @@ export const liveFlytrapStorage: FlytrapStorage = {
 
 		log.info(
 			'api-calls',
-			`[GET] ${FLYTRAP_API_BASE}/api/v1/captures/${captureId} - Received ${data}`
+			`[GET] ${FLYTRAP_API_BASE}/api/v1/captures/${captureId} - Received ${data}`,
+			{ data }
 		)
 
 		// Decrypt capture
@@ -269,11 +270,8 @@ export const liveFlytrapStorage: FlytrapStorage = {
 
 		log.info(
 			'api-calls',
-			`[POST] ${FLYTRAP_API_BASE}/api/v1/captures - Payload size ~${stringifiedPayload.length} bytes.`
-		)
-		log.info(
-			'storage',
-			`[POST] ${FLYTRAP_API_BASE}/api/v1/captures - Payload size ~${stringifiedPayload.length} bytes.`
+			`[POST] ${FLYTRAP_API_BASE}/api/v1/captures - Payload size ~${stringifiedPayload.length} bytes. Payload:`,
+			{ payload }
 		)
 		// TODO: use something like `devalue` to get closer to reality
 		const { error: captureError } = await post(

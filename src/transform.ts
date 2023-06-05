@@ -197,9 +197,8 @@ export const unpluginOptions: UnpluginOptions = {
 				if (error || !code) {
 					log.error(
 						'transform',
-						`An error occurred while reading file at path "${
-							transformedFiles[i]
-						}". Error: ${JSON.stringify(serializeError(error))}`
+						`An error occurred while reading file at path "${transformedFiles[i]}". Error:`,
+						error
 					)
 					continue
 				}
@@ -226,7 +225,8 @@ export const unpluginOptions: UnpluginOptions = {
 
 			log.info(
 				'storage',
-				`Created ${artifacts.length} artifacts. Size: ${JSON.stringify(artifacts).length}`
+				`Created ${artifacts.length} artifacts. Size: ${JSON.stringify(artifacts).length}`,
+				{ artifacts }
 			)
 
 			const { data: uploadedBatches, error } = await tryCatch(
@@ -242,7 +242,10 @@ export const unpluginOptions: UnpluginOptions = {
 				'api-calls',
 				`Pushed ${artifacts.length} artifacts in ${
 					uploadedBatches?.length
-				} batches to the Flytrap API. Payload size: ${JSON.stringify(artifacts).length}`
+				} batches to the Flytrap API. Payload size: ~${
+					JSON.stringify(artifacts).length
+				} bytes. Payload`,
+				{ artifacts }
 			)
 		}
 	}

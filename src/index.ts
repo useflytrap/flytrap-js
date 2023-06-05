@@ -150,17 +150,17 @@ export function useFlytrapFunction<
 }
 
 async function executeFunctionAsync<T extends Function>(fn: T, thisArg: any, args: any[]) {
-	log.info('function-execution', `Executing function ${fn.name ?? 'anonymous'}()`)
+	log.info('function-execution', `Executing function ${fn.name ?? 'anonymous'}()`, { args })
 	return await fn.call(thisArg, ...args)
 }
 
 function executeFunction<T extends Function>(fn: T, thisArg: any, args: any[]) {
-	log.info('function-execution', `Executing function ${fn.name ?? 'anonymous'}()`)
+	log.info('function-execution', `Executing function ${fn.name ?? 'anonymous'}()`, { args })
 	return fn.call(thisArg, ...args)
 }
 
 async function executeFunctionCallAsync<T>(fn: T, name: string, args: any[]) {
-	log.info('call-execution', `Executing async function ${name}()`)
+	log.info('call-execution', `Executing async function ${name}()`, { args })
 	// @ts-ignore
 	if (fn?.[name]) {
 		if (typeof fn === 'object' && typeof (fn as any)?.[name] === 'function') {
@@ -177,7 +177,7 @@ async function executeFunctionCallAsync<T>(fn: T, name: string, args: any[]) {
 }
 
 function executeFunctionCall<T>(fn: T, name: string, args: any[]) {
-	log.info('call-execution', `Executing function ${name}()`)
+	log.info('call-execution', `Executing function ${name}()`, { args })
 	// @ts-ignore
 	if (fn?.[name]) {
 		if (typeof fn === 'object' && typeof (fn as any)?.[name] === 'function') {
@@ -364,7 +364,7 @@ export async function loadCapture() {
 }
 
 export async function capture(error: any) {
-	log.info('capture', `Manually captured error.`)
+	log.info('capture', `Manually captured error.`, { error })
 	/**
 	 * We're manually capturing an error. Let's send the current
 	 * executing function along with its data to the Flytrap API.
@@ -454,7 +454,7 @@ function saveErrorForFunctionCall(functionCallId: string, error: any) {
 		console.error(`Saving error for nonexistent function call with ID ${functionCallId}`)
 		return
 	}
-	log.info('call-execution', `Saving error for function call ID ${functionCallId}.`)
+	log.info('call-execution', `Saving error for function call ID ${functionCallId}.`, { error })
 	call.error = serializeError(error)
 }
 
@@ -466,7 +466,7 @@ function saveErrorForFunction(functionId: string, error: any) {
 		return
 	}
 
-	log.info('function-execution', `Saving error for function ID ${functionId}`)
+	log.info('function-execution', `Saving error for function ID ${functionId}`, { error })
 	func.error = serializeError(error)
 }
 
