@@ -1,6 +1,6 @@
 {
 	"name": "useflytrap",
-	"version": "0.1.17",
+	"version": "0.1.18",
 	"description": "Catch bugs in production and replay them in your local development environment.",
 	"repository": "useflytrap/flytrap-js",
 	"license": "MIT",
