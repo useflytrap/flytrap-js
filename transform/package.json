@@ -1,0 +1,5 @@
+{
+	"main": "./transform.cjs",
+	"module": "./transform.mjs",
+	"types": "./transform.d.ts"
+}

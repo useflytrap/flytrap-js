@@ -11,7 +11,7 @@ export const generatedPath = join(__dirname, 'generated-fixtures')
 
 beforeAll(async () => {
 	// Create generated fixtures
-	tryCatchSync(() => mkdirSync(join(__dirname, 'generated-fixtures')))
+	tryCatchSync(() => mkdirSync(generatedPath))
 
 	const filesInCurrentDirectory = readdirSync(join(__dirname, 'ecosystem-fixtures'))
 

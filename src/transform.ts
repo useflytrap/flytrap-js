@@ -16,7 +16,6 @@ import { excludeDirectoriesIncludeFilePath } from './transform/excludes'
 import { containsScriptTags, parseScriptTags } from './transform/parseScriptTags'
 import { batchedArtifactsUpload } from './transform/batchedArtifactsUpload'
 import { getFileExtension } from './transform/util'
-import { serializeError } from 'serialize-error'
 
 const transformedFiles: string[] = []
 

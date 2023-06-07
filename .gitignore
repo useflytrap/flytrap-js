@@ -4,3 +4,6 @@ coverage
 .DS_Store
 /test/transform/generated-*/
 /test/transform/ecosystem-repos
+# Transform
+transform/*
+!transform/package.json

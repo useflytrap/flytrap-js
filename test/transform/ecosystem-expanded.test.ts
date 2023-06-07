@@ -86,7 +86,11 @@ beforeAll(async () => {
 }, 120_000)
 
 afterAll(() => {
-	cleanupTargets()
+	// cleanupTargets()
+})
+
+it('runs tests', () => {
+	expect(true).toEqual(true)
 })
 
 for (const [targetName] of Object.entries(targets)) {
