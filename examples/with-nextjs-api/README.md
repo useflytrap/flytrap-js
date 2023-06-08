@@ -4,6 +4,15 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 This is a basic NextJS app which demonstrates the capture and replay functionality of Flytrap.
 
+<figure>
+  <img style="border-radius: 14px;" src="https://github.com/useflytrap/flytrap-js/blob/main/docs/with-nextjs-api/capture-demo-faster.gif?raw=true" alt="Demo" />
+  <figcaption>
+    <p align="center">
+			Demonstration of capturing an invariant state bug using Flytrap, then finding the problem with Flytrap's detailed context of all function calls.
+    </p>
+  </figcaption>
+</figure>
+
 To try out the demo, first [create a project](https://useflytrap.com/projects/create), then copy the configuration given by the Flytrap dashboard into the `flytrap.config.ts` file.
 
 Run the development server:
