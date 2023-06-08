@@ -226,7 +226,7 @@ export const liveFlytrapStorage: FlytrapStorage = {
 			functionName:
 				serializeError(processededError)?.message ??
 				serializeError(processededError)?.error ??
-				'unknown',
+				(typeof processededError === 'string' ? processededError : 'unknown'),
 			source: NO_SOURCE,
 			calls: await Promise.all(
 				processedCalls.map(
