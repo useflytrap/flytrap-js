@@ -474,3 +474,4 @@ function saveErrorForFunction(functionId: string, error: any) {
 export * from './core/config'
 export * from './core/types'
 export * from './core/encryption'
+export * from './core/stringify'

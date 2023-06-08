@@ -1,7 +1,40 @@
 import SuperJSON from 'superjson'
-import { FLYTRAP_CIRCULAR, FLYTRAP_DOM_EVENT, FLYTRAP_FUNCTION } from './constants'
+import {
+	FLYTRAP_CIRCULAR,
+	FLYTRAP_DOM_EVENT,
+	FLYTRAP_FUNCTION,
+	FLYTRAP_HEADERS,
+	FLYTRAP_REQUEST,
+	FLYTRAP_RESPONSE
+} from './constants'
 
 export function superJsonRegisterCustom() {
+	// Fetch API classes
+	SuperJSON.registerCustom<any, string>(
+		{
+			isApplicable: (v): v is Headers => v instanceof Headers,
+			serialize: () => FLYTRAP_HEADERS,
+			deserialize: () => FLYTRAP_HEADERS
+		},
+		'Headers'
+	)
+	SuperJSON.registerCustom<any, string>(
+		{
+			isApplicable: (v): v is Response => v instanceof Response,
+			serialize: () => FLYTRAP_RESPONSE,
+			deserialize: () => FLYTRAP_RESPONSE
+		},
+		'Response'
+	)
+	SuperJSON.registerCustom<any, string>(
+		{
+			isApplicable: (v): v is Request => v instanceof Request,
+			serialize: () => FLYTRAP_REQUEST,
+			deserialize: () => FLYTRAP_REQUEST
+		},
+		'Request'
+	)
+
 	// handle functions
 	SuperJSON.registerCustom<any, string>(
 		{

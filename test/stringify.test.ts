@@ -1,7 +1,12 @@
-import { expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { parse, stringify } from '../src/core/stringify'
 import SuperJSON from 'superjson'
-import { FLYTRAP_DOM_EVENT } from '../src/core/constants'
+import {
+	FLYTRAP_DOM_EVENT,
+	FLYTRAP_HEADERS,
+	FLYTRAP_REQUEST,
+	FLYTRAP_RESPONSE
+} from '../src/core/constants'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 GlobalRegistrator.register()
 
@@ -32,4 +37,18 @@ it('removes cyclical dependencies', () => {
 
 it('doesnt stringify DOM events', () => {
 	expect(parse(stringify(new MouseEvent('click')))).toEqual(FLYTRAP_DOM_EVENT)
+})
+
+describe('Fetch API', () => {
+	it('Response', () => {
+		expect(parse(stringify(new Response()))).toEqual(FLYTRAP_RESPONSE)
+	})
+	it('Headers', () => {
+		expect(parse(stringify(new Headers()))).toEqual(FLYTRAP_HEADERS)
+	})
+	it('Request', () => {
+		expect(parse(stringify(new Request(new URL('https://useflytrap.com'))))).toEqual(
+			FLYTRAP_REQUEST
+		)
+	})
 })
