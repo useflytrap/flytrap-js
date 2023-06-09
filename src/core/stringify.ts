@@ -8,9 +8,9 @@ import {
 	FLYTRAP_RESPONSE
 } from './constants'
 
-export function superJsonRegisterCustom() {
+export function superJsonRegisterCustom(superJsonInstance: typeof SuperJSON) {
 	// Fetch API classes
-	SuperJSON.registerCustom<any, string>(
+	superJsonInstance.registerCustom<any, string>(
 		{
 			isApplicable: (v): v is Headers => v instanceof Headers,
 			serialize: () => FLYTRAP_HEADERS,
@@ -18,7 +18,7 @@ export function superJsonRegisterCustom() {
 		},
 		'Headers'
 	)
-	SuperJSON.registerCustom<any, string>(
+	superJsonInstance.registerCustom<any, string>(
 		{
 			isApplicable: (v): v is Response => v instanceof Response,
 			serialize: () => FLYTRAP_RESPONSE,
@@ -26,7 +26,7 @@ export function superJsonRegisterCustom() {
 		},
 		'Response'
 	)
-	SuperJSON.registerCustom<any, string>(
+	superJsonInstance.registerCustom<any, string>(
 		{
 			isApplicable: (v): v is Request => v instanceof Request,
 			serialize: () => FLYTRAP_REQUEST,
@@ -36,7 +36,7 @@ export function superJsonRegisterCustom() {
 	)
 
 	// handle functions
-	SuperJSON.registerCustom<any, string>(
+	superJsonInstance.registerCustom<any, string>(
 		{
 			isApplicable: (v): v is Function => typeof v === 'function',
 			serialize: () => FLYTRAP_FUNCTION,
@@ -46,7 +46,7 @@ export function superJsonRegisterCustom() {
 	)
 
 	// handle DOM events
-	SuperJSON.registerCustom<any, string>(
+	superJsonInstance.registerCustom<any, string>(
 		{
 			isApplicable: (v): v is Event => {
 				return typeof window !== 'undefined' ? v instanceof window.Event : false
@@ -64,7 +64,7 @@ export function superJsonRegisterCustom() {
  * @returns stringified object with cyclical dependencies removed
  */
 export function stringify(obj: any): string {
-	superJsonRegisterCustom()
+	superJsonRegisterCustom(SuperJSON)
 
 	const serialized = SuperJSON.serialize(obj)
 	if (serialized.meta?.referentialEqualities) {
@@ -87,6 +87,6 @@ export function stringify(obj: any): string {
 }
 
 export function parse<T = unknown>(stringified: string): T {
-	superJsonRegisterCustom()
+	superJsonRegisterCustom(SuperJSON)
 	return SuperJSON.parse<T>(stringified)
 }

@@ -304,7 +304,7 @@ export function getFlytrapStorage(flytrapStorage?: FlytrapStorage) {
 }
 
 function isSerializable(input: any) {
-	superJsonRegisterCustom()
+	superJsonRegisterCustom(SuperJSON)
 	const { error } = tryCatchSync(() => SuperJSON.stringify(input))
 	return error === null
 }
