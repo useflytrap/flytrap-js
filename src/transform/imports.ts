@@ -1,8 +1,12 @@
 import MagicString from 'magic-string'
-import { findStaticImports } from 'mlly'
+import { findStaticImports, parseStaticImport } from 'mlly'
 import { FLYTRAP_PACKAGE_NAME } from '../core/config'
 import { parse } from '@babel/parser'
 import { FlytrapConfig } from '../core/types'
+
+export function getRequiredExportsForCapture(): string[] {
+	return ['useFlytrapCall', 'useFlytrapCallAsync', 'useFlytrapFunction', 'setFlytrapConfig']
+}
 
 export function getCoreExports(): string[] {
 	return [
@@ -37,18 +41,23 @@ export function addMissingFlytrapImports(s: MagicString) {
 	const statements = findStaticImports(s.toString()).filter(
 		(i) => i.specifier === FLYTRAP_PACKAGE_NAME
 	)
+	const parsedImports = statements.map((importStatement) => parseStaticImport(importStatement))
+	const importedFunctions = parsedImports.reduce(
+		(acc, curr) => [...acc, ...Object.keys(curr.namedImports ?? {})],
+		[] as string[]
+	)
+	const importsToBeAdded = getRequiredExportsForCapture().filter(
+		(i) => !importedFunctions.includes(i)
+	)
 
-	// Remove existing Flytrap import statements
-	for (let i = 0; i < statements.length; i++) {
-		s.remove(statements[i].start, statements[i].end)
+	if (importsToBeAdded.length > 0) {
+		const startingIndex = findStartingIndex(s)
+		s.appendLeft(
+			startingIndex,
+			`\n\nimport { ${importsToBeAdded.join(', ')} } from '${FLYTRAP_PACKAGE_NAME}';\n\n`
+		)
 	}
 
-	const startingIndex = findStartingIndex(s)
-
-	s.appendLeft(
-		startingIndex,
-		`\n\nimport { ${getCoreExports().join(', ')} } from '${FLYTRAP_PACKAGE_NAME}'\n\n`
-	)
 	return s
 }
 

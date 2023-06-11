@@ -4,7 +4,7 @@ import { deriveAnonymousFunctionName } from '../src/core/util'
 import {
 	addMissingFlytrapImports,
 	findStartingIndex,
-	getCoreExports
+	getRequiredExportsForCapture
 } from '../src/transform/imports'
 import MagicString from 'magic-string'
 import { FLYTRAP_PACKAGE_NAME } from '../src/core/config'
@@ -292,8 +292,12 @@ it('finds correct place to add code to (after directives)', () => {
 
 // function flytrapImport
 
-const getFlytrapImports = () => {
+/*const getFlytrapImports = () => {
 	return `import { ${getCoreExports().join(', ')} } from '${FLYTRAP_PACKAGE_NAME}'`
+}*/
+
+const getFlytrapRequiredImports = () => {
+	return `import { ${getRequiredExportsForCapture().join(', ')} } from '${FLYTRAP_PACKAGE_NAME}';`
 }
 
 describe('addMissingImports transform', () => {
@@ -320,7 +324,7 @@ describe('addMissingImports transform', () => {
 			toOneLine(`
 			'use client';
 
-			${getFlytrapImports()}
+			${getFlytrapRequiredImports()}
 
 			function foo() {}
 			`)
@@ -332,7 +336,7 @@ describe('addMissingImports transform', () => {
 			// comment
 			'use client';
 
-			${getFlytrapImports()}
+			${getFlytrapRequiredImports()}
 
 			function foo() {}
 			`)
@@ -343,14 +347,36 @@ describe('addMissingImports transform', () => {
 			toOneLine(addMissingFlytrapImports(new MagicString(wrongUseClientFixture)).toString())
 		).toBe(
 			toOneLine(`
-			${getFlytrapImports()}
+			${getFlytrapRequiredImports()}
 			function foo() {}
 			'use client';
 			`)
 		)
 	})
 
-	it.todo('adds only needed imports')
+	it('adds only needed imports', () => {
+		const fixture = `import { capture } from 'useflytrap';`
+		const transformed = addMissingFlytrapImports(new MagicString(fixture))
+		expect(toOneLine(transformed.toString())).toEqual(
+			toOneLine(`
+			${getFlytrapRequiredImports()}
+			import { capture } from 'useflytrap';
+			`)
+		)
+
+		const fixtureWithRequiredImports = `
+		import { capture, useFlytrapCall } from 'useflytrap';
+		`
+		const transformedWithRequired = addMissingFlytrapImports(
+			new MagicString(fixtureWithRequiredImports)
+		)
+		expect(toOneLine(transformedWithRequired.toString())).toEqual(
+			toOneLine(`
+			import { useFlytrapCallAsync, useFlytrapFunction, setFlytrapConfig } from 'useflytrap';
+			import { capture, useFlytrapCall } from 'useflytrap';
+			`)
+		)
+	})
 })
 
 describe('useFlytrapCall(Async) transform', () => {
@@ -580,7 +606,7 @@ it('transforms .vue files', async () => {
 	expect(toOneLine((await unpluginOptions.transform(fixture, '/app.vue')).code)).toEqual(
 		toOneLine(`
 			<script setup>
-			import { useFlytrapCall, useFlytrapCallAsync, useFlytrapFunction, setFlytrapConfig, capture, identify, encrypt, decrypt, defineFlytrapConfig, generateKeyPair } from 'useflytrap'
+			${getFlytrapRequiredImports()}
 
 			const foo = useFlytrapFunction(function foo() {
 			}, {
