@@ -19,7 +19,7 @@ jobs:
           node-version: 16
 
       - name: 📦 Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: 🔠 Lint project
         run: npm run lint
@@ -34,7 +34,7 @@ jobs:
           node-version: 16
 
       - name: 📦 Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: 🛠 Build project
         run: npm run build
