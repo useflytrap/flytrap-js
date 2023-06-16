@@ -3,16 +3,24 @@ import { homedir } from 'os'
 import { deepEqual } from 'fast-equals'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { Artifact, CacheFile } from '../../exports'
+import { cwd } from 'process'
+
+export const getCacheFilePath = (projectId: string) => {
+	if (process.env.NODE_ENV === 'test') {
+		return join(cwd(), '.flytrap', 'cache', `${projectId}.json`)
+	}
+	return join(homedir(), '.flytrap', 'cache', `${projectId}.json`)
+}
 
 function _createCacheFile(projectId: string): string {
-	const cacheFilePath = join(homedir(), '.flytrap', 'cache', `${projectId}.json`)
+	const cacheFilePath = getCacheFilePath(projectId)
 	const cacheDirPath = dirname(cacheFilePath)
 	mkdirSync(cacheDirPath, { recursive: true })
 	if (!existsSync(cacheFilePath)) {
 		const cache: CacheFile = {
 			projectId,
 			createdTimestamp: Date.now(),
-			artifacts: []
+			artifactCacheEntries: []
 		}
 		writeFileSync(cacheFilePath, JSON.stringify(cache, null, 2))
 	}
@@ -20,14 +28,12 @@ function _createCacheFile(projectId: string): string {
 }
 
 function _saveCacheFile(projectId: string, cache: CacheFile) {
-	_createCacheFile(projectId)
-	const cacheFilePath = join(homedir(), '.flytrap', 'cache', `${projectId}.json`)
+	const cacheFilePath = _createCacheFile(projectId)
 	writeFileSync(cacheFilePath, JSON.stringify(cache, null, 2))
 }
 
 const _getCacheFile = (projectId: string): CacheFile => {
-	_createCacheFile(projectId)
-	const cacheFilePath = join(homedir(), '.flytrap', 'cache', `${projectId}.json`)
+	const cacheFilePath = _createCacheFile(projectId)
 	const cacheFileContents = readFileSync(cacheFilePath).toString()
 	return JSON.parse(cacheFileContents) as CacheFile
 }
@@ -37,7 +43,7 @@ const _indexOfArtifactWithId = (haystack: Artifact[], functionOrCallId: string) 
 
 export function upsertArtifact(projectId: string, artifact: Artifact) {
 	const cache = _getCacheFile(projectId)
-	const savedArtifacts = cache.artifacts.reduce(
+	const savedArtifacts = cache.artifactCacheEntries.reduce(
 		(acc, curr) => [...acc, curr.artifact],
 		[] as Artifact[]
 	)
@@ -50,15 +56,15 @@ export function upsertArtifact(projectId: string, artifact: Artifact) {
 			return
 		}
 		// Update
-		cache.artifacts[artifactIndex] = {
-			...cache.artifacts[artifactIndex],
+		cache.artifactCacheEntries[artifactIndex] = {
+			...cache.artifactCacheEntries[artifactIndex],
 			uploadStatus: 'not-uploaded',
 			artifact
 		}
 		return
 	}
 
-	cache.artifacts.push({
+	cache.artifactCacheEntries.push({
 		timestamp: Date.now(),
 		uploadStatus: 'not-uploaded',
 		artifact
@@ -70,12 +76,14 @@ export function upsertArtifact(projectId: string, artifact: Artifact) {
 
 export function markArtifactAsUploaded(projectId: string, artifact: Artifact) {
 	const cache = _getCacheFile(projectId)
-	const savedArtifacts = cache.artifacts.reduce(
+	const savedArtifacts = cache.artifactCacheEntries.reduce(
 		(acc, curr) => [...acc, curr.artifact],
 		[] as Artifact[]
 	)
 	const artifactIndex = _indexOfArtifactWithId(savedArtifacts, artifact.functionOrCallId)
-	cache.artifacts[artifactIndex].uploadStatus = 'uploaded'
+	if (artifactIndex !== -1) {
+		cache.artifactCacheEntries[artifactIndex].uploadStatus = 'uploaded'
+	}
 
 	// Save cache
 	_saveCacheFile(projectId, cache)
@@ -84,7 +92,7 @@ export function markArtifactAsUploaded(projectId: string, artifact: Artifact) {
 export function getArtifactsToUpload(projectId: string) {
 	const cache = _getCacheFile(projectId)
 
-	return cache.artifacts
+	return cache.artifactCacheEntries
 		.filter((a) => a.uploadStatus !== 'uploaded')
 		.reduce((acc, curr) => [...acc, curr.artifact], [] as Artifact[])
 }

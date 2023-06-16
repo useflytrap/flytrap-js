@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import {
 	_babelInterop,
 	extractArtifacts,
@@ -10,6 +10,14 @@ import { parse } from 'recast'
 import babelTsParser from 'recast/parsers/babel-ts.js'
 import { Identifier } from '@babel/types'
 import { flytrapTransformArtifacts } from '../src/transform/index'
+import {
+	getArtifactsToUpload,
+	getCacheFilePath,
+	markArtifactAsUploaded,
+	upsertArtifact
+} from '../src/transform/artifacts/cache'
+import { Artifact } from '../src/exports'
+import { rmSync } from 'fs'
 
 describe('Artifacts for functions', () => {
 	const arrowFunctionFixture = `
@@ -250,4 +258,39 @@ it('generates values same as transform', () => {
 	for (let i = 0; i < functionIds.length; i++) {
 		expect(transformedCode.code).toContain(functionIds[i] as string)
 	}
+})
+
+describe('Cache', () => {
+	const cacheFilePath = getCacheFilePath('mock-project-id')
+	const mockArtifact: Artifact = {
+		functionOrCallId: '',
+		functionOrCallName: '',
+		params: '',
+		scopes: [],
+		type: 'CALL',
+		source: {
+			filePath: '/file.js',
+			lineNumber: -1
+		}
+	}
+
+	afterAll(() => {
+		rmSync(cacheFilePath, { recursive: true })
+	})
+
+	it('upserts artifact', () => {
+		upsertArtifact('mock-project-id', mockArtifact)
+	})
+
+	it('gets artifacts to upload', () => {
+		expect(getArtifactsToUpload('mock-project-id')).toEqual([mockArtifact])
+	})
+
+	it('marks artifact as uploaded', () => {
+		markArtifactAsUploaded('mock-project-id', mockArtifact)
+	})
+
+	it('doesnt return already uploaded artifacts', () => {
+		expect(getArtifactsToUpload('mock-project-id')).toEqual([])
+	})
 })

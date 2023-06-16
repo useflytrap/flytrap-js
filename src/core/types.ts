@@ -165,5 +165,5 @@ export type ArtifactCacheEntry = {
 export type CacheFile = {
 	projectId: string
 	createdTimestamp: number
-	artifacts: ArtifactCacheEntry[]
+	artifactCacheEntries: ArtifactCacheEntry[]
 }
