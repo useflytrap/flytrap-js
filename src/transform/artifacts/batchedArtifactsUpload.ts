@@ -1,6 +1,6 @@
-import { FLYTRAP_API_BASE } from '../core/config'
-import { post } from '../core/util'
-import { Artifact } from './artifacts'
+import { FLYTRAP_API_BASE } from '../../core/config'
+import { post } from '../../core/util'
+import { Artifact } from '../../exports'
 
 const ARTIFACTS_BATCH_SIZE = 20
 
@@ -17,7 +17,7 @@ export async function batchedArtifactsUpload(
 
 	const uploadedArtifactBatches = await Promise.all(
 		batches.map(async (batch) => {
-			const { data, error } = await post(
+			const { data, error } = await post<Artifact>(
 				`${FLYTRAP_API_BASE}/api/v1/artifacts/${projectId}`,
 				JSON.stringify({
 					artifacts: batch
@@ -29,7 +29,7 @@ export async function batchedArtifactsUpload(
 					})
 				}
 			)
-			if (error) {
+			if (error || !data) {
 				throw error
 			}
 			return data

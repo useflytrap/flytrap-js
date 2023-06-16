@@ -63,30 +63,28 @@ export type SourceType = {
 	lineNumber: number
 }
 
-export type AddCaptureDetails<T> = T & {
+export type CaptureInvocation = {
 	args: any[]
 	timestamp: number
 	error?: ErrorType
-}
-
-export type CapturedFunction = AddCaptureDetails<FlytrapFunctionOptions> & {
 	output?: any
 }
-export type CapturedCall = AddCaptureDetails<FlytrapCallOptions> & {
-	output?: any
-}
-
-export type EncryptedCapturedCall = Omit<CapturedCall, 'output' | 'args' | 'error'> & {
-	output?: string
+export type EncryptedCaptureInvocation = Omit<CaptureInvocation, 'args' | 'error' | 'output'> & {
 	args: string
 	error?: string
+	output?: string
 }
 
-export type EncryptedCapturedFunction = Omit<CapturedFunction, 'output' | 'args' | 'error'> & {
-	output?: string
-	args: string
-	error?: string
+export type CapturedFunction<T = CaptureInvocation> = FlytrapFunctionOptions & {
+	invocations: T[]
 }
+
+export type CapturedCall<T = CaptureInvocation> = Omit<FlytrapCallOptions, 'args' | 'name'> & {
+	invocations: T[]
+}
+
+export type EncryptedCapturedCall = CapturedCall<EncryptedCaptureInvocation>
+export type EncryptedCapturedFunction = CapturedFunction<EncryptedCaptureInvocation>
 
 // `useFlytrapFunction` options
 export type FlytrapFunctionOptions = {
@@ -96,40 +94,76 @@ export type FlytrapFunctionOptions = {
 // `useFlytrapCall` options
 export type FlytrapCallOptions = {
 	id: string
-	functionId?: string
+	// functionId?: string
 	args: any[]
 	name: string
 }
 
 // Storage
 export type DatabaseCapture = {
-	id: string
-	createdAt: Date
 	projectId: string
-	status: string
-	pinned: boolean
 	functionName: string
-	/* calls: string // encrypted
-	functions: string // encrypted */
 
-	calls: EncryptedCapturedCall[]
-	functions: EncryptedCapturedFunction[]
+	args: string // encrypted
+	outputs: string // encrypted
+
+	calls: CapturedCall<CaptureInvocationWithLinks>[]
+	functions: CapturedCall<CaptureInvocationWithLinks>[]
 
 	error?: string // encrypted
 	capturedUserId?: string
 	source?: SourceType
 }
 
-export type CaptureDecrypted = Omit<DatabaseCapture, 'calls' | 'functions' | 'error'> & {
-	calls: CapturedCall[]
-	functions: CapturedFunction[]
+export type CaptureDecrypted = Omit<DatabaseCapture, 'args' | 'outputs'> & {
+	args: any[][]
+	outputs: any[]
 	error?: ErrorType
 }
 
-export type CapturePayload = Omit<DatabaseCapture, 'id' | 'createdAt' | 'status' | 'pinned'>
+export type CaptureDecryptedAndRevived = Omit<
+	DatabaseCapture,
+	'args' | 'outputs' | 'calls' | 'functions' | 'error'
+> & {
+	calls: CapturedCall[]
+	functions: CapturedCall[]
+	error?: ErrorType
+}
+
+export type CapturePayload = DatabaseCapture
 
 export type Storage = {
-	getItem(captureId: string): CaptureDecrypted | null
+	getItem(captureId: string): CaptureDecryptedAndRevived | null
 	removeItem(captureId: string): void
-	setItem(captureId: string, capture: CaptureDecrypted): void
+	setItem(captureId: string, capture: CaptureDecryptedAndRevived): void
+}
+
+export type CaptureInvocationWithLinks = Omit<CaptureInvocation, 'args' | 'output'> & {
+	args: number
+	output: number
+}
+
+export type Artifact = {
+	type: 'CALL' | 'FUNCTION'
+	functionOrCallId: string
+	functionOrCallName: string
+	source: SourceType
+	scopes: string[]
+	params: string
+	/**
+	 * `functionId` can only defined if `type` === 'CALL'
+	 */
+	functionId?: string
+}
+
+export type ArtifactCacheEntry = {
+	timestamp: number
+	uploadStatus: 'not-uploaded' | 'uploaded' | 'upload-failed'
+	artifact: Artifact
+}
+
+export type CacheFile = {
+	projectId: string
+	createdTimestamp: number
+	artifacts: ArtifactCacheEntry[]
 }

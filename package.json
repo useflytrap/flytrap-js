@@ -12,9 +12,9 @@
 			"types": "./dist/index.d.ts"
 		},
 		"./transform": {
-			"import": "./transform/transform.mjs",
-			"require": "./transform/transform.cjs",
-			"types": "./transform/transform.d.ts"
+			"import": "./transform/index.mjs",
+			"require": "./transform/index.cjs",
+			"types": "./transform/index.d.ts"
 		}
 	},
 	"main": "./dist/index.cjs",
@@ -44,6 +44,8 @@
 		"@babel/parser": "^7.21.4",
 		"@babel/traverse": "^7.21.4",
 		"c12": "^1.4.1",
+		"copy-anything": "^3.0.5",
+		"fast-equals": "^5.0.1",
 		"lilconfig": "^2.1.0",
 		"magic-string": "^0.30.0",
 		"mlly": "^1.0.0",

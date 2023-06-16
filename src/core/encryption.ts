@@ -1,6 +1,3 @@
-import importedCrypto from 'crypto'
-const crypto = typeof window !== 'undefined' ? window.crypto : importedCrypto
-
 const MAX_CHUNK_SIZE = 190 // 2048 bits RSA-OAEP key size, minus padding (256 bits)
 const CHUNK_SEPARATOR = '|'
 
@@ -51,11 +48,6 @@ export async function generateKeyPair(): Promise<KeyPair> {
 		publicKey: 'pk_' + isomorphicEncodeBase64(publicKey),
 		privateKey: 'sk_' + isomorphicEncodeBase64(privateKey)
 	}
-
-	/* return {
-		publicKey: 'pk_' + Buffer.from(publicKey).toString('base64'),
-		privateKey: 'sk_' + Buffer.from(privateKey).toString('base64')
-	} */
 }
 
 async function encryptChunk(publicKey: CryptoKey, chunk: Uint8Array): Promise<ArrayBuffer> {

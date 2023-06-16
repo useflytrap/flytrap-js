@@ -3,24 +3,14 @@ import { findStaticImports, parseStaticImport } from 'mlly'
 import { FLYTRAP_PACKAGE_NAME } from '../core/config'
 import { parse } from '@babel/parser'
 import { FlytrapConfig } from '../core/types'
+import * as flytrapExports from '../index'
 
 export function getRequiredExportsForCapture(): string[] {
 	return ['useFlytrapCall', 'useFlytrapCallAsync', 'useFlytrapFunction', 'setFlytrapConfig']
 }
 
 export function getCoreExports(): string[] {
-	return [
-		'useFlytrapCall',
-		'useFlytrapCallAsync',
-		'useFlytrapFunction',
-		'setFlytrapConfig',
-		'capture',
-		'identify',
-		'encrypt',
-		'decrypt',
-		'defineFlytrapConfig',
-		'generateKeyPair'
-	]
+	return Object.keys(flytrapExports)
 }
 
 export function findStartingIndex(s: MagicString) {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parse } from 'recast'
 import babelTsParser from 'recast/parsers/babel-ts.js'
-import { _babelInterop } from '../src/transform/artifacts'
+import { _babelInterop } from '../src/transform/artifacts/artifacts'
 import babelTraverse from '@babel/traverse'
 import { findIgnoredImports, shouldIgnoreCall } from '../src/transform/packageIgnores'
 import { excludeDirectoriesIncludeFilePath } from '../src/transform/excludes'

@@ -16,6 +16,7 @@ import { getFlytrapStorage, getLoadedCapture, loadAndPersist } from './core/stor
 import { createHumanLog } from './core/human-logs'
 import { log } from './core/logging'
 import { getLoadedConfig } from './core/config'
+import { CaptureInvocation } from './exports'
 
 /**
  * All function definitions are wrapped with the useFlytrapFunction
@@ -26,9 +27,8 @@ export function useFlytrapFunction<
 	if (isAsyncFunction(fn)) {
 		// Return async function
 		return async function (...args: any[]) {
-			addExecutingFunction({
-				id: opts.id,
-				args: [...args],
+			addFunctionInvocation(opts.id, {
+				args,
 				timestamp: Date.now()
 			})
 
@@ -69,7 +69,7 @@ export function useFlytrapFunction<
 				saveErrorForFunction(opts.id, error)
 
 				const { error: saveError } = await tryCatch(
-					getFlytrapStorage().saveCapture(_executingFunctions, _functionCalls, error)
+					getFlytrapStorage().saveCapture(_executingFunctions, _functionCalls, error as Error)
 				)
 				if (saveError) {
 					console.error(
@@ -89,9 +89,8 @@ export function useFlytrapFunction<
 
 	// Return normal function
 	return function (...args: any[]) {
-		addExecutingFunction({
-			id: opts.id,
-			args: [...args],
+		addFunctionInvocation(opts.id, {
+			args,
 			timestamp: Date.now()
 		})
 
@@ -133,7 +132,7 @@ export function useFlytrapFunction<
 			saveErrorForFunction(opts.id, error)
 
 			const { error: saveError } = tryCatchSync(() =>
-				getFlytrapStorage().saveCapture(_executingFunctions, _functionCalls, error)
+				getFlytrapStorage().saveCapture(_executingFunctions, _functionCalls, error as Error)
 			)
 			if (saveError) {
 				const errorLog = createHumanLog({
@@ -228,7 +227,7 @@ export function useFlytrapCall<T>(fnOrNamespace: T, opts: FlytrapCallOptions): a
 		 * executing function along with its data to the
 		 * Flytrap API.
 		 */
-		saveErrorForFunctionCall(opts.id, error)
+		saveErrorForFunctionCall(opts.id, error as Error)
 
 		throw error
 	}
@@ -285,10 +284,8 @@ function getReplayCallArgs(functionCallId: string): any[] | undefined {
 		return undefined
 	}
 
-	const matchingFunctionCalls = loadedCapture.calls
-		.filter((call) => call.id === functionCallId)
-		.sort((a, b) => b.timestamp - a.timestamp)
-	return matchingFunctionCalls[0]?.args
+	const matchingCall = loadedCapture.calls.find((f) => f.id === functionCallId)
+	return matchingCall?.invocations.sort((a, b) => a.timestamp - b.timestamp).at(-1)?.args
 }
 
 function getReplayCallOutput(functionCallId: string): any | undefined {
@@ -298,10 +295,8 @@ function getReplayCallOutput(functionCallId: string): any | undefined {
 		return undefined
 	}
 
-	const matchingFunctionCalls = loadedCapture.calls
-		.filter((call) => call.id === functionCallId)
-		.sort((a, b) => b.timestamp - a.timestamp)
-	return matchingFunctionCalls[0]?.output
+	const matchingCall = loadedCapture.calls.find((f) => f.id === functionCallId)
+	return matchingCall?.invocations.sort((a, b) => a.timestamp - b.timestamp).at(-1)?.output
 }
 
 function getReplayFunctionArgs(functionId: string): any[] | undefined {
@@ -311,10 +306,8 @@ function getReplayFunctionArgs(functionId: string): any[] | undefined {
 		return undefined
 	}
 
-	const matchingFunctionCalls = loadedCapture.functions
-		.filter((func) => func.id === functionId)
-		.sort((a, b) => b.timestamp - a.timestamp)
-	return matchingFunctionCalls?.[0]?.args
+	const matchingFunction = loadedCapture.functions.find((f) => f.id === functionId)
+	return matchingFunction?.invocations.sort((a, b) => a.timestamp - b.timestamp).at(-1)?.args
 }
 
 function getReplayFunctionOutput(functionId: string): any | undefined {
@@ -324,24 +317,22 @@ function getReplayFunctionOutput(functionId: string): any | undefined {
 		return undefined
 	}
 
-	const matchingFunctionCalls = loadedCapture.functions
-		.filter((func) => func.id === functionId)
-		.sort((a, b) => b.timestamp - a.timestamp)
-	return matchingFunctionCalls?.[0]?.output
+	const matchingFunction = loadedCapture.functions.find((f) => f.id === functionId)
+	return matchingFunction?.invocations.sort((a, b) => a.timestamp - b.timestamp).at(-1)?.output
 }
 
 let _executingFunctions: CapturedFunction[] = []
 let _functionCalls: CapturedCall[] = []
 let _userId: string | undefined = undefined
 
-export const getExecutingFunctions = () => _executingFunctions
-export const getFunctionCalls = () => _functionCalls
+export const getCapturedFunctions = () => _executingFunctions
+export const getCapturedCalls = () => _functionCalls
 
-export const _resetExecutingFunctions = () => {
+export const clearCapturedFunctions = () => {
 	_executingFunctions = []
 }
 
-export const _resetFunctionCalls = () => {
+export const clearCapturedCalls = () => {
 	_functionCalls = []
 }
 
@@ -363,8 +354,14 @@ export async function loadCapture() {
 	}
 }
 
-export async function capture(error: any) {
-	log.info('capture', `Manually captured error.`, { error })
+export async function capture<T extends Error>({
+	error,
+	message
+}: {
+	error: T
+	message?: string
+}): Promise<void> {
+	log.info('capture', `Manually captured error.`, { error, ...(message && { message }) })
 	/**
 	 * We're manually capturing an error. Let's send the current
 	 * executing function along with its data to the Flytrap API.
@@ -393,26 +390,35 @@ export function identify(userId: string) {
 	_userId = userId
 }
 export const getUserId = () => _userId
-export const getExecutingFunction = (): CapturedFunction | undefined =>
-	_executingFunctions[_executingFunctions.length - 1]
-const addExecutingFunction = (wrappedFunction: CapturedFunction) => {
-	log.info('function-execution', `Executing function with ID "${wrappedFunction.id}"`)
-	const matchingExecutingFunction = _executingFunctions.find(
-		(execFn) => execFn.id === wrappedFunction.id
-	)
+export const getExecutingFunction = () => _executingFunctions.at(-1)
+
+const addFunctionInvocation = (functionId: string, invocation: CaptureInvocation) => {
+	log.info('function-execution', `Executing function with ID "${functionId}"`)
+	const matchingExecutingFunction = _executingFunctions.find((execFn) => execFn.id === functionId)
 	if (matchingExecutingFunction) {
-		// Update timestamp of execution
-		matchingExecutingFunction.timestamp = Date.now()
+		matchingExecutingFunction.invocations.push(invocation)
 		return
 	}
-	_executingFunctions.push(wrappedFunction)
+
+	_executingFunctions.push({
+		id: functionId,
+		invocations: [invocation]
+	})
 }
 
 function saveFunctionCall(opts: FlytrapCallOptions) {
-	_functionCalls.push({
-		...opts,
-		timestamp: Date.now()
-	})
+	const functionCallIndex = _functionCalls.findIndex((call) => call.id === opts.id)
+	if (functionCallIndex === -1) {
+		_functionCalls.push({
+			id: opts.id,
+			invocations: [
+				{
+					...opts,
+					timestamp: Date.now()
+				}
+			]
+		})
+	}
 }
 
 function saveOutputForFunctionCall<T>(functionCallId: string, output: T) {
@@ -424,7 +430,8 @@ function saveOutputForFunctionCall<T>(functionCallId: string, output: T) {
 		return
 	}
 
-	_functionCalls[functionCallIndex].output = output
+	const lastInvocation = _functionCalls[functionCallIndex].invocations.at(-1)
+	if (lastInvocation) lastInvocation.output = output
 }
 
 function saveOutputForFunction<T>(functionId: string, output: T) {
@@ -436,18 +443,21 @@ function saveOutputForFunction<T>(functionId: string, output: T) {
 		return
 	}
 
-	_executingFunctions[functionIndex].output = output
+	const lastInvocation = _executingFunctions[functionIndex].invocations.at(-1)
+	if (lastInvocation) lastInvocation.output = output
 }
 
-function getFunctionCallById(functionCallId: string): CapturedCall | undefined {
+function getFunctionCallById(functionCallId: string) {
 	return _functionCalls.find((call) => call.id === functionCallId)
 }
 
-function getFunctionById(functionId: string): CapturedFunction | undefined {
+function getFunctionById(functionId: string) {
 	return _executingFunctions.find((func) => func.id === functionId)
 }
 
-function saveErrorForFunctionCall(functionCallId: string, error: any) {
+// TODO: let's make overloaded calls like this for `capture`
+// function saveErrorForFunctionCall(functionCallId: string, error: string): void;
+function saveErrorForFunctionCall(functionCallId: string, error: any): void {
 	const call = getFunctionCallById(functionCallId)
 
 	if (!call) {
@@ -455,7 +465,8 @@ function saveErrorForFunctionCall(functionCallId: string, error: any) {
 		return
 	}
 	log.info('call-execution', `Saving error for function call ID ${functionCallId}.`, { error })
-	call.error = serializeError(error)
+	const lastInvocation = call.invocations.at(-1)
+	if (lastInvocation) lastInvocation.error = serializeError(error)
 }
 
 function saveErrorForFunction(functionId: string, error: any) {
@@ -467,7 +478,8 @@ function saveErrorForFunction(functionId: string, error: any) {
 	}
 
 	log.info('function-execution', `Saving error for function ID ${functionId}`, { error })
-	func.error = serializeError(error)
+	const lastInvocation = func.invocations.at(-1)
+	if (lastInvocation) lastInvocation.error = serializeError(error)
 }
 
 // Export

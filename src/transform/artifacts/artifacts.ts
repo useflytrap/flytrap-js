@@ -1,4 +1,3 @@
-import { SourceType } from '../core/types'
 import babelTraverse, { Node, NodePath } from '@babel/traverse'
 import { parse, print } from 'recast'
 import babelTsParser from 'recast/parsers/babel-ts.js'
@@ -11,19 +10,7 @@ import {
 	ObjectProperty,
 	VariableDeclarator
 } from '@babel/types'
-
-export type Artifact = {
-	type: 'CALL' | 'FUNCTION'
-	functionOrCallId: string
-	functionOrCallName: string
-	source: SourceType
-	scopes: string[]
-	params: string
-	/**
-	 * `functionId` can only defined if `type` === 'CALL'
-	 */
-	functionId?: string
-}
+import { Artifact } from '../../exports'
 
 /**
  * An interop function to make babel's exports work

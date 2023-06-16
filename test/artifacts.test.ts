@@ -4,7 +4,7 @@ import {
 	extractArtifacts,
 	extractCurrentScope,
 	extractFunctionCallId
-} from '../src/transform/artifacts'
+} from '../src/transform/artifacts/artifacts'
 import babelTraverse from '@babel/traverse'
 import { parse } from 'recast'
 import babelTsParser from 'recast/parsers/babel-ts.js'

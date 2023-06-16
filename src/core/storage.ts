@@ -1,5 +1,5 @@
 import type {
-	CaptureDecrypted,
+	CaptureDecryptedAndRevived,
 	CapturePayload,
 	CapturedCall,
 	CapturedFunction,
@@ -8,22 +8,32 @@ import type {
 } from './types'
 import { FLYTRAP_API_BASE, getLoadedConfig } from './config'
 import { getUserId } from '../index'
-import { empty, get, post, tryCatch, tryCatchSync } from './util'
+import { empty, get, post, tryCatchSync } from './util'
 import { createHumanLog } from './human-logs'
 import SuperJSON from 'superjson'
 import { FLYTRAP_UNSERIALIZABLE_VALUE, NO_SOURCE } from './constants'
-import { decrypt, encrypt } from './encryption'
+import { encrypt } from './encryption'
 import { log } from './logging'
 import { serializeError } from 'serialize-error'
-import { parse, stringify, superJsonRegisterCustom } from './stringify'
+import { copy } from 'copy-anything'
+import {
+	addLinksToCaptures,
+	decryptCapture,
+	extractArgs,
+	extractOutputs,
+	parse,
+	removeCircularDependencies,
+	stringify,
+	superJsonRegisterCustom
+} from './stringify'
 
-const loadedCaptures = new Map<string, CaptureDecrypted | undefined>()
+const loadedCaptures = new Map<string, CaptureDecryptedAndRevived | undefined>()
 
 export const browserStorage: Storage = {
 	getItem(captureId) {
 		const captureStringified = localStorage.getItem(captureId)
 		if (!captureStringified) return null
-		return parse<CaptureDecrypted>(captureStringified)
+		return parse<CaptureDecryptedAndRevived>(captureStringified)
 	},
 	removeItem(captureId) {
 		return localStorage.removeItem(captureId)
@@ -44,7 +54,7 @@ export const fileStorage: Storage = {
 		try {
 			const captureStringified = readFileSync(join(getCacheDir(), `${captureId}.json`), 'utf-8')
 			if (!captureStringified) return null
-			return parse<CaptureDecrypted>(captureStringified)
+			return parse<CaptureDecryptedAndRevived>(captureStringified)
 		} catch (e) {
 			return null
 		}
@@ -94,7 +104,7 @@ export async function loadAndPersist(
 }
 
 export type FlytrapStorage = {
-	getCapture: (captureId: string) => CaptureDecrypted | null
+	getCapture: (captureId: string) => CaptureDecryptedAndRevived | null
 	/**
 	 * Load the wrapped functions from the API. These are decrypted before
 	 * returning them.
@@ -104,8 +114,12 @@ export type FlytrapStorage = {
 		captureId: string,
 		secretApiKey: string,
 		privateKey: string
-	) => Promise<CaptureDecrypted | undefined>
-	saveCapture: (functions: CapturedFunction[], calls: CapturedCall[], error?: any) => Promise<void>
+	) => Promise<CaptureDecryptedAndRevived | undefined>
+	saveCapture: (
+		functions: CapturedFunction[],
+		calls: CapturedCall[],
+		error?: Error | string
+	) => Promise<void>
 }
 
 export const liveFlytrapStorage: FlytrapStorage = {
@@ -161,37 +175,7 @@ export const liveFlytrapStorage: FlytrapStorage = {
 			{ data }
 		)
 
-		// Decrypt capture
-		const decryptedCapture: CaptureDecrypted = {
-			...data,
-			calls: await Promise.all(
-				data.calls.map(async (encryptedCall) => ({
-					...encryptedCall,
-					args: parse(await decrypt(privateKey, encryptedCall.args)),
-					...(encryptedCall.output && {
-						output: parse(await decrypt(privateKey, encryptedCall.output))
-					}),
-					...(encryptedCall.error && {
-						error: parse<any>(await decrypt(privateKey, encryptedCall.error))
-					})
-				}))
-			),
-			functions: await Promise.all(
-				data.functions.map(async (encryptedFunction) => ({
-					...encryptedFunction,
-					args: parse(await decrypt(privateKey, encryptedFunction.args)),
-					...(encryptedFunction.output && {
-						output: parse(await decrypt(privateKey, encryptedFunction.output))
-					}),
-					...(encryptedFunction.error && {
-						error: parse<any>(await decrypt(privateKey, encryptedFunction.error))
-					})
-				}))
-			),
-			...(data.error && {
-				error: parse<any>(await decrypt(privateKey, data.error))
-			})
-		}
+		const decryptedCapture = await decryptCapture(data, privateKey)
 
 		log.info('storage', `Loaded capture ID "${captureId}".`)
 
@@ -213,50 +197,37 @@ export const liveFlytrapStorage: FlytrapStorage = {
 			return
 		}
 
-		// TODO: Rewrite this
-		const [processedFunctions, processedCalls, processededError] = preprocessCapture(
-			functions,
-			calls,
-			error
-		)
+		calls = removeIllegalValues(removeCircularDependencies(calls))
+		functions = removeIllegalValues(removeCircularDependencies(functions))
 
-		const { data: payload, error: encryptError } = await tryCatch<CapturePayload>({
+		const args = [...extractArgs(calls), ...extractArgs(functions)]
+		const outputs = [...extractOutputs(calls), ...extractOutputs(functions)]
+
+		const linkedCalls = addLinksToCaptures(calls, { args, outputs })
+		const linkedFunctions = addLinksToCaptures(functions, { args, outputs })
+
+		const newPayload: CapturePayload = {
 			capturedUserId: getUserId(),
 			projectId,
 			functionName:
-				serializeError(processededError)?.message ??
-				serializeError(processededError)?.error ??
-				(typeof processededError === 'string' ? processededError : 'unknown'),
+				typeof error === 'string'
+					? error
+					: serializeError(error)?.message ?? serializeError(error)?.name ?? 'unknown',
 			source: NO_SOURCE,
-			calls: await Promise.all(
-				processedCalls.map(
-					async (processedCall) => await encryptCapturedCall(processedCall, publicApiKey)
-				)
-			),
-			functions: await Promise.all(
-				processedFunctions.map(
-					async (processedFunc) => await encryptCapturedFunction(processedFunc, publicApiKey)
-				)
-			),
+			// args, outputs,
+			args: await encrypt(publicApiKey, stringify(args)),
+			outputs: await encrypt(publicApiKey, stringify(args)),
+			calls: linkedCalls,
+			functions: linkedFunctions,
 			...(error && {
-				error: await encrypt(publicApiKey, stringify(serializeError(processededError)))
+				error: await encrypt(publicApiKey, stringify(serializeError(error)))
 			})
-		})
-
-		if (!payload || encryptError) {
-			const errorLog = createHumanLog({
-				event: 'capture_failed',
-				explanation: 'stringify_capture_failed',
-				solution: 'critical_contact_us'
-			})
-			console.error(errorLog.toString())
-			console.error((encryptError as Error).message)
-			return
 		}
 
 		const { data: stringifiedPayload, error: stringifyError } = tryCatchSync(() =>
-			stringify(payload)
+			stringify(newPayload)
 		)
+
 		if (stringifyError || !stringifiedPayload) {
 			const errorLog = createHumanLog({
 				event: 'capture_failed',
@@ -264,16 +235,16 @@ export const liveFlytrapStorage: FlytrapStorage = {
 				solution: 'stringify_capture_failed_solution'
 			})
 			console.error(errorLog.toString())
-			console.error((stringifyError as Error).message)
+			console.error(stringifyError)
 			return
 		}
 
 		log.info(
 			'api-calls',
 			`[POST] ${FLYTRAP_API_BASE}/api/v1/captures - Payload size ~${stringifiedPayload.length} bytes. Payload:`,
-			{ payload }
+			{ payload: newPayload }
 		)
-		// TODO: use something like `devalue` to get closer to reality
+
 		const { error: captureError } = await post(
 			`${FLYTRAP_API_BASE}/api/v1/captures`,
 			stringifiedPayload,
@@ -309,68 +280,30 @@ function isSerializable(input: any) {
 	return error === null
 }
 
-export async function encryptCapturedFunction(
-	capturedFunction: CapturedFunction,
-	publicApiKey: string
-) {
-	const { args, error, output, ...rest } = capturedFunction
+export function removeIllegalValues(captures: (CapturedCall | CapturedFunction)[]) {
+	const capturesClone = copy(captures)
 
-	return {
-		args: await encrypt(publicApiKey, stringify(args)),
-		...(error && { error: await encrypt(publicApiKey, stringify(error)) }),
-		...(output && { output: await encrypt(publicApiKey, stringify(output)) }),
-		...rest
-	}
-}
-
-export async function encryptCapturedCall(capturedCall: CapturedCall, publicApiKey: string) {
-	const { args, error, output, ...rest } = capturedCall
-
-	return {
-		args: await encrypt(publicApiKey, stringify(args)),
-		...(error && { error: await encrypt(publicApiKey, stringify(error)) }),
-		...(output && { output: await encrypt(publicApiKey, stringify(output)) }),
-		...rest
-	}
-}
-
-export function preprocessCapture(
-	functions: CapturedFunction[],
-	calls: CapturedCall[],
-	error?: any
-) {
-	// Iterate over calls and functions
-	const funcsCopy = [...functions]
-	let callsCopy = [...calls].sort((callA, callB) => callA.timestamp - callB.timestamp).reverse()
-
-	let size = 0
-	for (let i = 0; i < callsCopy.length; i++) {
-		if (!isSerializable(callsCopy[i])) {
-			if (!isSerializable(callsCopy[i].args)) {
-				callsCopy[i].args = callsCopy[i].args.map(() => FLYTRAP_UNSERIALIZABLE_VALUE)
+	for (let i = 0; i < capturesClone.length; i++) {
+		for (let j = 0; j < capturesClone[i].invocations.length; j++) {
+			// Args
+			if (!isSerializable(capturesClone[i].invocations[j].args)) {
+				capturesClone[i].invocations[j].args = capturesClone[i].invocations[j].args.map(
+					() => FLYTRAP_UNSERIALIZABLE_VALUE
+				)
 			}
-			if (!isSerializable(callsCopy[i].output)) {
-				callsCopy[i].output = FLYTRAP_UNSERIALIZABLE_VALUE
+			// Output
+			if (!isSerializable(capturesClone[i].invocations[j].output)) {
+				capturesClone[i].invocations[j].output = FLYTRAP_UNSERIALIZABLE_VALUE
 			}
-		}
-		tryCatchSync(() => {
-			size += SuperJSON.stringify(callsCopy[i]).length
-			if (size >= 3_000_000) {
-				// Remove the rest
-				callsCopy = callsCopy.slice(0, i)
-			}
-		})
-	}
-
-	for (let i = 0; i < funcsCopy.length; i++) {
-		if (!isSerializable(funcsCopy[i])) {
-			if (!isSerializable(funcsCopy[i].args)) {
-				funcsCopy[i].args = funcsCopy[i].args.map(() => FLYTRAP_UNSERIALIZABLE_VALUE)
-			}
-			if (!isSerializable(funcsCopy[i].output)) {
-				funcsCopy[i].output = FLYTRAP_UNSERIALIZABLE_VALUE
+			// Error
+			if (!isSerializable(capturesClone[i].invocations[j].error)) {
+				capturesClone[i].invocations[j].error = {
+					name: FLYTRAP_UNSERIALIZABLE_VALUE,
+					message: FLYTRAP_UNSERIALIZABLE_VALUE,
+					stack: FLYTRAP_UNSERIALIZABLE_VALUE
+				}
 			}
 		}
 	}
-	return [funcsCopy, callsCopy, error] as const
+	return capturesClone
 }

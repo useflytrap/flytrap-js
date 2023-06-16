@@ -9,13 +9,19 @@ import { createHumanLog } from './core/human-logs'
 import { loadConfig } from './transform/config'
 import { setFlytrapConfig } from './core/config'
 import { log } from './core/logging'
-import { Artifact, extractArtifacts } from './transform/artifacts'
+import { extractArtifacts } from './transform/artifacts/artifacts'
 import { tryCatch, tryCatchSync } from './core/util'
 import { readFileSync } from 'node:fs'
 import { excludeDirectoriesIncludeFilePath } from './transform/excludes'
 import { containsScriptTags, parseScriptTags } from './transform/parseScriptTags'
-import { batchedArtifactsUpload } from './transform/batchedArtifactsUpload'
+import { batchedArtifactsUpload } from './transform/artifacts/batchedArtifactsUpload'
 import { getFileExtension } from './transform/util'
+import {
+	getArtifactsToUpload,
+	markArtifactAsUploaded,
+	upsertArtifact
+} from './transform/artifacts/cache'
+import { Artifact } from './exports'
 
 const transformedFiles: string[] = []
 
@@ -222,29 +228,42 @@ export const unpluginOptions: UnpluginOptions = {
 				}
 			}
 
+			// Cache artifacts
+			for (let i = 0; i < artifacts.length; i++) {
+				upsertArtifact(config.projectId, artifacts[i])
+			}
+
+			// Upload artifacts marked as `not-uploaded`
+			const artifactsToUpload = getArtifactsToUpload(config.projectId)
 			log.info(
 				'storage',
-				`Created ${artifacts.length} artifacts. Size: ${JSON.stringify(artifacts).length}`,
-				{ artifacts }
+				`Created ${artifactsToUpload.length} new artifacts to upload. Size: ${
+					JSON.stringify(artifactsToUpload).length
+				}`
 			)
 
 			const { data: uploadedBatches, error } = await tryCatch(
-				batchedArtifactsUpload(artifacts, config.secretApiKey, config.projectId)
+				// batchedArtifactsUpload(artifacts, config.secretApiKey, config.projectId)
+				batchedArtifactsUpload(artifactsToUpload, config.secretApiKey, config.projectId)
 			)
-			if (error) {
+			if (error || !uploadedBatches) {
 				console.error(
 					`Oops! Something went wrong while pushing artifacts to the Flytrap API. Error:`
 				)
 				console.error(error)
+				return
+			}
+
+			for (let i = 0; i < uploadedBatches.length; i++) {
+				markArtifactAsUploaded(config.projectId, uploadedBatches[i])
 			}
 			log.info(
 				'api-calls',
-				`Pushed ${artifacts.length} artifacts in ${
+				`Pushed ${artifactsToUpload.length} artifacts in ${
 					uploadedBatches?.length
 				} batches to the Flytrap API. Payload size: ~${
-					JSON.stringify(artifacts).length
-				} bytes. Payload`,
-				{ artifacts }
+					JSON.stringify(artifactsToUpload).length
+				} bytes.`
 			)
 		}
 	}

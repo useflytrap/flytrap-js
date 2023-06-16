@@ -28,7 +28,7 @@ import {
 	extractFunctionCallName,
 	extractFunctionId,
 	extractFunctionName
-} from './artifacts'
+} from './artifacts/artifacts'
 import { findIgnoredImports, shouldIgnoreCall } from './packageIgnores'
 
 export function shouldBeWrapped(path: NodePath) {
@@ -132,7 +132,7 @@ export function flytrapTransformArtifacts(
 		CallExpression(path) {
 			if (!shouldBeWrapped(path)) return
 
-			// Ingored calls (eg. packageIgnores & reserved words)
+			// Ignored calls (eg. packageIgnores & reserved words)
 			if (shouldIgnoreCall(path, ignoredImports ?? [])) {
 				return
 			}

@@ -46,14 +46,14 @@ export default [
 		output: [
 			{
 				dir: "transform",
-				entryFileNames: "[name].mjs",
+				entryFileNames: "index.mjs",
 				format: "esm",
 				exports: "named",
 				sourcemap: true,
 			},
 			{
 				dir: "transform",
-				entryFileNames: "[name].cjs",
+				entryFileNames: "index.cjs",
 				format: "cjs",
 				exports: "named",
 				sourcemap: true,
@@ -66,7 +66,7 @@ export default [
 		output: [
 			{
 				dir: "transform",
-				entryFileNames: "[name].d.ts",
+				entryFileNames: "index.d.ts",
 				format: "esm",
 				exports: "named",
 			},
