@@ -14,37 +14,33 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - run: corepack enable
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
-          cache: 'pnpm'
+          node-version: 16
 
       - name: 📦 Install dependencies
-        run: pnpm install
+        run: npm ci
 
       - name: 🔠 Lint project
-        run: pnpm lint
+        run: npm run lint
 
   test:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
-      - run: corepack enable
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
-          cache: 'pnpm'
+          node-version: 16
 
       - name: 📦 Install dependencies
-        run: pnpm install
+        run: npm ci
 
       - name: 🛠 Build project
-        run: pnpm build
+        run: npm run build
 
       - name: 💪 Test types
-        run: pnpm test:types
+        run: npm run test:types
 
       - name: 🧪 Test project
-        run: pnpm test
+        run: npm run test
