@@ -94,15 +94,9 @@ export function extractCurrentScope(
 		if (currentPath.node.type === 'BlockStatement') {
 			scopes.push('{}')
 		}
-		if (
-			['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression'].includes(
-				currentPath.node.type
-			)
-		) {
+		if (['FunctionDeclaration', 'FunctionExpression'].includes(currentPath.node.type)) {
 			let scopeName: string
-			if (currentPath.node.type === 'ArrowFunctionExpression') {
-				scopeName = extractFunctionName(currentPath.parent as VariableDeclarator | ObjectProperty)
-			} else if (currentPath.node.type === 'FunctionExpression') {
+			if (currentPath.node.type === 'FunctionExpression') {
 				if (currentPath.node.id?.type === 'Identifier') {
 					scopeName = extractFunctionName(currentPath.node as FunctionExpression)
 				} else {

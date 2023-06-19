@@ -131,7 +131,7 @@ describe('extractCurrentScope', () => {
 				foo()
 			}
 			`,
-			scopes: ['arrowFuncScope', '{}']
+			scopes: ['{}']
 		},
 		{
 			name: 'function expression scope',
