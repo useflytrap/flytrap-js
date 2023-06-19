@@ -44,7 +44,9 @@ export async function request<DataType = unknown, ErrorType = string>(
 ): Promise<RequestResponse<DataType, ErrorType>> {
 	log.info(
 		'api-calls',
-		`[🐛 ${method}] ${endpoint} - Size ${formatBytes(JSON.stringify(body).length)}.`,
+		`[🐛 ${method}] ${endpoint} - ${
+			body ? `Size: ${formatBytes(JSON.stringify(body).length)}` : ''
+		}.`,
 		{ payload: body }
 	)
 	try {
