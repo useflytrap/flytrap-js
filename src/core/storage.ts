@@ -169,12 +169,6 @@ export const liveFlytrapStorage: FlytrapStorage = {
 			throw errorLog.toString()
 		}
 
-		log.info(
-			'api-calls',
-			`[GET] ${FLYTRAP_API_BASE}/api/v1/captures/${captureId} - Received ${data}`,
-			{ data }
-		)
-
 		const decryptedCapture = await decryptCapture(data, privateKey)
 
 		log.info('storage', `Loaded capture ID "${captureId}".`)
@@ -238,12 +232,6 @@ export const liveFlytrapStorage: FlytrapStorage = {
 			console.error(stringifyError)
 			return
 		}
-
-		log.info(
-			'api-calls',
-			`[POST] ${FLYTRAP_API_BASE}/api/v1/captures - Payload size ~${stringifiedPayload.length} bytes. Payload:`,
-			{ payload: newPayload }
-		)
 
 		const { error: captureError } = await post(
 			`${FLYTRAP_API_BASE}/api/v1/captures`,

@@ -1,3 +1,6 @@
+import * as importedCrypto from 'crypto'
+const crypto = typeof window !== 'undefined' ? window.crypto : importedCrypto
+
 const MAX_CHUNK_SIZE = 190 // 2048 bits RSA-OAEP key size, minus padding (256 bits)
 const CHUNK_SEPARATOR = '|'
 

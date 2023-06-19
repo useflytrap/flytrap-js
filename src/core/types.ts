@@ -11,6 +11,7 @@ export type LogGroup =
 	| 'identify'
 	| 'capture'
 	| 'transform'
+	| 'cache'
 
 export type FlytrapConfig = {
 	projectId: string

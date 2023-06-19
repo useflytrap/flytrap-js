@@ -1,5 +1,6 @@
 import { getLoadedConfig } from './config'
 import { FLYTRAP_REPLACE_VALUES, FLYTRAP_UNSERIALIZABLE_VALUE } from './constants'
+import { log } from './logging'
 import { SourceType } from './types'
 
 /**
@@ -41,6 +42,11 @@ export async function request<DataType = unknown, ErrorType = string>(
 	body?: BodyInit,
 	options: RequestInit = {}
 ): Promise<RequestResponse<DataType, ErrorType>> {
+	log.info(
+		'api-calls',
+		`[🐛 ${method}] ${endpoint} - Size ${formatBytes(JSON.stringify(body).length)}.`,
+		{ payload: body }
+	)
 	try {
 		const data = await fetch(endpoint, {
 			...options,
@@ -212,4 +218,10 @@ export function fillUnserializableFlytrapValues(
 		return output
 	}
 	return input
+}
+
+export const formatBytes = (bytes: number) => {
+	if (bytes === 0) return '0 B'
+	const e = Math.floor(Math.log(bytes) / Math.log(1000))
+	return `${(bytes / Math.pow(1000, e)).toFixed(2)} ${' KMGTP'.charAt(e)}B`
 }

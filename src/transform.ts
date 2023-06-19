@@ -19,7 +19,8 @@ import { getFileExtension } from './transform/util'
 import {
 	getArtifactsToUpload,
 	markArtifactAsUploaded,
-	upsertArtifact
+	upsertArtifact,
+	upsertArtifacts
 } from './transform/artifacts/cache'
 import { Artifact } from './exports'
 
@@ -228,23 +229,9 @@ export const unpluginOptions: UnpluginOptions = {
 				}
 			}
 
-			// Cache artifacts
-			for (let i = 0; i < artifacts.length; i++) {
-				upsertArtifact(config.projectId, artifacts[i])
-			}
-
-			// Upload artifacts marked as `not-uploaded`
-			const artifactsToUpload = getArtifactsToUpload(config.projectId)
-			log.info(
-				'storage',
-				`Created ${artifactsToUpload.length} new artifacts to upload. Size: ${
-					JSON.stringify(artifactsToUpload).length
-				}`
-			)
-
+			// Upload artifacts
 			const { data: uploadedBatches, error } = await tryCatch(
-				// batchedArtifactsUpload(artifacts, config.secretApiKey, config.projectId)
-				batchedArtifactsUpload(artifactsToUpload, config.secretApiKey, config.projectId)
+				upsertArtifacts(config.projectId, config.secretApiKey, artifacts)
 			)
 			if (error || !uploadedBatches) {
 				console.error(
@@ -253,18 +240,6 @@ export const unpluginOptions: UnpluginOptions = {
 				console.error(error)
 				return
 			}
-
-			for (let i = 0; i < uploadedBatches.length; i++) {
-				markArtifactAsUploaded(config.projectId, uploadedBatches[i])
-			}
-			log.info(
-				'api-calls',
-				`Pushed ${artifactsToUpload.length} artifacts in ${
-					uploadedBatches?.length
-				} batches to the Flytrap API. Payload size: ~${
-					JSON.stringify(artifactsToUpload).length
-				} bytes.`
-			)
 		}
 	}
 }
