@@ -163,7 +163,7 @@ export function getArtifactsToUpload(projectId: string) {
 
 async function _fetchUploadedArtifacts(projectId: string, secretApiKey: string) {
 	const { data, error } = await get<Artifact[]>(
-		`${FLYTRAP_API_BASE}/v1/artifacts/${projectId}`,
+		`${FLYTRAP_API_BASE}/api/v1/artifacts/${projectId}`,
 		undefined,
 		{
 			headers: new Headers({
