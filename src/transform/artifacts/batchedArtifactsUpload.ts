@@ -17,7 +17,7 @@ export async function batchedArtifactsUpload(
 
 	const uploadedArtifactBatches = await Promise.all(
 		batches.map(async (batch) => {
-			const { data, error } = await post<Artifact>(
+			const { data, error } = await post<string[]>(
 				`${FLYTRAP_API_BASE}/api/v1/artifacts/${projectId}`,
 				JSON.stringify({
 					artifacts: batch
@@ -35,5 +35,5 @@ export async function batchedArtifactsUpload(
 			return data
 		})
 	)
-	return uploadedArtifactBatches
+	return uploadedArtifactBatches.reduce((acc, curr) => [...acc, ...curr], [] as string[])
 }

@@ -11,13 +11,18 @@ import babelTsParser from 'recast/parsers/babel-ts.js'
 import { Identifier } from '@babel/types'
 import { flytrapTransformArtifacts } from '../src/transform/index'
 import {
+	_fetchUploadedArtifacts,
+	_getArtifactsToUpload,
 	getArtifactsToUpload,
 	getCacheFilePath,
 	markArtifactAsUploaded,
-	upsertArtifact
+	upsertArtifact,
+	upsertArtifacts
 } from '../src/transform/artifacts/cache'
 import { Artifact } from '../src/exports'
 import { rmSync } from 'fs'
+import { config } from 'dotenv'
+config()
 
 describe('Artifacts for functions', () => {
 	const arrowFunctionFixture = `
@@ -261,9 +266,17 @@ it('generates values same as transform', () => {
 })
 
 describe('Cache', () => {
+	const testEnvProjectId = process.env['FLYTRAP_PROJECT_ID']
+	const testEnvSecretApiKey = process.env['FLYTRAP_SECRET_KEY']
+	if (!testEnvProjectId) {
+		throw new Error(`Flytrap Testing Environment project ID not defined.`)
+	}
+	if (!testEnvSecretApiKey) {
+		throw new Error(`Flytrap Testing Environment secret API key not defined.`)
+	}
 	const cacheFilePath = getCacheFilePath('mock-project-id')
 	const mockArtifact: Artifact = {
-		functionOrCallId: '',
+		functionOrCallId: `mock-call-id-${new Date().toISOString()}`,
 		functionOrCallName: '',
 		params: '',
 		scopes: [],
@@ -276,6 +289,33 @@ describe('Cache', () => {
 
 	afterAll(() => {
 		rmSync(cacheFilePath, { recursive: true })
+	})
+
+	it('_fetchUploadedArtifacts', async () => {
+		const uploadedArtifacts = await _fetchUploadedArtifacts(testEnvProjectId, testEnvSecretApiKey)
+		expect(
+			uploadedArtifacts.find((u) => u.functionOrCallId === mockArtifact.functionOrCallId) !==
+				undefined
+		)
+	})
+
+	it('_getArtifactsToUpload', async () => {
+		const artifactsToUpload = await _getArtifactsToUpload(testEnvProjectId, testEnvSecretApiKey, [
+			mockArtifact
+		])
+		expect(artifactsToUpload).toEqual([mockArtifact])
+	})
+
+	it('upsertArtifacts', async () => {
+		const response = await upsertArtifacts(testEnvProjectId, testEnvSecretApiKey, [mockArtifact])
+		expect(response.includes(mockArtifact.functionOrCallId))
+	})
+
+	it('_getArtifactsToUpload no longer include the mock artifact', async () => {
+		const artifactsToUpload = await _getArtifactsToUpload(testEnvProjectId, testEnvSecretApiKey, [
+			mockArtifact
+		])
+		expect(artifactsToUpload).toEqual([])
 	})
 
 	it('upserts artifact', () => {

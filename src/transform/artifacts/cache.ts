@@ -2,7 +2,7 @@ import { dirname, join } from 'path'
 import { homedir } from 'os'
 import { deepEqual } from 'fast-equals'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
-import { Artifact, CacheFile } from '../../exports'
+import { Artifact, CacheFile, DatabaseArtifact } from '../../exports'
 import { cwd } from 'process'
 import { formatBytes, get } from '../../core/util'
 import { FLYTRAP_API_BASE } from '../../core/config'
@@ -57,7 +57,13 @@ const _populateCache = async (projectId: string, secretApiKey: string): Promise<
 	return cache
 }
 
-async function _getArtifactsToUpload(
+function _removeDatabaseKeys(artifact: DatabaseArtifact): Artifact {
+	const { id, createdAt, projectId, ...rest } = artifact
+	if (rest.functionId === null) delete rest.functionId
+	return rest
+}
+
+export async function _getArtifactsToUpload(
 	projectId: string,
 	secretApiKey: string,
 	artifacts: Artifact[]
@@ -70,8 +76,11 @@ async function _getArtifactsToUpload(
 			artifacts[i].functionOrCallId
 		)
 		if (existingArtifactIndex !== -1) {
+			const withoutDatabaseKeys = _removeDatabaseKeys(
+				alreadyUploadedArtifacts[existingArtifactIndex]
+			)
 			// Exists, check if they're the same
-			if (!deepEqual(alreadyUploadedArtifacts[existingArtifactIndex], artifacts[i])) {
+			if (!deepEqual(withoutDatabaseKeys, artifacts[i])) {
 				artifactsToUpload.push(artifacts[i])
 				continue
 			}
@@ -161,8 +170,8 @@ export function getArtifactsToUpload(projectId: string) {
 		.reduce((acc, curr) => [...acc, curr.artifact], [] as Artifact[])
 }
 
-async function _fetchUploadedArtifacts(projectId: string, secretApiKey: string) {
-	const { data, error } = await get<Artifact[]>(
+export async function _fetchUploadedArtifacts(projectId: string, secretApiKey: string) {
+	const { data, error } = await get<DatabaseArtifact[]>(
 		`${FLYTRAP_API_BASE}/api/v1/artifacts/${projectId}`,
 		undefined,
 		{

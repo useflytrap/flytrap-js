@@ -157,6 +157,13 @@ export type Artifact = {
 	functionId?: string
 }
 
+export type DatabaseArtifact = Artifact & {
+	id: string
+	createdAt: string
+	projectId: string
+	functionId: null | undefined | string
+}
+
 export type ArtifactCacheEntry = {
 	timestamp: number
 	uploadStatus: 'not-uploaded' | 'uploaded' | 'upload-failed'
