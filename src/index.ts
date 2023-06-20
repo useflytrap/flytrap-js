@@ -50,14 +50,14 @@ export function useFlytrapFunction<
 				const mergedArgs = fillUnserializableFlytrapValues(replayArgs, args)
 				// const realOutput = await fn(...mergedArgs)
 				// @ts-expect-error for some reason `this as any` still gives error
-				const realOutput = executeFunctionAsync(fn, this as any, mergedArgs)
+				const realOutput = await executeFunctionAsync(fn, this as any, mergedArgs)
 				return fillUnserializableFlytrapValues(replayOutput, realOutput)
 			}
 			// Capturing bugs
 			try {
 				// const output = await fn(...args)
 				// @ts-expect-error for some reason `this as any` still gives error
-				const output = executeFunctionAsync(fn, this as any, args)
+				const output = await executeFunctionAsync(fn, this as any, args)
 				saveOutputForFunction(opts.id, output)
 				return output
 			} catch (error) {

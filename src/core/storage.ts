@@ -8,7 +8,7 @@ import type {
 } from './types'
 import { FLYTRAP_API_BASE, getLoadedConfig } from './config'
 import { getUserId } from '../index'
-import { empty, get, post, tryCatchSync } from './util'
+import { empty, formatBytes, get, post, tryCatchSync } from './util'
 import { createHumanLog } from './human-logs'
 import SuperJSON from 'superjson'
 import { FLYTRAP_UNSERIALIZABLE_VALUE, NO_SOURCE } from './constants'
@@ -252,6 +252,13 @@ export const liveFlytrapStorage: FlytrapStorage = {
 			})
 			console.error(errorLog.toString())
 			console.error(captureError)
+		} else {
+			log.info(
+				'storage',
+				`Saved capture with name "${newPayload.functionName}". Payload Size: ${formatBytes(
+					stringifiedPayload.length
+				)}`
+			)
 		}
 	}
 }

@@ -1,5 +1,19 @@
 import * as importedCrypto from 'crypto'
-const crypto = typeof window !== 'undefined' ? window.crypto : importedCrypto
+
+function getCrypto() {
+	// Check if the environment is a Web Worker
+	if (typeof self !== 'undefined' && typeof self.crypto !== 'undefined') {
+		return self.crypto
+	}
+	// Check if the environment is a browser
+	if (typeof window !== 'undefined' && typeof window.crypto !== 'undefined') {
+		return window.crypto
+	}
+
+	return importedCrypto
+}
+
+const crypto = getCrypto()
 
 const MAX_CHUNK_SIZE = 190 // 2048 bits RSA-OAEP key size, minus padding (256 bits)
 const CHUNK_SEPARATOR = '|'

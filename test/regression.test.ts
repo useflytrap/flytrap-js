@@ -1,6 +1,8 @@
 import { flytrapTransformArtifacts } from '../src/transform/index'
-import { describe, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { extractArtifacts } from '../src/transform/artifacts/artifacts'
+import { initTRPC } from '@trpc/server'
+import { removeCircularDependencies } from '../src/core/stringify'
 
 describe('Regression', () => {
 	it('regression #1 > generates correct artifacts that match the transformed code', async () => {
@@ -30,5 +32,11 @@ describe('Regression', () => {
 					.join(', ')}`
 			)
 		}
+	})
+
+	it('regression #2 > can remove circulars from non-POJOs', () => {
+		const trpcInstance = initTRPC.create({})
+		const withoutCirculars = removeCircularDependencies(trpcInstance)
+		expect(typeof withoutCirculars).toEqual('object')
 	})
 })

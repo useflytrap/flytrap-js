@@ -291,13 +291,17 @@ describe('Cache', () => {
 		rmSync(cacheFilePath, { recursive: true })
 	})
 
-	it('_fetchUploadedArtifacts', async () => {
-		const uploadedArtifacts = await _fetchUploadedArtifacts(testEnvProjectId, testEnvSecretApiKey)
-		expect(
-			uploadedArtifacts.find((u) => u.functionOrCallId === mockArtifact.functionOrCallId) !==
-				undefined
-		)
-	})
+	it(
+		'_fetchUploadedArtifacts',
+		async () => {
+			const uploadedArtifacts = await _fetchUploadedArtifacts(testEnvProjectId, testEnvSecretApiKey)
+			expect(
+				uploadedArtifacts.find((u) => u.functionOrCallId === mockArtifact.functionOrCallId) !==
+					undefined
+			)
+		},
+		{ timeout: 10_000 }
+	)
 
 	it('_getArtifactsToUpload', async () => {
 		const artifactsToUpload = await _getArtifactsToUpload(testEnvProjectId, testEnvSecretApiKey, [

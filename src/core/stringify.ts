@@ -102,7 +102,42 @@ export function parse<T = unknown>(stringified: string): T {
 	return SuperJSON.parse<T>(stringified)
 }
 
-export function removeCircularDependencies<T>(obj: T): T {
+export function removeCircularDependencies<T>(obj: T, seenObjects = new Set()): T {
+	// Null or primitive type
+	if (obj === null || typeof obj !== 'object') {
+		return obj
+	}
+
+	// Check if this object has been seen before
+	if (seenObjects.has(obj)) {
+		// It's a circular reference
+		// @ts-expect-error
+		return FLYTRAP_CIRCULAR
+		// return null; // Or replace with some placeholder if needed
+	}
+
+	// Keep track of this object so we don't process it again
+	seenObjects.add(obj)
+
+	// Clone object if it's an object or an array
+	const newObj = Array.isArray(obj) ? [] : {}
+
+	// Recursively inspect each property of the object
+	for (const key in obj) {
+		if (Object.prototype.hasOwnProperty.call(obj, key)) {
+			const cleanedValue = removeCircularDependencies(obj[key], seenObjects)
+
+			if (cleanedValue !== null) {
+				// If it's non-circular dependency, add it to the result object
+				;(newObj as T)[key] = cleanedValue
+			}
+		}
+	}
+
+	return newObj as T
+}
+
+/*export function removeCircularDependencies<T>(obj: T): T {
 	superJsonRegisterCustom(SuperJSON)
 	const serialized = SuperJSON.serialize(obj)
 	if (serialized.meta?.referentialEqualities) {
@@ -110,7 +145,7 @@ export function removeCircularDependencies<T>(obj: T): T {
 	}
 
 	return SuperJSON.deserialize(serialized)
-}
+}*/
 
 function _extract(captures: (CapturedCall | CapturedFunction)[], key: 'args' | 'output' = 'args') {
 	const values = captures.reduce(
