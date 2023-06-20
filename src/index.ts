@@ -77,7 +77,7 @@ export function useFlytrapFunction<
 							event: 'capture_failed',
 							explanation: 'api_capture_error_response',
 							solution: 'try_again_contact_us'
-						})
+						}).toString()
 					)
 					console.error(saveError)
 				}
@@ -141,6 +141,7 @@ export function useFlytrapFunction<
 					solution: 'try_again_contact_us'
 				})
 				console.error(errorLog.toString())
+				console.error(saveError)
 			}
 
 			throw error
@@ -382,6 +383,7 @@ export async function capture<T extends Error>({
 			solution: 'try_again_contact_us'
 		})
 		console.error(errorLog.toString())
+		console.error(saveError)
 	}
 }
 

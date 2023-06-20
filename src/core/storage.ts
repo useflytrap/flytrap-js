@@ -245,15 +245,13 @@ export const liveFlytrapStorage: FlytrapStorage = {
 		)
 
 		if (captureError) {
-			console.error('Capture error:')
-			console.error(captureError)
-
 			const errorLog = createHumanLog({
 				event: 'capture_failed',
 				explanation: 'api_capture_error_response',
 				solution: 'try_again_contact_us'
 			})
 			console.error(errorLog.toString())
+			console.error(captureError)
 		}
 	}
 }
