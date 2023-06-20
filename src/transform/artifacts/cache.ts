@@ -58,7 +58,7 @@ const _populateCache = async (projectId: string, secretApiKey: string): Promise<
 }
 
 function _removeDatabaseKeys(artifact: DatabaseArtifact): Artifact {
-	const { id, createdAt, projectId, ...rest } = artifact
+	const { id: _id, createdAt: _createdAt, projectId: _projectId, ...rest } = artifact
 	if (rest.functionId === null) delete rest.functionId
 	return rest
 }

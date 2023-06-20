@@ -67,7 +67,7 @@ export function useFlytrapFunction<
 				 * Flytrap API.
 				 */
 				saveErrorForFunction(opts.id, error)
-
+				log.info('capture', `Captured error in async function with ID "${opts.id}".`, { error })
 				const { error: saveError } = await tryCatch(
 					getFlytrapStorage().saveCapture(_executingFunctions, _functionCalls, error as Error)
 				)
@@ -130,7 +130,7 @@ export function useFlytrapFunction<
 			 * Flytrap API.
 			 */
 			saveErrorForFunction(opts.id, error)
-
+			log.info('capture', `Captured error in function with ID "${opts.id}".`, { error })
 			const { error: saveError } = tryCatchSync(() =>
 				getFlytrapStorage().saveCapture(_executingFunctions, _functionCalls, error as Error)
 			)
@@ -228,7 +228,7 @@ export function useFlytrapCall<T>(fnOrNamespace: T, opts: FlytrapCallOptions): a
 		 * Flytrap API.
 		 */
 		saveErrorForFunctionCall(opts.id, error as Error)
-
+		log.info('capture', `Captured error in function call with ID "${opts.id}".`, { error })
 		throw error
 	}
 }
@@ -272,7 +272,7 @@ export async function useFlytrapCallAsync<T extends (...args: any[]) => Promise<
 		 * Flytrap API.
 		 */
 		saveErrorForFunctionCall(opts.id, error)
-
+		log.info('capture', `Captured error in async function call with ID "${opts.id}".`, { error })
 		throw error
 	}
 }
