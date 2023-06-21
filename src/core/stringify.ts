@@ -1,6 +1,7 @@
 import SuperJSON from 'superjson'
 import {
 	FLYTRAP_CIRCULAR,
+	FLYTRAP_CLASS,
 	FLYTRAP_DOM_EVENT,
 	FLYTRAP_FUNCTION,
 	FLYTRAP_HEADERS,
@@ -17,7 +18,7 @@ import {
 } from './types'
 import { deepEqual } from 'fast-equals'
 import { decrypt } from './encryption'
-import { copy } from 'copy-anything'
+// import { copy } from 'copy-anything'
 
 export function superJsonRegisterCustom(superJsonInstance: typeof SuperJSON) {
 	// Fetch API classes
@@ -46,17 +47,17 @@ export function superJsonRegisterCustom(superJsonInstance: typeof SuperJSON) {
 		'Request'
 	)
 
-	// handle functions
+	// Functions
 	superJsonInstance.registerCustom<any, string>(
 		{
 			isApplicable: (v): v is Function => typeof v === 'function',
 			serialize: () => FLYTRAP_FUNCTION,
 			deserialize: () => FLYTRAP_FUNCTION
 		},
-		'functions'
+		'Functions'
 	)
 
-	// handle DOM events
+	// DOM Events
 	superJsonInstance.registerCustom<any, string>(
 		{
 			isApplicable: (v): v is Event => {
@@ -65,7 +66,29 @@ export function superJsonRegisterCustom(superJsonInstance: typeof SuperJSON) {
 			serialize: () => FLYTRAP_DOM_EVENT,
 			deserialize: () => FLYTRAP_DOM_EVENT
 		},
-		'dom events'
+		'DOM Events'
+	)
+
+	// Classes
+	superJsonInstance.registerCustom<any, string>(
+		{
+			isApplicable: (v): v is Request => {
+				return isClassInstance(v)
+			},
+			serialize: () => FLYTRAP_CLASS,
+			deserialize: () => FLYTRAP_CLASS
+		},
+		'Classes'
+	)
+}
+
+export function isClassInstance<T>(obj: T): boolean {
+	return (
+		obj !== null &&
+		typeof obj === 'object' &&
+		!(obj instanceof Array) &&
+		obj.constructor &&
+		obj.constructor !== Object
 	)
 }
 
@@ -113,7 +136,6 @@ export function removeCircularDependencies<T>(obj: T, seenObjects = new Set()): 
 		// It's a circular reference
 		// @ts-expect-error
 		return FLYTRAP_CIRCULAR
-		// return null; // Or replace with some placeholder if needed
 	}
 
 	// Keep track of this object so we don't process it again
@@ -136,16 +158,6 @@ export function removeCircularDependencies<T>(obj: T, seenObjects = new Set()): 
 
 	return newObj as T
 }
-
-/*export function removeCircularDependencies<T>(obj: T): T {
-	superJsonRegisterCustom(SuperJSON)
-	const serialized = SuperJSON.serialize(obj)
-	if (serialized.meta?.referentialEqualities) {
-		delete serialized.meta.referentialEqualities
-	}
-
-	return SuperJSON.deserialize(serialized)
-}*/
 
 function _extract(captures: (CapturedCall | CapturedFunction)[], key: 'args' | 'output' = 'args') {
 	const values = captures.reduce(
@@ -171,7 +183,7 @@ export function extractArgs(captures: (CapturedCall | CapturedFunction)[]): any[
 	return _extract(captures, 'args')
 }
 
-export function extractOutputs(captures: (CapturedCall | CapturedFunction)[]): any[][] {
+export function extractOutputs(captures: (CapturedCall | CapturedFunction)[]): any[] {
 	return _extract(captures, 'output')
 }
 
@@ -188,7 +200,8 @@ export function addLinks(
 	invocations: CaptureInvocation[],
 	{ args, outputs }: { args: any[][]; outputs: any[] }
 ) {
-	const invocationsCopy = copy(invocations)
+	// const invocationsCopy = copy(invocations)
+	const invocationsCopy = invocations
 
 	for (let i = 0; i < invocationsCopy.length; i++) {
 		// Args
@@ -210,7 +223,8 @@ export function addLinksToCaptures(
 	captures: (CapturedCall | CapturedFunction)[],
 	{ args, outputs }: { args: any[][]; outputs: any[] }
 ) {
-	const capturesCopy = copy(captures)
+	// const capturesCopy = copy(captures)
+	const capturesCopy = captures
 	for (let i = 0; i < capturesCopy.length; i++) {
 		// captures[i].invocations
 		const linkedInvocations = addLinks(capturesCopy[i].invocations, { args, outputs })
@@ -275,7 +289,8 @@ export function reviveLinks(
 	invocations: CaptureInvocationWithLinks[],
 	{ args, outputs }: { args: any[][]; outputs: any[] }
 ): CaptureInvocation[] {
-	const invocationsCopy = copy(invocations)
+	// const invocationsCopy = copy(invocations)
+	const invocationsCopy = invocations
 
 	for (let i = 0; i < invocationsCopy.length; i++) {
 		// Revive args
@@ -288,4 +303,12 @@ export function reviveLinks(
 	}
 
 	return invocationsCopy as unknown as CaptureInvocation[]
+}
+
+export function processCaptures(captures: (CapturedCall | CapturedFunction)[]) {
+	superJsonRegisterCustom(SuperJSON)
+	for (let i = 0; i < captures.length; i++) {
+		captures[i] = SuperJSON.deserialize(SuperJSON.serialize(captures[i]))
+	}
+	return captures
 }

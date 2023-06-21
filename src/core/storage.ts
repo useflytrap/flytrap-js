@@ -15,13 +15,13 @@ import { FLYTRAP_UNSERIALIZABLE_VALUE, NO_SOURCE } from './constants'
 import { encrypt } from './encryption'
 import { log } from './logging'
 import { serializeError } from 'serialize-error'
-import { copy } from 'copy-anything'
 import {
 	addLinksToCaptures,
 	decryptCapture,
 	extractArgs,
 	extractOutputs,
 	parse,
+	processCaptures,
 	removeCircularDependencies,
 	stringify,
 	superJsonRegisterCustom
@@ -191,8 +191,14 @@ export const liveFlytrapStorage: FlytrapStorage = {
 			return
 		}
 
-		calls = removeIllegalValues(removeCircularDependencies(calls))
-		functions = removeIllegalValues(removeCircularDependencies(functions))
+		calls = removeIllegalValues(calls)
+		functions = removeIllegalValues(functions)
+
+		calls = processCaptures(calls)
+		functions = processCaptures(functions)
+
+		calls = removeCircularDependencies(calls)
+		functions = removeCircularDependencies(functions)
 
 		const args = [...extractArgs(calls), ...extractArgs(functions)]
 		const outputs = [...extractOutputs(calls), ...extractOutputs(functions)]
@@ -210,7 +216,7 @@ export const liveFlytrapStorage: FlytrapStorage = {
 			source: NO_SOURCE,
 			// args, outputs,
 			args: await encrypt(publicApiKey, stringify(args)),
-			outputs: await encrypt(publicApiKey, stringify(args)),
+			outputs: await encrypt(publicApiKey, stringify(outputs)),
 			calls: linkedCalls,
 			functions: linkedFunctions,
 			...(error && {
@@ -274,7 +280,7 @@ function isSerializable(input: any) {
 }
 
 export function removeIllegalValues(captures: (CapturedCall | CapturedFunction)[]) {
-	const capturesClone = copy(captures)
+	const capturesClone = captures
 
 	for (let i = 0; i < capturesClone.length; i++) {
 		for (let j = 0; j < capturesClone[i].invocations.length; j++) {

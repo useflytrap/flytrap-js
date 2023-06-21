@@ -3,12 +3,15 @@ import {
 	addLinks,
 	extractArgs,
 	extractOutputs,
+	isClassInstance,
 	parse,
+	processCaptures,
 	reviveLinks,
 	stringify
 } from '../src/core/stringify'
 import SuperJSON from 'superjson'
 import {
+	FLYTRAP_CLASS,
 	FLYTRAP_DOM_EVENT,
 	FLYTRAP_FUNCTION,
 	FLYTRAP_HEADERS,
@@ -16,7 +19,7 @@ import {
 	FLYTRAP_RESPONSE
 } from '../src/core/constants'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
-import { CapturedCall } from '../src/exports'
+import { CapturedCall, type CapturedFunction } from '../src/exports'
 GlobalRegistrator.register()
 
 it('removes cyclical dependencies', () => {
@@ -161,6 +164,67 @@ describe('Deduplication', () => {
 			invocationsFixture
 		)
 	})
+})
+
+it('isClassInstance', () => {
+	class Foo {}
+	class Bar {}
+	abstract class Baz {}
+	const FooBar = class {}
+	class FooBarBaz extends Baz {}
+
+	const fixtures: any[] = [
+		[new Foo(), true],
+		[new Bar(), true],
+		[new FooBar(), true],
+		[new FooBarBaz(), true],
+		[{ foo: Foo }, false],
+		[{ foo: 'bar', bar: new Bar() }, false],
+		[[{ foo: Foo }, new Bar()], false]
+	]
+
+	for (let i = 0; i < fixtures.length; i++) {
+		expect(isClassInstance(fixtures[i][0]), `Fixture at index ${i}`).toEqual(fixtures[i][1])
+	}
+})
+
+it('processCaptures', () => {
+	// const mockClass
+	class HelloWorld {}
+	const outputArgs = {
+		user: { name: 'John Doe' },
+		hello: new HelloWorld(),
+		res: new Response('Hello World')
+	}
+	const mockCaptures: (CapturedCall | CapturedFunction)[] = [
+		{
+			id: 'mock-call',
+			invocations: [
+				{
+					args: [],
+					output: outputArgs,
+					timestamp: 0
+				}
+			]
+		}
+	]
+
+	expect(processCaptures(mockCaptures)).toEqual([
+		{
+			id: 'mock-call',
+			invocations: [
+				{
+					args: [],
+					output: {
+						user: { name: 'John Doe' },
+						hello: FLYTRAP_CLASS,
+						res: FLYTRAP_RESPONSE
+					},
+					timestamp: 0
+				}
+			]
+		}
+	])
 })
 
 /*describe.skip('Encrypting captures', async () => {
