@@ -18,7 +18,6 @@ import {
 } from './types'
 import { deepEqual } from 'fast-equals'
 import { decrypt } from './encryption'
-// import { copy } from 'copy-anything'
 
 export function superJsonRegisterCustom(superJsonInstance: typeof SuperJSON) {
 	// Fetch API classes
@@ -200,39 +199,34 @@ export function addLinks(
 	invocations: CaptureInvocation[],
 	{ args, outputs }: { args: any[][]; outputs: any[] }
 ) {
-	// const invocationsCopy = copy(invocations)
-	const invocationsCopy = invocations
-
-	for (let i = 0; i < invocationsCopy.length; i++) {
+	for (let i = 0; i < invocations.length; i++) {
 		// Args
-		const argsIndex = _findIndexOfMatchingValue(args, invocationsCopy[i].args)
-		const outputIndex = _findIndexOfMatchingValue(outputs, invocationsCopy[i].output)
+		const argsIndex = _findIndexOfMatchingValue(args, invocations[i].args)
+		const outputIndex = _findIndexOfMatchingValue(outputs, invocations[i].output)
 
 		if (argsIndex !== undefined) {
 			// @ts-expect-error
-			invocationsCopy[i].args = argsIndex
+			invocations[i].args = argsIndex
 		}
 		if (outputIndex !== undefined) {
-			invocationsCopy[i].output = outputIndex
+			invocations[i].output = outputIndex
 		}
 	}
-	return invocationsCopy as unknown as CaptureInvocationWithLinks[]
+	return invocations as unknown as CaptureInvocationWithLinks[]
 }
 
 export function addLinksToCaptures(
 	captures: (CapturedCall | CapturedFunction)[],
 	{ args, outputs }: { args: any[][]; outputs: any[] }
 ) {
-	// const capturesCopy = copy(captures)
-	const capturesCopy = captures
-	for (let i = 0; i < capturesCopy.length; i++) {
+	for (let i = 0; i < captures.length; i++) {
 		// captures[i].invocations
-		const linkedInvocations = addLinks(capturesCopy[i].invocations, { args, outputs })
+		const linkedInvocations = addLinks(captures[i].invocations, { args, outputs })
 		// @ts-expect-error
-		capturesCopy[i].invocations = linkedInvocations
+		captures[i].invocations = linkedInvocations
 	}
 
-	return capturesCopy as unknown as (
+	return captures as unknown as (
 		| CapturedCall<CaptureInvocationWithLinks>
 		| CapturedFunction<CaptureInvocationWithLinks>
 	)[]
@@ -289,20 +283,17 @@ export function reviveLinks(
 	invocations: CaptureInvocationWithLinks[],
 	{ args, outputs }: { args: any[][]; outputs: any[] }
 ): CaptureInvocation[] {
-	// const invocationsCopy = copy(invocations)
-	const invocationsCopy = invocations
-
-	for (let i = 0; i < invocationsCopy.length; i++) {
+	for (let i = 0; i < invocations.length; i++) {
 		// Revive args
-		const argsIndex = invocationsCopy[i].args
-		;(invocationsCopy[i] as unknown as CaptureInvocation).args = args[argsIndex]
+		const argsIndex = invocations[i].args
+		;(invocations[i] as unknown as CaptureInvocation).args = args[argsIndex]
 
 		// Outputs
-		const outputIndex = invocationsCopy[i].output
-		invocationsCopy[i].output = outputs[outputIndex]
+		const outputIndex = invocations[i].output
+		invocations[i].output = outputs[outputIndex]
 	}
 
-	return invocationsCopy as unknown as CaptureInvocation[]
+	return invocations as unknown as CaptureInvocation[]
 }
 
 export function processCaptures(captures: (CapturedCall | CapturedFunction)[]) {
