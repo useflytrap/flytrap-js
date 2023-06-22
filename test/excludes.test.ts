@@ -5,6 +5,8 @@ import { _babelInterop } from '../src/transform/artifacts/artifacts'
 import babelTraverse from '@babel/traverse'
 import { findIgnoredImports, shouldIgnoreCall } from '../src/transform/packageIgnores'
 import { excludeDirectoriesIncludeFilePath } from '../src/transform/excludes'
+import { CapturePayload } from '../src/exports'
+import { shouldIgnoreCapture } from '../src/core/captureIgnores'
 
 describe('excludeDirectories', () => {
 	it('excludeDirectoriesIncludeFilePath', () => {
@@ -139,6 +141,62 @@ describe('packageIgnores', () => {
 					expect(shouldIgnoreCall(path, fixtures[i].ignoredImports)).toEqual(true)
 				}
 			})
+		})
+	}
+})
+
+describe('captureIgnores', () => {
+	const createMockCapturePayload = (partialPayload: Partial<CapturePayload>): CapturePayload => ({
+		functionName: 'Lorem ipsum',
+		capturedUserId: 'rasmus@useflytrap.com',
+		args: '',
+		outputs: '',
+		error: 'encrypted',
+		functions: [],
+		calls: [],
+		projectId: 'mock-project-id'
+	})
+
+	const mockCapturePayload = createMockCapturePayload({})
+
+	const fixtures = {
+		strings: [
+			['Hello World', false],
+			['Lorem ipsuM', false],
+			['', false],
+			['Lorem', true],
+			['Lorem ipsum', true]
+		],
+		funcs: [
+			[() => true, true],
+			[(c: CapturePayload) => c.functionName.includes('Lorem'), true],
+			[(c: CapturePayload) => c.capturedUserId === 'rasmus@useflytrap.com', true],
+			[() => false, false],
+			[(c: CapturePayload) => c.functionName.includes('LoRem'), false],
+			[(c: CapturePayload) => c.capturedUserId === 'max@useflytrap.com', false]
+		],
+		regexps: [
+			[/Hello World/g, false],
+			[/Lorem ipsuM/g, false],
+			[/\\/g, false],
+			[/Lorem/g, true],
+			[/Lorem ipsum/g, true],
+			[(c: CapturePayload) => c.functionName.includes('Lorem'), true],
+			[(c: CapturePayload) => c.capturedUserId === 'rasmus@useflytrap.com', true],
+			[() => false, false],
+			[(c: CapturePayload) => c.functionName.includes('LoRem'), false],
+			[(c: CapturePayload) => c.capturedUserId === 'max@useflytrap.com', false]
+		]
+	} as const
+
+	for (const [key, keyFixtures] of Object.entries(fixtures)) {
+		it(`capture ignores > ${key}`, () => {
+			for (let i = 0; i < keyFixtures.length; i++) {
+				expect(
+					shouldIgnoreCapture(mockCapturePayload, [keyFixtures[i][0]]),
+					`fixture "${keyFixtures[i][0]}"`
+				).toEqual(keyFixtures[i][1])
+			}
 		})
 	}
 })

@@ -13,6 +13,8 @@ export type LogGroup =
 	| 'transform'
 	| 'cache'
 
+export type CaptureIgnore = string | RegExp | ((payload: CapturePayload) => boolean)
+
 export type FlytrapConfig = {
 	projectId: string
 	publicApiKey: string
@@ -47,6 +49,31 @@ export type FlytrapConfig = {
 	 * [Learn more](https://docs.useflytrap.com/config/introduction)
 	 */
 	excludeDirectories?: string[]
+	/**
+	 * Prevent certain captures from being sent to the Flytrap API. Ignoring
+	 * captures is useful if there are certain errors that are expected to be
+	 * thrown, for example "UNAUTHORIZED" tRPC responses.
+	 *
+	 * Capture ignores can be defined using partial matching of the capture
+	 * name, regular expressions or a function that returns a boolean. If any
+	 * of the ignore criteria returns true, the capture is ignored.
+	 *
+	 * @example
+	 * ```typescript
+	 * defineFlytrapConfig({
+	 * 	captureIgnores: [
+	 * 		// Ignore captures whose name matches below regex
+	 * 		/Hello World/g,
+	 * 		// Ignore captures whose name contains "UNAUTHORIZED"
+	 * 		"UNAUTHORIZED",
+	 * 		// Ignore all captures
+	 * 		(capture: CapturePayload) => true
+	 * 	]
+	 * })
+	 * ```
+	 * [Learn more](https://docs.useflytrap.com/config/introduction)
+	 */
+	captureIgnores?: CaptureIgnore[]
 }
 
 export type ErrorType = {

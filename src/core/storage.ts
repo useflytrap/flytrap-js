@@ -26,6 +26,7 @@ import {
 	stringify,
 	superJsonRegisterCustom
 } from './stringify'
+import { shouldIgnoreCapture } from './captureIgnores'
 
 const loadedCaptures = new Map<string, CaptureDecryptedAndRevived | undefined>()
 
@@ -178,7 +179,7 @@ export const liveFlytrapStorage: FlytrapStorage = {
 	},
 	async saveCapture(functions, calls, error?) {
 		// Here error if
-		const { publicApiKey, projectId } = (await getLoadedConfig()) ?? {}
+		const { publicApiKey, projectId, captureIgnores } = (await getLoadedConfig()) ?? {}
 
 		if (!publicApiKey || !projectId || empty(publicApiKey, projectId)) {
 			console.error(
@@ -206,7 +207,7 @@ export const liveFlytrapStorage: FlytrapStorage = {
 		const linkedCalls = addLinksToCaptures(calls, { args, outputs })
 		const linkedFunctions = addLinksToCaptures(functions, { args, outputs })
 
-		const newPayload: CapturePayload = {
+		const payload: CapturePayload = {
 			capturedUserId: getUserId(),
 			projectId,
 			functionName:
@@ -224,8 +225,16 @@ export const liveFlytrapStorage: FlytrapStorage = {
 			})
 		}
 
+		// Capture ignores
+		if (captureIgnores) {
+			if (shouldIgnoreCapture(payload, captureIgnores)) {
+				log.info('storage', `Ignored capture with name "${payload.functionName}"`)
+				return
+			}
+		}
+
 		const { data: stringifiedPayload, error: stringifyError } = tryCatchSync(() =>
-			stringify(newPayload)
+			stringify(payload)
 		)
 
 		if (stringifyError || !stringifiedPayload) {
@@ -261,7 +270,7 @@ export const liveFlytrapStorage: FlytrapStorage = {
 		} else {
 			log.info(
 				'storage',
-				`Saved capture with name "${newPayload.functionName}". Payload Size: ${formatBytes(
+				`Saved capture with name "${payload.functionName}". Payload Size: ${formatBytes(
 					stringifiedPayload.length
 				)}`
 			)
