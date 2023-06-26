@@ -7,6 +7,7 @@ function Home() {
 	const [inputValue, setInputValue] = useState('')
 
 	function submit() {
+		console.log('Input Value:', inputValue)
 		if (inputValue === 'wrong') {
 			throw new Error(`Input value "${inputValue}" is wrong!`)
 		}

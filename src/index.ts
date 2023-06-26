@@ -409,18 +409,24 @@ const addFunctionInvocation = (functionId: string, invocation: CaptureInvocation
 }
 
 function saveFunctionCall(opts: FlytrapCallOptions) {
-	const functionCallIndex = _functionCalls.findIndex((call) => call.id === opts.id)
-	if (functionCallIndex === -1) {
-		_functionCalls.push({
-			id: opts.id,
-			invocations: [
-				{
-					...opts,
-					timestamp: Date.now()
-				}
-			]
+	const matchingFunctionCall = _functionCalls.find((call) => call.id === opts.id)
+	if (matchingFunctionCall) {
+		matchingFunctionCall.invocations.push({
+			...opts,
+			timestamp: Date.now()
 		})
+		return
 	}
+
+	_functionCalls.push({
+		id: opts.id,
+		invocations: [
+			{
+				...opts,
+				timestamp: Date.now()
+			}
+		]
+	})
 }
 
 function saveOutputForFunctionCall<T>(functionCallId: string, output: T) {
