@@ -171,10 +171,11 @@ export type CaptureInvocationWithLinks = Omit<CaptureInvocation, 'args' | 'outpu
 	output: number
 }
 
-export type Artifact = {
-	type: 'CALL' | 'FUNCTION'
+export type CallArtifact = {
+	type: 'CALL'
 	functionOrCallId: string
 	functionOrCallName: string
+	fullFunctionName: string
 	source: SourceType
 	scopes: string[]
 	params: string
@@ -183,6 +184,17 @@ export type Artifact = {
 	 */
 	functionId?: string
 }
+
+export type FunctionArtifact = {
+	type: 'FUNCTION'
+	functionOrCallId: string
+	functionOrCallName: string
+	source: SourceType
+	scopes: string[]
+	params: string
+}
+
+export type Artifact = FunctionArtifact | CallArtifact
 
 export type DatabaseArtifact = Artifact & {
 	id: string

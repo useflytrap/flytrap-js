@@ -19,7 +19,7 @@ import {
 	upsertArtifact,
 	upsertArtifacts
 } from '../src/transform/artifacts/cache'
-import { Artifact } from '../src/exports'
+import { Artifact, CallArtifact } from '../src/exports'
 import { rmSync } from 'fs'
 import { config } from 'dotenv'
 config()
@@ -74,7 +74,9 @@ describe('Artifacts for functions', () => {
 	})
 	it('functionId is undefined', () => {
 		for (let i = 0; i < fixtures.length; i++) {
-			expect(extractArtifacts(fixtures[i], '/file.js')[0].functionId).toEqual(undefined)
+			expect((extractArtifacts(fixtures[i], '/file.js')[0] as CallArtifact).functionId).toEqual(
+				undefined
+			)
 		}
 	})
 })
@@ -214,6 +216,23 @@ describe('Artifacts for function calls', () => {
 		expect(
 			extractArtifacts(chainedCallExpressionFixture, '/file.js')[0].functionOrCallName
 		).toEqual('baz')
+
+		// Namespaced call name
+		expect(
+			extractArtifacts(`supabase.auth.admin.listUsers()`, '/file.js')[0].functionOrCallName
+		).toEqual('listUsers')
+	})
+	it('fullFunctionName', () => {
+		expect(
+			(extractArtifacts(chainedCallExpressionFixture, '/file.js')[0] as CallArtifact)
+				.fullFunctionName
+		).toEqual('bar(a, b).baz')
+
+		// Namespaced call name
+		expect(
+			(extractArtifacts(`supabase.auth.admin.listUsers()`, '/file.js')[0] as CallArtifact)
+				.fullFunctionName
+		).toEqual('supabase.auth.admin.listUsers')
 	})
 	it('params', () => {
 		for (let i = 0; i < fixtures.length; i++) {
@@ -223,7 +242,9 @@ describe('Artifacts for function calls', () => {
 	})
 	it('functionId', () => {
 		for (let i = 0; i < fixtures.length; i++) {
-			expect(extractArtifacts(fixtures[i], '/file.js')[0].functionId).toEqual(undefined)
+			expect((extractArtifacts(fixtures[i], '/file.js')[0] as CallArtifact).functionId).toEqual(
+				undefined
+			)
 		}
 	})
 })
@@ -256,7 +277,7 @@ function Home() {
 `
 
 it('generates values same as transform', () => {
-	const extracted = extractArtifacts(pageCodeFixture, '/file.js')
+	const extracted = extractArtifacts(pageCodeFixture, '/file.js') as CallArtifact[]
 	const transformedCode = flytrapTransformArtifacts(pageCodeFixture, '/file.js')
 
 	const functionIds = extracted.map((e) => e.functionId).filter(Boolean)
@@ -278,6 +299,7 @@ describe('Cache', () => {
 	const mockArtifact: Artifact = {
 		functionOrCallId: `mock-call-id-${new Date().toISOString()}`,
 		functionOrCallName: '',
+		fullFunctionName: '',
 		params: '',
 		scopes: [],
 		type: 'CALL',

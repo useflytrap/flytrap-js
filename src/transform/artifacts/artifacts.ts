@@ -48,6 +48,12 @@ export function extractFunctionName(
 	return 'anonymous'
 }
 
+export function extractFullFunctionCallName(node: CallExpression): string {
+	const fullNamespacedFunctionCall = print(node).code
+	const lastIndexOfOpeningParen = fullNamespacedFunctionCall.lastIndexOf('(')
+	return fullNamespacedFunctionCall.slice(0, lastIndexOfOpeningParen)
+}
+
 export function extractFunctionCallName(node: CallExpression): string {
 	if (node.callee.type === 'Identifier') {
 		return node.callee.name
@@ -186,6 +192,7 @@ export function extractArtifacts(code: string, filePath: string): Artifact[] {
 		},
 		CallExpression(path) {
 			const functionCallName = extractFunctionCallName(path.node)
+			const fullFunctionCallName = extractFullFunctionCallName(path.node)
 			const scopes = extractCurrentScope(path)
 			const functionCallId = extractFunctionCallId(path, filePath, functionCallName, scopes)
 			const wrappedFunctionId = getWrappingFunctionId(path, functionIdMap)
@@ -193,6 +200,7 @@ export function extractArtifacts(code: string, filePath: string): Artifact[] {
 			artifacts.push({
 				functionOrCallId: functionCallId,
 				functionOrCallName: functionCallName,
+				fullFunctionName: fullFunctionCallName,
 				type: 'CALL',
 				params: extractParams(path.node.arguments as Identifier[]),
 				scopes,
