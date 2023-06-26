@@ -6,11 +6,12 @@ import {
 	FlytrapFunctionOptions
 } from './core/types'
 import {
+	TryCatchResponse,
 	fillUnserializableFlytrapValues,
 	getMode,
 	isAsyncFunction,
-	tryCatch,
-	tryCatchSync
+	tryCatch as utilTryCatch,
+	tryCatchSync as utilTryCatchSync
 } from './core/util'
 import { getFlytrapStorage, getLoadedCapture, loadAndPersist } from './core/storage'
 import { createHumanLog } from './core/human-logs'
@@ -68,7 +69,7 @@ export function useFlytrapFunction<
 				 */
 				saveErrorForFunction(opts.id, error)
 				log.info('capture', `Captured error in async function with ID "${opts.id}".`, { error })
-				const { error: saveError } = await tryCatch(
+				const { error: saveError } = await utilTryCatch(
 					getFlytrapStorage().saveCapture(_executingFunctions, _functionCalls, error as Error)
 				)
 				if (saveError) {
@@ -131,7 +132,7 @@ export function useFlytrapFunction<
 			 */
 			saveErrorForFunction(opts.id, error)
 			log.info('capture', `Captured error in function with ID "${opts.id}".`, { error })
-			const { error: saveError } = tryCatchSync(() =>
+			const { error: saveError } = utilTryCatchSync(() =>
 				getFlytrapStorage().saveCapture(_executingFunctions, _functionCalls, error as Error)
 			)
 			if (saveError) {
@@ -373,7 +374,7 @@ export async function capture<T extends Error>({
 	}
 
 	// Let's save it
-	const { error: saveError } = await tryCatch(
+	const { error: saveError } = await utilTryCatch(
 		getFlytrapStorage().saveCapture(_executingFunctions, _functionCalls, error)
 	)
 	if (saveError) {
@@ -488,6 +489,37 @@ function saveErrorForFunction(functionId: string, error: any) {
 	log.info('function-execution', `Saving error for function ID ${functionId}`, { error })
 	const lastInvocation = func.invocations.at(-1)
 	if (lastInvocation) lastInvocation.error = serializeError(error)
+}
+
+// Utility functions
+export async function tryCapture<DType = unknown, EType = any>(
+	fn: Promise<DType>
+): Promise<TryCatchResponse<DType, EType>> {
+	try {
+		return { data: await fn, error: null }
+	} catch (error) {
+		await capture({ error: error as Error })
+		return { data: null, error: error as EType }
+	}
+}
+export function tryCaptureSync<DType = unknown, EType = any>(
+	fn: () => DType
+): TryCatchResponse<DType, EType> {
+	try {
+		return { data: fn(), error: null }
+	} catch (error) {
+		capture({ error: error as Error })
+		return { data: null, error: error as EType }
+	}
+}
+
+export async function invariantAsync(condition: any, message?: string) {
+	if (condition) return
+	await capture({ error: new Error('Invariant failed'), message: message ?? 'Invariant failed.' })
+}
+export function invariant(condition: any, message?: string): asserts condition {
+	if (condition) return
+	capture({ error: new Error('Invariant failed'), message: message ?? 'Invariant failed.' })
 }
 
 // Export

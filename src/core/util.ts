@@ -12,13 +12,10 @@ export function extractCallerSource(): SourceType | undefined {
 	if (!stack) return undefined
 
 	const lines = stack.split('\n')
-	// Third line contains our called file and line
-	// /Users/rasmus/Desktop/DEV/Web/flytrap-libs/test/newindex.test.ts:13:24
 	if (lines.length < 4) return undefined
 	const sourceLine = lines[3]
 	const parts = sourceLine.split('/')
 	const fileNameAndSourceLine = parts[parts.length - 1]
-	// newindex.test.ts:13:24
 	const [filePath, lineNumber] = fileNameAndSourceLine.split(':')
 	return {
 		filePath,
@@ -180,8 +177,6 @@ export function tryCatchSync<DType = unknown, EType = unknown>(
 	}
 }
 
-// function fillMissingFlytrapValues(lackingObject: any, fullObject: any) {}
-
 type ReplaceValue = any
 type InputValue = ReplaceValue | (typeof FLYTRAP_REPLACE_VALUES)[number]
 
@@ -189,7 +184,6 @@ export function fillUnserializableFlytrapValues(
 	input: InputValue,
 	replaceValue: ReplaceValue
 ): ReplaceValue {
-	// if (input === FLYTRAP_UNSERIALIZABLE_VALUE) {
 	if (FLYTRAP_REPLACE_VALUES.includes(input)) {
 		if (replaceValue === undefined) throw new Error(`Replace value is undefined.`)
 		return replaceValue
