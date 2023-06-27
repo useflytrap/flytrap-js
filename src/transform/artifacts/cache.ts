@@ -2,7 +2,7 @@ import { dirname, join } from 'path'
 import { homedir } from 'os'
 import { deepEqual } from 'fast-equals'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
-import { Artifact, CacheFile, DatabaseArtifact } from '../../exports'
+import { Artifact, CacheFile, CallArtifact, DatabaseArtifact } from '../../exports'
 import { cwd } from 'process'
 import { formatBytes, get } from '../../core/util'
 import { FLYTRAP_API_BASE } from '../../core/config'
@@ -43,23 +43,10 @@ const _getCacheFile = (projectId: string): CacheFile => {
 	return JSON.parse(cacheFileContents) as CacheFile
 }
 
-const _populateCache = async (projectId: string, secretApiKey: string): Promise<CacheFile> => {
-	const artifacts = await _fetchUploadedArtifacts(projectId, secretApiKey)
-	const cache = _getCacheFile(projectId)
-	for (let i = 0; i < artifacts.length; i++) {
-		cache.artifactCacheEntries.push({
-			artifact: artifacts[i],
-			timestamp: Date.now(),
-			uploadStatus: 'uploaded'
-		})
-	}
-	_saveCacheFile(projectId, cache)
-	return cache
-}
-
 function _removeDatabaseKeys(artifact: DatabaseArtifact): Artifact {
 	const { id: _id, createdAt: _createdAt, projectId: _projectId, ...rest } = artifact
 	if (rest.functionId === null) delete rest.functionId
+	if ((rest as CallArtifact).fullFunctionName === null) delete (rest as any).fullFunctionName
 	return rest
 }
 

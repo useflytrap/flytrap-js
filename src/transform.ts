@@ -189,7 +189,7 @@ export const unpluginOptions: UnpluginOptions = {
 			}).toString()
 		}
 
-		if (!config.disableArtifacts && process?.env?.NODE_ENV === 'production') {
+		if (!config.disableArtifacts) {
 			// Push artifacts
 			log.info(
 				'storage',

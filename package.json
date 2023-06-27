@@ -31,7 +31,7 @@
 		"dev:playground": "jiti playground/index.ts",
 		"lint": "pnpm lint:all:eslint && pnpm lint:all:prettier",
 		"lint:all:eslint": "pnpm lint:eslint --ext .ts,.js,.mjs,.cjs \"{src,test}/**/*.{js,json,ts}\"",
-		"lint:all:prettier": "pnpm lint:prettier \"{src,test}/**/*.{js,json,ts}\"",
+		"lint:all:prettier": "pnpm lint:prettier \"{src,test,examples}/**/*.{js,json,ts}\"",
 		"lint:eslint": "eslint --fix",
 		"lint:prettier": "prettier --write --loglevel warn",
 		"prepublishOnly": "pnpm lint && pnpm test",

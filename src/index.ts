@@ -516,10 +516,12 @@ export function tryCaptureSync<DType = unknown, EType = any>(
 export async function invariantAsync(condition: any, message?: string) {
 	if (condition) return
 	await capture({ error: new Error('Invariant failed'), message: message ?? 'Invariant failed.' })
+	throw new Error(`Invariant failed${message ? `: ${message}` : ''}`)
 }
 export function invariant(condition: any, message?: string): asserts condition {
 	if (condition) return
 	capture({ error: new Error('Invariant failed'), message: message ?? 'Invariant failed.' })
+	throw new Error(`Invariant failed${message ? `: ${message}` : ''}`)
 }
 
 // Export
