@@ -43,7 +43,10 @@ export async function GET(request: Request) {
 		 * We will place a flytrap capture function here, so in case it happens (which ends up happening)
 		 * we are able to see the context, replay and quickly fix the  bug causing the invariant state.
 		 */
-		await capture({ error: new Error('User not found'), message: '/api/user invariant state, user not found.' })
+		await capture({
+			error: new Error('User not found'),
+			message: '/api/user invariant state, user not found.'
+		})
 		return NextResponse.json({ success: false }, { status: 500 })
 	}
 
