@@ -32,9 +32,9 @@ app.put('/todos/:id', (req: Request, res: Response) => {
 
 	const foundTodo = todos.find((todo) => todo.id === id)
 
-	// @ts-expect-error
+	// @ts-ignore
 	foundTodo.completed = req.body.completed
-	// @ts-expect-error
+	// @ts-ignore
 	foundTodo.title = req.body.title
 
 	res.json(foundTodo)

@@ -42,7 +42,9 @@ export default [
 	},
 	{
 		input: ["src/transform.ts"],
-		plugins: [json(), esbuild(), commonjs()],
+		plugins: [nodeResolve({
+			resolveOnly: ['serialize-error', 'pkg-dir', 'find-up', 'locate-path']
+		}), json(), esbuild(), commonjs()],
 		output: [
 			{
 				dir: "transform",

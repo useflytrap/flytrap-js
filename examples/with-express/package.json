@@ -5,7 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"build": "rollup -c",
-		"build:esbuild": "node esbuild.build.js"
+		"build:esbuild": "node esbuild.build.js",
+		"build:webpack": "webpack"
 	},
 	"dependencies": {
 		"@rollup/plugin-commonjs": "^25.0.0",
@@ -17,6 +18,11 @@
 		"useflytrap": "workspace:*"
 	},
 	"devDependencies": {
-		"@types/express": "^4.17.17"
+		"@types/express": "^4.17.17",
+		"@types/webpack": "^5.28.1",
+		"ts-loader": "^9.4.4",
+		"webpack": "^5.88.0",
+		"webpack-cli": "^5.1.4",
+		"webpack-node-externals": "^3.0.0"
 	}
 }
