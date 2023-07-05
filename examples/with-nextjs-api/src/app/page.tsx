@@ -58,7 +58,7 @@ export default function Home() {
         />
       </div>
 
-      <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" />
+      <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" style={{ color: 'black' }} />
       <button onClick={fetchDetails}>Fetch account details</button>
       {error && (
         <div className='space-y-2'>

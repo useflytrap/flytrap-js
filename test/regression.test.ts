@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { extractArtifacts } from '../src/transform/artifacts/artifacts'
 import { initTRPC } from '@trpc/server'
 import { removeCircularDependencies } from '../src/core/stringify'
+import SuperJSON from 'superjson'
 
 describe('Regression', () => {
 	it('regression #1 > generates correct artifacts that match the transformed code', async () => {
@@ -38,5 +39,15 @@ describe('Regression', () => {
 		const trpcInstance = initTRPC.create({})
 		const withoutCirculars = removeCircularDependencies(trpcInstance)
 		expect(typeof withoutCirculars).toEqual('object')
+	})
+
+	it.skip("regression #3 > doesn't give false positives to circular", () => {
+		const items = ['abc', 'def']
+		const calls = [items, items]
+		const callsWithoutCirculars = removeCircularDependencies(calls)
+		expect(callsWithoutCirculars).toEqual([
+			['abc', 'def'],
+			['abc', 'def']
+		])
 	})
 })

@@ -110,6 +110,7 @@ export function stringify(obj: any): string {
 			if (key.startsWith('_')) return // Don't compare React's internal props.
 			if (typeof value === 'object' && value !== null) {
 				if (seen.has(value)) return FLYTRAP_CIRCULAR
+				// if (seen.has(value)) return null
 				seen.add(value)
 			}
 			return value

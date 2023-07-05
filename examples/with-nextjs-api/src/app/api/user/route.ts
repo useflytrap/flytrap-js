@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { faker } from '@faker-js/faker'
-import { capture } from 'useflytrap'
+import { capture, identify } from 'useflytrap'
 
 // @ts-expect-error
 const mockUsers = [...Array(100).keys()].map((i) => ({
@@ -26,6 +26,7 @@ function listUsers(options: ListUsersOptions = { per_page: 50, page: 0 }) {
 export async function GET(request: Request) {
 	const { searchParams } = new URL(request.url)
 	const userId = searchParams.get('userId')
+	if (userId) identify(userId)
 
 	/**
 	 * Here we're making an oversight, we should include `{ per_page: 100, page: 0 }` to include

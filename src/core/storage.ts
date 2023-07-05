@@ -198,8 +198,25 @@ export const liveFlytrapStorage: FlytrapStorage = {
 		calls = processCaptures(calls)
 		functions = processCaptures(functions)
 
-		calls = removeCircularDependencies(calls)
-		functions = removeCircularDependencies(functions)
+		// Remove the circular from `calls` and `functions`
+		for (let i = 0; i < calls.length; i++) {
+			for (let j = 0; j < calls[i].invocations.length; j++) {
+				calls[i].invocations[j].args = calls[i].invocations[j].args.map((a) =>
+					removeCircularDependencies(a)
+				)
+				calls[i].invocations[j].output = removeCircularDependencies(calls[i].invocations[j].output)
+			}
+		}
+		for (let i = 0; i < functions.length; i++) {
+			for (let j = 0; j < functions[i].invocations.length; j++) {
+				functions[i].invocations[j].args = functions[i].invocations[j].args.map((a) =>
+					removeCircularDependencies(a)
+				)
+				functions[i].invocations[j].output = removeCircularDependencies(
+					functions[i].invocations[j].output
+				)
+			}
+		}
 
 		const args = [...extractArgs(calls), ...extractArgs(functions)]
 		const outputs = [...extractOutputs(calls), ...extractOutputs(functions)]
