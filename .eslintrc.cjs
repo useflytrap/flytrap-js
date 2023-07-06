@@ -12,8 +12,8 @@ module.exports = {
 	extends: [
 		'plugin:@typescript-eslint/recommended',
 		'eslint:recommended',
-		'plugin:prettier/recommended',
-		'prettier'
+		// 'plugin:prettier/recommended',
+		// 'prettier'
 	],
 	rules: {
 		// we need this for isomorphic code unfortunately
@@ -26,6 +26,7 @@ module.exports = {
 		'@typescript-eslint/no-explicit-any': 'off',
 		'no-unused-vars': 'off',
 		'no-undef': 'off',
-		'no-redeclare': 'off'
+		'no-redeclare': 'off',
+		'no-mixed-spaces-and-tabs': 'off'
 	}
 }
