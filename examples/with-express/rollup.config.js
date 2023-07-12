@@ -3,6 +3,7 @@ import nodeResolve from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
 import { FlytrapTransformPlugin } from 'useflytrap/transform'
 
+/** @type import('rollup').RollupOptions */
 export default {
 	input: 'src/index.ts',
 	output: {

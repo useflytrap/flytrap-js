@@ -89,9 +89,9 @@ export async function upsertArtifacts(
 	const uploadedBatches = await batchedArtifactsUpload(artifactsToUpload, secretApiKey, projectId)
 	log.info(
 		'storage',
-		`Pushed ${
-			artifactsToUpload.length
-		} artifacts in ${uploadedBatches?.length} batches to the Flytrap API. Payload Size: ${formatBytes(
+		`Pushed ${artifactsToUpload.length} artifacts in ${
+			uploadedBatches?.length
+		} batches to the Flytrap API. Payload Size: ${formatBytes(
 			JSON.stringify(artifactsToUpload).length
 		)}`
 	)

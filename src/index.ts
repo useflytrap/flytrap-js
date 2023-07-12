@@ -32,6 +32,7 @@ export function useFlytrapFunction<
 				args,
 				timestamp: Date.now()
 			})
+			_executionCursor--
 
 			// Replaying code
 			if (getMode() === 'replay') {
@@ -49,17 +50,16 @@ export function useFlytrapFunction<
 
 				// Merge replay args & real args
 				const mergedArgs = fillUnserializableFlytrapValues(replayArgs, args)
-				// const realOutput = await fn(...mergedArgs)
 				// @ts-expect-error for some reason `this as any` still gives error
 				const realOutput = await executeFunctionAsync(fn, this as any, mergedArgs)
 				return fillUnserializableFlytrapValues(replayOutput, realOutput)
 			}
 			// Capturing bugs
 			try {
-				// const output = await fn(...args)
 				// @ts-expect-error for some reason `this as any` still gives error
 				const output = await executeFunctionAsync(fn, this as any, args)
 				saveOutputForFunction(opts.id, output)
+				_executionCursor++
 				return output
 			} catch (error) {
 				/**
@@ -94,6 +94,7 @@ export function useFlytrapFunction<
 			args,
 			timestamp: Date.now()
 		})
+		_executionCursor--
 
 		// Replaying code
 		if (getMode() === 'replay') {
@@ -105,14 +106,12 @@ export function useFlytrapFunction<
 						`Could not find replay input arguments for function with ID ${opts.id}, either this is a function you have added, or something has gone wrong during the capture process. If this is the case, contact us.`
 					)
 				}
-				// return fn(...args)
 				// @ts-expect-error for some reason `this as any` still gives error
 				return executeFunction(fn, this as any, args)
 			}
 
 			// Merge replay args & real args
 			const mergedArgs = fillUnserializableFlytrapValues(replayArgs, args)
-			// const realOutput = fn(...mergedArgs)
 			// @ts-expect-error for some reason `this as any` still gives error
 			const realOutput = executeFunction(fn, this as any, mergedArgs)
 			return fillUnserializableFlytrapValues(replayOutput, realOutput)
@@ -123,6 +122,7 @@ export function useFlytrapFunction<
 			// @ts-expect-error for some reason `this as any` still gives error
 			const output = executeFunction(fn, this as any, args)
 			saveOutputForFunction(opts.id, output)
+			_executionCursor++
 			return output
 		} catch (error) {
 			/**
@@ -324,11 +324,16 @@ function getReplayFunctionOutput(functionId: string): any | undefined {
 }
 
 let _executingFunctions: CapturedFunction[] = []
+let _executionCursor = 1
 let _functionCalls: CapturedCall[] = []
 let _userId: string | undefined = undefined
 
 export const getCapturedFunctions = () => _executingFunctions
 export const getCapturedCalls = () => _functionCalls
+
+export const getUserId = () => _userId
+export const getExecutingFunction = () =>
+	_executingFunctions.at(-_executionCursor) ?? _executingFunctions.at(-1)
 
 export const clearCapturedFunctions = () => {
 	_executingFunctions = []
@@ -392,8 +397,6 @@ export function identify(userId: string) {
 	log.info('identify', `Identified current user as "${userId}"`)
 	_userId = userId
 }
-export const getUserId = () => _userId
-export const getExecutingFunction = () => _executingFunctions.at(-1)
 
 const addFunctionInvocation = (functionId: string, invocation: CaptureInvocation) => {
 	log.info('function-execution', `Executing function with ID "${functionId}"`)

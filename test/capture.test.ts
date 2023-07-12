@@ -3,7 +3,9 @@ import {
 	useFlytrapCall,
 	clearCapturedFunctions,
 	clearCapturedCalls,
-	getCapturedCalls
+	getCapturedCalls,
+	getExecutingFunction,
+	getCapturedFunctions
 } from '../src/index'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -88,6 +90,37 @@ describe('useFlytrapCall capture', () => {
 			name: 'world'
 		})
 		expect(returnVal).toBe(2)
+	})
+
+	it('correctly marks function causing the error when manually capturing', () => {
+		const date = new Date(0)
+		vi.setSystemTime(date)
+		clearFlytrapStorage()
+
+		let caughtExecutingFunctionId: string | undefined = undefined
+
+		const GET = useFlytrapFunction(
+			function GET() {
+				const users = [1, 2, 3, 4, 5]
+				const foundUser = useFlytrapCall(users, {
+					id: '/file.js-call-_find',
+					args: [
+						useFlytrapFunction((u) => u === 13, {
+							id: '/file.js-_anonymous'
+						})
+					],
+					name: 'find'
+				})
+				if (!foundUser) {
+					// `capture` here
+					caughtExecutingFunctionId = getExecutingFunction()?.id
+				}
+			},
+			{ id: '/file.js-_GET' }
+		)
+		GET()
+
+		expect(caughtExecutingFunctionId).toEqual(`/file.js-_GET`)
 	})
 
 	it.todo('captures errors inside the function call')
