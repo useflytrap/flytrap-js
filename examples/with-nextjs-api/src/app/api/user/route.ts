@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { faker } from '@faker-js/faker'
 import { capture, identify } from 'useflytrap'
 
+export const revalidate = 0
+
 // @ts-expect-error
 const mockUsers = [...Array(100).keys()].map((i) => ({
 	userId: `user-${i}`,
@@ -37,6 +39,13 @@ export async function GET(request: Request) {
 
 	const foundUser = users.find((u) => u.userId === userId)
 
+	/**
+	 * We could also use Flytrap's `invariant` function like this:
+	 *
+	 * ```typescript
+	 * invariant(foundUser, `Could not find user by id ${userId}`)
+	 * ```
+	 */
 	if (!foundUser) {
 		/**
 		 * In this example, this should not be able to happen since on the front-end, we are only able to

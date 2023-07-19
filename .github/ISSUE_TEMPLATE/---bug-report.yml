@@ -14,7 +14,7 @@ body:
       required: true
     attributes:
       label: 🛠️ To reproduce
-      description: A reproduction of the bug via https://stackblitz.com/github/danielroe/magic-regexp/tree/main/playground
+      description: Provide detailed steps to reproduce the bug, ideally with a GitHub repository or a online development environment (eg. StackBlitz)
       placeholder: https://stackblitz.com/[...]
   - type: textarea
     validations:
