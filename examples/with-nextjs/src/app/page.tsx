@@ -50,7 +50,9 @@ function Home() {
 					height={37}
 					priority
 				/>
-				<input value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
+				<div className='text-black'>
+					<input value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
+				</div>
 				<button onClick={() => submit()}>Submit</button>
 			</div>
 

@@ -11,6 +11,7 @@ import {
 	VariableDeclarator
 } from '@babel/types'
 import { Artifact } from '../../exports'
+import { getRequiredExportsForCapture } from '../imports'
 
 /**
  * An interop function to make babel's exports work
@@ -54,7 +55,7 @@ export function extractFullFunctionCallName(node: CallExpression): string {
 	return fullNamespacedFunctionCall.slice(0, lastIndexOfOpeningParen)
 }
 
-export function extractFunctionCallName(node: CallExpression): string {
+export function extractFunctionCallName(node: CallExpression): string | 'iife' {
 	if (node.callee.type === 'Identifier') {
 		return node.callee.name
 	}
@@ -88,19 +89,30 @@ export function extractFunctionCallId(
 export function extractCurrentScope(
 	path: NodePath<
 		CallExpression | FunctionDeclaration | FunctionExpression | ArrowFunctionExpression
-	>
+	>,
+	includeCallExpressions = false
 ): string[] {
 	const scopes: string[] = []
-
 	let currentPath: NodePath<Node> = path
 
 	while (currentPath.parentPath) {
 		currentPath = currentPath.parentPath
 
-		if (currentPath.node.type === 'BlockStatement') {
-			scopes.push('{}')
+		if (includeCallExpressions && currentPath.node.type === 'CallExpression') {
+			const functionCallName = extractFunctionCallName(currentPath.node)
+			if (
+				functionCallName !== 'iife' &&
+				!getRequiredExportsForCapture().includes(functionCallName)
+			) {
+				scopes.push(functionCallName)
+			}
 		}
-		if (['FunctionDeclaration', 'FunctionExpression'].includes(currentPath.node.type)) {
+
+		if (
+			['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression'].includes(
+				currentPath.node.type
+			)
+		) {
 			let scopeName: string
 			if (currentPath.node.type === 'FunctionExpression') {
 				if (currentPath.node.id?.type === 'Identifier') {
@@ -108,6 +120,11 @@ export function extractCurrentScope(
 				} else {
 					scopeName = extractFunctionName(currentPath.parent as VariableDeclarator)
 				}
+			} else if (
+				currentPath.node.type === 'ArrowFunctionExpression' &&
+				currentPath.parent.type === 'VariableDeclarator'
+			) {
+				scopeName = extractFunctionName(currentPath.parent)
 			} else {
 				scopeName = extractFunctionName(currentPath.node as FunctionDeclaration)
 			}
@@ -147,7 +164,7 @@ export function extractArtifacts(code: string, filePath: string): Artifact[] {
 				functionOrCallName: functionName,
 				type: 'FUNCTION',
 				params: extractParams(path.node.params as Identifier[]),
-				scopes,
+				scopes: extractCurrentScope(path, true),
 				source: {
 					filePath,
 					lineNumber: getLineNumber(path.node)
@@ -165,7 +182,7 @@ export function extractArtifacts(code: string, filePath: string): Artifact[] {
 				functionOrCallName: functionName,
 				type: 'FUNCTION',
 				params: extractParams(path.node.params as Identifier[]),
-				scopes,
+				scopes: extractCurrentScope(path, true),
 				source: {
 					filePath,
 					lineNumber: getLineNumber(path.node)
@@ -183,7 +200,7 @@ export function extractArtifacts(code: string, filePath: string): Artifact[] {
 				functionOrCallName: functionName,
 				type: 'FUNCTION',
 				params: extractParams(path.node.params as Identifier[]),
-				scopes,
+				scopes: extractCurrentScope(path, true),
 				source: {
 					filePath,
 					lineNumber: getLineNumber(path.node)
@@ -203,7 +220,7 @@ export function extractArtifacts(code: string, filePath: string): Artifact[] {
 				fullFunctionName: fullFunctionCallName,
 				type: 'CALL',
 				params: extractParams(path.node.arguments as Identifier[]),
-				scopes,
+				scopes: extractCurrentScope(path, true),
 				source: {
 					filePath,
 					lineNumber: getLineNumber(path.node)

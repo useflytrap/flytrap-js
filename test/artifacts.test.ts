@@ -129,7 +129,7 @@ describe('extractCurrentScope', () => {
 		{
 			name: 'block scope',
 			fixture: `{ foo() }`,
-			scopes: ['{}']
+			scopes: []
 		},
 		{
 			name: 'arrow function scope',
@@ -138,7 +138,7 @@ describe('extractCurrentScope', () => {
 				foo()
 			}
 			`,
-			scopes: ['{}']
+			scopes: ['arrowFuncScope']
 		},
 		{
 			name: 'function expression scope',
@@ -147,7 +147,7 @@ describe('extractCurrentScope', () => {
 				foo()
 			}
 			`,
-			scopes: ['funcExprScope', '{}']
+			scopes: ['funcExprScope']
 		},
 		{
 			name: 'function declaration scope',
@@ -156,7 +156,16 @@ describe('extractCurrentScope', () => {
 				foo()
 			}
 			`,
-			scopes: ['funcDeclScope', '{}']
+			scopes: ['funcDeclScope']
+		}
+	]
+	const scopeFuncFixtures = [
+		{
+			name: 'function call scope',
+			fixture: `
+			users.find((u) => u.name === '')
+			`,
+			scopes: ['find']
 		}
 	]
 
@@ -171,7 +180,16 @@ describe('extractCurrentScope', () => {
 		}
 	})
 
-	it.todo('extracts scope for functions')
+	it('extracts scope for functions', () => {
+		for (let i = 0; i < scopeFuncFixtures.length; i++) {
+			const ast = parse(scopeFuncFixtures[i].fixture, { parser: babelTsParser })
+			_babelInterop(babelTraverse)(ast, {
+				ArrowFunctionExpression(path) {
+					expect(extractCurrentScope(path, true)).toEqual(scopeFuncFixtures[i].scopes)
+				}
+			})
+		}
+	})
 })
 
 describe('Artifacts for function calls', () => {
