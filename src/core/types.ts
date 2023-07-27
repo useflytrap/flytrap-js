@@ -136,7 +136,7 @@ export type DatabaseCapture = {
 	outputs: string // encrypted
 
 	calls: CapturedCall<CaptureInvocationWithLinks>[]
-	functions: CapturedCall<CaptureInvocationWithLinks>[]
+	functions: CapturedFunction<CaptureInvocationWithLinks>[]
 
 	error?: string // encrypted
 	capturedUserId?: string
@@ -154,7 +154,7 @@ export type CaptureDecryptedAndRevived = Omit<
 	'args' | 'outputs' | 'calls' | 'functions' | 'error'
 > & {
 	calls: CapturedCall[]
-	functions: CapturedCall[]
+	functions: CapturedFunction[]
 	error?: ErrorType
 }
 
