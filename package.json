@@ -36,7 +36,9 @@
 		"lint:prettier": "prettier --write --loglevel warn",
 		"prepublishOnly": "pnpm lint && pnpm test",
 		"release": "np",
-		"test": "vitest run",
+		"test": "pnpm test:types && pnpm test:unit && pnpm test:e2e",
+		"test:unit": "vitest run",
+		"test:e2e": "playwright test",
 		"test:types": "tsc --noEmit",
 		"test:ecosystem": "vitest run test/transform/generate.test.ts && vitest run test/transform/generated-fixtures"
 	},
@@ -59,6 +61,7 @@
 	"devDependencies": {
 		"@happy-dom/global-registrator": "^9.20.3",
 		"@nuxtjs/eslint-config-typescript": "latest",
+		"@playwright/test": "^1.36.2",
 		"@rollup/plugin-commonjs": "^25.0.0",
 		"@rollup/plugin-json": "^6.0.0",
 		"@rollup/plugin-node-resolve": "^15.1.0",

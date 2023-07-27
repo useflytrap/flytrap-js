@@ -35,7 +35,7 @@
 	</h2>
 
 	<input bind:value={value} />
-	<button on:click={handleSubmit}>submit</button>
+	<button on:click={handleSubmit}>Submit</button>
 
 	<Counter />
 </section>

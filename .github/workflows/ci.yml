@@ -46,5 +46,5 @@ jobs:
       - name: 💪 Test types
         run: pnpm test:types
 
-      - name: 🧪 Test project
-        run: pnpm test
+      - name: 🧪 Run unit tests
+        run: pnpm test:unit

@@ -2,6 +2,7 @@
 
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
+import { configDefaults } from 'vitest/config'
 
 export default defineConfig({
 	resolve: {
@@ -9,12 +10,16 @@ export default defineConfig({
 			useflytrap: fileURLToPath(new URL('./src/index.ts', import.meta.url).href)
 		}
 	},
-	// @ts-ignore
+	// @ts-expect-error
 	test: {
 		coverage: {
 			'100': true,
 			include: ['src'],
 			reporter: ['text', 'json', 'html']
-		}
+		},
+		exclude: [
+			...configDefaults.exclude,
+			'e2e/*'
+		]
 	}
 })

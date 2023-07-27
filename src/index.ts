@@ -37,22 +37,15 @@ export function useFlytrapFunction<
 			// Replaying code
 			if (getMode() === 'replay') {
 				const replayArgs = getReplayFunctionArgs(opts.id)
-				const replayOutput = getReplayFunctionOutput(opts.id)
 
 				if (!replayArgs) {
-					if (getLoadedCapture()) {
-						console.warn(
-							`Could not find replay input arguments for function with ID ${opts.id}, either this is a function you have added, or something has gone wrong during the capture process. If this is the case, contact us.`
-						)
-					}
 					return await fn(...args)
 				}
 
 				// Merge replay args & real args
 				const mergedArgs = fillUnserializableFlytrapValues(replayArgs, args)
 				// @ts-expect-error for some reason `this as any` still gives error
-				const realOutput = await executeFunctionAsync(fn, this as any, mergedArgs)
-				return fillUnserializableFlytrapValues(replayOutput, realOutput)
+				return await executeFunctionAsync(fn, this as any, mergedArgs)
 			}
 			// Capturing bugs
 			try {
@@ -99,13 +92,8 @@ export function useFlytrapFunction<
 		// Replaying code
 		if (getMode() === 'replay') {
 			const replayArgs = getReplayFunctionArgs(opts.id)
-			const replayOutput = getReplayFunctionOutput(opts.id)
+
 			if (!replayArgs) {
-				if (getLoadedCapture()) {
-					console.warn(
-						`Could not find replay input arguments for function with ID ${opts.id}, either this is a function you have added, or something has gone wrong during the capture process. If this is the case, contact us.`
-					)
-				}
 				// @ts-expect-error for some reason `this as any` still gives error
 				return executeFunction(fn, this as any, args)
 			}
@@ -113,8 +101,7 @@ export function useFlytrapFunction<
 			// Merge replay args & real args
 			const mergedArgs = fillUnserializableFlytrapValues(replayArgs, args)
 			// @ts-expect-error for some reason `this as any` still gives error
-			const realOutput = executeFunction(fn, this as any, mergedArgs)
-			return fillUnserializableFlytrapValues(replayOutput, realOutput)
+			return executeFunction(fn, this as any, mergedArgs)
 		}
 
 		// We're capturing
@@ -204,12 +191,6 @@ export function useFlytrapCall<T>(fnOrNamespace: T, opts: FlytrapCallOptions): a
 			const replayArgs = getReplayCallArgs(opts.id)
 			const replayOutput = getReplayCallOutput(opts.id)
 			if (!replayArgs) {
-				if (getLoadedCapture()) {
-					console.warn(
-						`Could not find replay input arguments for function call with ID ${opts.id}, either this is a new function call you have added, or something has gone wrong during the capture process. If this is the case, contact us.`
-					)
-				}
-				// return fn(...opts.args)
 				return executeFunctionCall(fnOrNamespace, opts.name, opts.args)
 			}
 
@@ -248,11 +229,6 @@ export async function useFlytrapCallAsync<T extends (...args: any[]) => Promise<
 			const replayArgs = getReplayCallArgs(opts.id)
 			const replayOutput = getReplayCallOutput(opts.id)
 			if (!replayArgs) {
-				if (getLoadedCapture()) {
-					console.warn(
-						`Could not find replay input arguments for function call with ID ${opts.id}, either this is a function call you have added, or something has gone wrong during the capture process. If this is the case, contact us.`
-					)
-				}
 				return await executeFunctionCallAsync(fn, opts.name, opts.args)
 			}
 

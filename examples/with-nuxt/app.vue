@@ -3,7 +3,7 @@ let text = ''
 
 function onSubmit() {
   if (text === 'wrong') {
-    throw new Error(`Input value "${text}"`)
+    throw new Error(`Input value "${text}" is wrong!`)
   }
 }
 </script>

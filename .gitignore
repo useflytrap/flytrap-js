@@ -5,6 +5,7 @@ coverage
 .env
 /test/transform/generated-*/
 /test/transform/ecosystem-repos
+/test-results/
 # Transform
 transform/*
 !transform/package.json
