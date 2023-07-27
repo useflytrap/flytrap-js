@@ -55,6 +55,9 @@ export function useFlytrapFunction<
 				_executionCursor++
 				return output
 			} catch (error) {
+				if (getMode() === 'replay') {
+					throw error
+				}
 				/**
 				 * Oops! We found a bug, let's send the current
 				 * executing function along with its data to the
@@ -112,6 +115,9 @@ export function useFlytrapFunction<
 			_executionCursor++
 			return output
 		} catch (error) {
+			if (getMode() === 'replay') {
+				throw error
+			}
 			/**
 			 * Oops! We found a bug, let's send the current
 			 * executing function along with its data to the
@@ -205,6 +211,9 @@ export function useFlytrapCall<T>(fnOrNamespace: T, opts: FlytrapCallOptions): a
 
 		return output
 	} catch (error) {
+		if (getMode() === 'replay') {
+			throw error
+		}
 		/**
 		 * Oops! We found a bug, let's send the current
 		 * executing function along with its data to the
@@ -244,6 +253,9 @@ export async function useFlytrapCallAsync<T extends (...args: any[]) => Promise<
 
 		return output
 	} catch (error) {
+		if (getMode() === 'replay') {
+			throw error
+		}
 		/**
 		 * Oops! We found a bug, let's send the current
 		 * executing function along with its data to the
