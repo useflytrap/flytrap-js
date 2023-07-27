@@ -61,6 +61,7 @@ test('should capture front-end bug in nextjs example', async ({ page }) => {
   // Start from the index page (the baseURL is set via the webServer in the playwright.config.ts)
   await page.goto(getBaseUrl(NEXTJS_PORT));
   await page.reload()
+  await waitMs(3_000)
 
   // Find the input
   await page.locator('input').fill('wrong')
@@ -73,7 +74,7 @@ test('should capture front-end bug in nextjs example', async ({ page }) => {
   const consoleLogsArgs = await consolePromise.args()
   // expect(await consoleLogsArgs[0]?.jsonValue()).toContain('[🐛 post] https://www.useflytrap.com/api/v1/captures')
 
-  await waitMs(10_000);
+  await waitMs(3_000);
 
   // Check the API for the capture
   const capturesAfter = await fetchCaptures('sk_Y8dYLe5VoNJfDI_CPEqF8AqMTEwWAvTwBi7Ml-pN9bzWsgsP');
@@ -89,7 +90,7 @@ test('should capture front-end bug in sveltekit example', async ({ page }) => {
   // Start from the index page (the baseURL is set via the webServer in the playwright.config.ts)
   await page.goto(getBaseUrl(SVELTE_PORT));
   await page.reload()
-  await waitMs(1000)
+  await waitMs(3_000)
 
   // Find the input
   await page.locator('input').fill('wrong')
@@ -116,7 +117,7 @@ test('should capture front-end bug in nuxt example', async ({ page }) => {
   // Start from the index page (the baseURL is set via the webServer in the playwright.config.ts)
   await page.goto(getBaseUrl(NUXT_PORT));
   await page.reload()
-  await waitMs(1000)
+  await waitMs(3_000)
 
   // Find the input
   await page.locator('input').fill('wrong')

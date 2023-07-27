@@ -65,19 +65,18 @@ export function useFlytrapFunction<
 				 */
 				saveErrorForFunction(opts.id, error)
 				log.info('capture', `Captured error in async function with ID "${opts.id}".`, { error })
-				const { error: saveError } = await utilTryCatch(
-					getFlytrapStorage().saveCapture(_executingFunctions, _functionCalls, error as Error)
-				)
-				if (saveError) {
-					console.error(
-						createHumanLog({
-							event: 'capture_failed',
-							explanation: 'api_capture_error_response',
-							solution: 'try_again_contact_us'
-						}).toString()
-					)
-					console.error(saveError)
-				}
+				getFlytrapStorage()
+					.saveCapture(_executingFunctions, _functionCalls, error as Error)
+					.catch((saveError) => {
+						console.error(
+							createHumanLog({
+								event: 'capture_failed',
+								explanation: 'api_capture_error_response',
+								solution: 'try_again_contact_us'
+							}).toString()
+						)
+						console.error(saveError)
+					})
 
 				throw error
 			}
@@ -125,18 +124,17 @@ export function useFlytrapFunction<
 			 */
 			saveErrorForFunction(opts.id, error)
 			log.info('capture', `Captured error in function with ID "${opts.id}".`, { error })
-			const { error: saveError } = utilTryCatchSync(() =>
-				getFlytrapStorage().saveCapture(_executingFunctions, _functionCalls, error as Error)
-			)
-			if (saveError) {
-				const errorLog = createHumanLog({
-					event: 'capture_failed',
-					explanation: 'generic_unexpected_error',
-					solution: 'try_again_contact_us'
+			getFlytrapStorage()
+				.saveCapture(_executingFunctions, _functionCalls, error as Error)
+				.catch((saveError) => {
+					const errorLog = createHumanLog({
+						event: 'capture_failed',
+						explanation: 'generic_unexpected_error',
+						solution: 'try_again_contact_us'
+					})
+					console.error(errorLog.toString())
+					console.error(saveError)
 				})
-				console.error(errorLog.toString())
-				console.error(saveError)
-			}
 
 			throw error
 		}

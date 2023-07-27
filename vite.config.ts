@@ -10,6 +10,7 @@ export default defineConfig({
 			useflytrap: fileURLToPath(new URL('./src/index.ts', import.meta.url).href)
 		}
 	},
+	// @ts-ignore
 	test: {
 		coverage: {
 			'100': true,
