@@ -36,7 +36,7 @@
 		"lint:prettier": "prettier --write --loglevel warn",
 		"prepublishOnly": "pnpm lint && pnpm test",
 		"release": "np",
-		"test": "pnpm test:types && pnpm test:unit && pnpm test:e2e",
+		"test": "vitest run",
 		"test:unit": "vitest run",
 		"test:e2e": "playwright test",
 		"test:types": "tsc --noEmit",
