@@ -35,15 +35,6 @@ Made with ❤️ in Helsinki
 
 Published under [MIT License](./LICENSE).
 
-## Known Limitations
-
-- If there are multiple functions in the same file with the same name and args, replaying will have
-  odd behavior.
-- If there are multiple function calls with the same args in the same scope, removing or adding function calls with same args will result to wrong replay behavior.
-- Adding / removing anonymous functions, (eg; `() => {}`,), in a scope where there already is anonymous functions will cause the replay to go wrong
-- React/framework errors during development (eg. hydration errors, ) manifest as weird errors such as "TypeError: Cannot read properties of null (reading 'useContext')", where the stacktrace points towards Flytrap. Because of this, you're recommended to
-  not use flytrap during active development if you're not replaying.
-
 <!-- Links -->
 
 [npm-href]: https://npmjs.com/package/useflytrap
