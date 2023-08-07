@@ -68,11 +68,28 @@ export function superJsonRegisterCustom(superJsonInstance: typeof SuperJSON) {
 		'DOM Events'
 	)
 
-	// Classes
+	// Unsupported classes
 	superJsonInstance.registerCustom<any, string>(
 		{
-			isApplicable: (v): v is Request => {
-				return isClassInstance(v)
+			isApplicable: (v): v is any => {
+				const SUPPORTED_CLASSES = [
+					Headers,
+					Request,
+					Response,
+					Array,
+					Date,
+					RegExp,
+					Set,
+					Map,
+					Error,
+					URL,
+					...(typeof window !== 'undefined' ? [window.Event] : [])
+				]
+
+				const isSupportedClass = SUPPORTED_CLASSES.some(
+					(classInstance) => v instanceof classInstance
+				)
+				return isClassInstance(v) && !isSupportedClass
 			},
 			serialize: () => FLYTRAP_CLASS,
 			deserialize: () => FLYTRAP_CLASS
@@ -98,6 +115,10 @@ export function isClassInstance<T>(obj: T): boolean {
  */
 export function stringify(obj: any): string {
 	superJsonRegisterCustom(SuperJSON)
+
+	/* if (obj[Symbol.iterator] && obj instanceof Array !== true) {
+		return FLYTRAP_UNSERIALIZABLE_VALUE
+	} */
 
 	const serialized = SuperJSON.serialize(obj)
 	if (serialized.meta?.referentialEqualities) {

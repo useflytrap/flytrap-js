@@ -9,7 +9,6 @@ import {
 	reviveLinks,
 	stringify
 } from '../src/core/stringify'
-import SuperJSON from 'superjson'
 import {
 	FLYTRAP_CLASS,
 	FLYTRAP_DOM_EVENT,
@@ -20,6 +19,7 @@ import {
 } from '../src/core/constants'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 import { CapturedCall, type CapturedFunction } from '../src/exports'
+import SuperJSON from 'superjson'
 GlobalRegistrator.register()
 
 it('removes cyclical dependencies', () => {

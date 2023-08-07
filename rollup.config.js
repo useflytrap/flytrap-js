@@ -43,7 +43,7 @@ export default [
 	{
 		input: ["src/transform.ts"],
 		plugins: [nodeResolve({
-			resolveOnly: ['serialize-error', 'pkg-dir', 'find-up', 'locate-path', 'p-locate', 'path-exists']
+			resolveOnly: ['serialize-error', 'pkg-dir', 'find-up', 'locate-path', 'p-locate', 'p-limit', 'path-exists', 'yocto-queue']
 		}), json(), esbuild(), commonjs()],
 		output: [
 			{

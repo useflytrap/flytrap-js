@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import { extractArtifacts } from '../src/transform/artifacts/artifacts'
 import { initTRPC } from '@trpc/server'
 import { removeCircularDependencies } from '../src/core/stringify'
-import SuperJSON from 'superjson'
 
 describe('Regression', () => {
 	it('regression #1 > generates correct artifacts that match the transformed code', async () => {
