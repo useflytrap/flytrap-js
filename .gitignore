@@ -3,9 +3,14 @@ node_modules
 coverage
 .DS_Store
 .env
+.flytrap/*
 /test/transform/generated-*/
 /test/transform/ecosystem-repos
 /test-results/
 # Transform
 transform/*
 !transform/package.json
+
+# Browser
+browser/*
+!browser/package.json

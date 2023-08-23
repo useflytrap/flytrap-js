@@ -27,9 +27,9 @@ export function findStartingIndex(s: MagicString) {
 	return 0
 }
 
-export function addMissingFlytrapImports(s: MagicString) {
+export function addMissingFlytrapImports(s: MagicString, browser = false) {
 	const statements = findStaticImports(s.toString()).filter(
-		(i) => i.specifier === FLYTRAP_PACKAGE_NAME
+		(i) => i.specifier === FLYTRAP_PACKAGE_NAME || i.specifier === FLYTRAP_PACKAGE_NAME + '/browser'
 	)
 	const parsedImports = statements.map((importStatement) => parseStaticImport(importStatement))
 	const importedFunctions = parsedImports.reduce(
@@ -44,7 +44,9 @@ export function addMissingFlytrapImports(s: MagicString) {
 		const startingIndex = findStartingIndex(s)
 		s.appendLeft(
 			startingIndex,
-			`\n\nimport { ${importsToBeAdded.join(', ')} } from '${FLYTRAP_PACKAGE_NAME}';\n\n`
+			`\n\nimport { ${importsToBeAdded.join(', ')} } from '${FLYTRAP_PACKAGE_NAME}${
+				browser ? '/browser' : ''
+			}';\n\n`
 		)
 	}
 

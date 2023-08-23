@@ -27,63 +27,9 @@ import {
 	superJsonRegisterCustom
 } from './stringify'
 import { shouldIgnoreCapture } from './captureIgnores'
+import { getPersistence } from './persistence/isomorphic'
 
 const loadedCaptures = new Map<string, CaptureDecryptedAndRevived | undefined>()
-
-export const browserStorage: Storage = {
-	getItem(captureId) {
-		const captureStringified = localStorage.getItem(captureId)
-		if (!captureStringified) return null
-		return parse<CaptureDecryptedAndRevived>(captureStringified)
-	},
-	removeItem(captureId) {
-		return localStorage.removeItem(captureId)
-	},
-	setItem(captureId, capture) {
-		return localStorage.setItem(captureId, stringify(capture))
-	}
-}
-
-const isBrowser = new Function('try {return this===window;}catch(e){return false;}')
-
-export const fileStorage: Storage = {
-	getItem(captureId) {
-		const { readFileSync } = require('fs')
-		const { join } = require('path')
-		const { homedir } = require('os')
-		const getCacheDir = () => join(homedir(), '.flytrap-cache')
-		try {
-			const captureStringified = readFileSync(join(getCacheDir(), `${captureId}.json`), 'utf-8')
-			if (!captureStringified) return null
-			return parse<CaptureDecryptedAndRevived>(captureStringified)
-		} catch (e) {
-			return null
-		}
-	},
-	removeItem(captureId) {
-		const { rmSync } = require('fs')
-		const { join } = require('path')
-		const { homedir } = require('os')
-		const getCacheDir = () => join(homedir(), '.flytrap-cache')
-		return rmSync(join(getCacheDir(), `${captureId}.json`))
-	},
-	setItem(captureId, capture) {
-		const { writeFileSync, mkdirSync } = require('fs')
-		const { join } = require('path')
-		const { homedir } = require('os')
-		const getCacheDir = () => join(homedir(), '.flytrap-cache')
-		mkdirSync(getCacheDir(), { recursive: true })
-		return writeFileSync(join(getCacheDir(), `${captureId}.json`), stringify(capture))
-	}
-}
-
-function getStorage(): Storage {
-	if (isBrowser()) {
-		return browserStorage
-	}
-
-	return fileStorage
-}
 
 export function getLoadedCapture() {
 	const { captureId } = getLoadedConfig() ?? {}
@@ -98,7 +44,7 @@ export async function loadAndPersist(
 ): Promise<boolean> {
 	const capture = await getFlytrapStorage().loadCapture(captureId, secretApiKey, privateKey)
 	if (capture) {
-		getStorage().setItem(captureId, capture)
+		getPersistence().setItem(captureId, capture)
 		return true
 	}
 	return false
@@ -125,7 +71,7 @@ export type FlytrapStorage = {
 
 export const liveFlytrapStorage: FlytrapStorage = {
 	getCapture(captureId) {
-		return getStorage().getItem(captureId)
+		return getPersistence().getItem(captureId)
 	},
 	async loadCapture(captureId, secretApiKey, privateKey) {
 		if (loadedCaptures.has(captureId)) {

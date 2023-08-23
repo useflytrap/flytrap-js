@@ -74,6 +74,11 @@ export type FlytrapConfig = {
 	 * [Learn more](https://docs.useflytrap.com/config/introduction)
 	 */
 	captureIgnores?: CaptureIgnore[]
+	/**
+	 * Use Flytrap in environments with access to only browser APIs, eg. Cloudflare
+	 * Workers & Pages and Deno.
+	 */
+	browser?: true
 }
 
 export type ErrorType = {
@@ -160,11 +165,11 @@ export type CaptureDecryptedAndRevived = Omit<
 
 export type CapturePayload = DatabaseCapture
 
-export type Storage = {
+/* export type Storage = {
 	getItem(captureId: string): CaptureDecryptedAndRevived | null
 	removeItem(captureId: string): void
 	setItem(captureId: string, capture: CaptureDecryptedAndRevived): void
-}
+} */
 
 export type CaptureInvocationWithLinks = Omit<CaptureInvocation, 'args' | 'output'> & {
 	args: number
@@ -213,4 +218,40 @@ export type CacheFile = {
 	projectId: string
 	createdTimestamp: number
 	artifactCacheEntries: ArtifactCacheEntry[]
+}
+
+// Adapter types
+
+export type Persistence = {
+	getItem: (captureId: string) => CaptureDecryptedAndRevived | null
+	removeItem: (captureId: string) => void
+	setItem: (captureId: string, capture: CaptureDecryptedAndRevived) => void
+}
+export type Storage = {
+	getCapture: (captureId: string) => CaptureDecryptedAndRevived | null
+	/**
+	 * Load the wrapped functions from the API. These are decrypted before
+	 * returning them.
+	 * @returns
+	 */
+	loadCapture: (
+		captureId: string,
+		secretApiKey: string,
+		privateKey: string
+	) => Promise<CaptureDecryptedAndRevived | undefined>
+	saveCapture: (
+		functions: CapturedFunction[],
+		calls: CapturedCall[],
+		error?: Error | string
+	) => Promise<void>
+}
+export type Encryption = {
+	encrypt: (publicKeyString: string, plaintext: string) => Promise<string>
+	decrypt: (privateKeyString: string, ciphertext: string) => Promise<string>
+}
+
+export type Adapter = {
+	persistence: Persistence
+	// storage: Storage;
+	encryption: Encryption
 }

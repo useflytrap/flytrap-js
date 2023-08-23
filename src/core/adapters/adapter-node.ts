@@ -1,22 +1,6 @@
 import * as importedCrypto from 'crypto'
-import {
-	CaptureDecryptedAndRevived,
-	CapturePayload,
-	CapturedCall,
-	CapturedFunction,
-	DatabaseCapture
-} from './types'
-import {
-	addLinksToCaptures,
-	extractArgs,
-	extractOutputs,
-	parse,
-	reviveLinks,
-	stringify
-} from './stringify'
-import { serializeError } from 'serialize-error'
-import { NO_SOURCE } from './constants'
-import { tryCatch, tryCatchSync } from './util'
+import { parse, stringify } from '../stringify'
+import { Adapter, CaptureDecryptedAndRevived, Encryption, Persistence } from '../types'
 
 function getCrypto() {
 	// Check if the environment is a Web Worker
@@ -32,6 +16,42 @@ function getCrypto() {
 }
 
 const crypto = getCrypto()
+
+const nodePersistence: Persistence = {
+	getItem(captureId) {
+		const { readFileSync } = require('fs')
+		const { join } = require('path')
+		const { homedir } = require('os')
+		const getCacheDir = () => join(homedir(), '.flytrap-cache')
+		try {
+			const captureStringified = readFileSync(join(getCacheDir(), `${captureId}.json`), 'utf-8')
+			if (!captureStringified) return null
+			return parse<CaptureDecryptedAndRevived>(captureStringified)
+		} catch (e) {
+			return null
+		}
+		/* const captureStringified = localStorage.getItem(captureId)
+		if (!captureStringified) return null
+		return parse<CaptureDecryptedAndRevived>(captureStringified) */
+	},
+	removeItem(captureId) {
+		//return localStorage.removeItem(captureId)
+		const { rmSync } = require('fs')
+		const { join } = require('path')
+		const { homedir } = require('os')
+		const getCacheDir = () => join(homedir(), '.flytrap-cache')
+		return rmSync(join(getCacheDir(), `${captureId}.json`))
+	},
+	setItem(captureId, capture) {
+		// return localStorage.setItem(captureId, stringify(capture))
+		const { writeFileSync, mkdirSync } = require('fs')
+		const { join } = require('path')
+		const { homedir } = require('os')
+		const getCacheDir = () => join(homedir(), '.flytrap-cache')
+		mkdirSync(getCacheDir(), { recursive: true })
+		return writeFileSync(join(getCacheDir(), `${captureId}.json`), stringify(capture))
+	}
+}
 
 const MAX_CHUNK_SIZE = 190 // 2048 bits RSA-OAEP key size, minus padding (256 bits)
 const CHUNK_SEPARATOR = '|'
@@ -191,117 +211,16 @@ export async function decrypt(privateKeyString: string, ciphertext: string): Pro
 	return new TextDecoder().decode(decrypted)
 }
 
-export function ok<T>(data: T) {
-	return {
-		data,
-		error: null
+const nodeEncryptionn: Encryption = {
+	encrypt(publicKeyString, plaintext) {
+		return encrypt(publicKeyString, plaintext)
+	},
+	decrypt(privateKeyString, ciphertext) {
+		return decrypt(privateKeyString, ciphertext)
 	}
 }
 
-export function err<T>(error: T) {
-	return {
-		data: null,
-		error
-	}
-}
-
-export async function encryptCapture(
-	functions: CapturedFunction[],
-	calls: CapturedCall[],
-	publicKey: string,
-	projectId: string,
-	capturedUserId?: string,
-	error?: string | Error
-) {
-	const args = [...extractArgs(calls), ...extractArgs(functions)]
-	const outputs = [...extractOutputs(calls), ...extractOutputs(functions)]
-	const linkedCalls = addLinksToCaptures(calls, { args, outputs })
-	const linkedFunctions = addLinksToCaptures(functions, { args, outputs })
-
-	return {
-		capturedUserId,
-		projectId,
-		functionName:
-			typeof error === 'string'
-				? error
-				: serializeError(error)?.message ?? serializeError(error)?.name ?? 'unknown',
-		source: NO_SOURCE,
-		// args, outputs,
-		args: await encrypt(publicKey, stringify(args)),
-		outputs: await encrypt(publicKey, stringify(outputs)),
-		calls: linkedCalls,
-		functions: linkedFunctions,
-		...(error && {
-			error: await encrypt(publicKey, stringify(serializeError(error)))
-		})
-	}
-}
-
-export async function decryptFunction(capture: DatabaseCapture, privateKey: string) {
-	const { data: decryptedArgsString, error: decryptArgsError } = await tryCatch(
-		decrypt(privateKey, capture.args)
-	)
-	const { data: decryptedOutputsString, error: decryptOutputsError } = await tryCatch(
-		decrypt(privateKey, capture.outputs)
-	)
-
-	if (
-		decryptArgsError ||
-		decryptOutputsError ||
-		decryptedArgsString === null ||
-		decryptedOutputsString === null
-	) {
-		return err('An error occurred when decrypting capture.')
-	}
-
-	// Decrypting `args` and `outputs`
-	const { data: decryptedArgs, error: parseArgsError } = tryCatchSync(() =>
-		parse<any[][]>(decryptedArgsString)
-	)
-	const { data: decryptedOutputs, error: parseOutputsError } = tryCatchSync(() =>
-		parse<any[]>(decryptedOutputsString)
-	)
-
-	if (parseArgsError || parseOutputsError || decryptedArgs === null || decryptedOutputs === null) {
-		return err('An error occured when parsing the decrypted capture.')
-	}
-
-	const revivedCalls: CapturedCall[] = []
-	const revivedFunctions: CapturedFunction[] = []
-
-	// Revive calls
-	for (let i = 0; i < capture.calls.length; i++) {
-		const revivedInvocations = reviveLinks(capture.calls[i].invocations, {
-			args: decryptedArgs,
-			outputs: decryptedOutputs
-		})
-		revivedCalls.push({
-			id: capture.calls[i].id,
-			invocations: revivedInvocations
-		})
-	}
-
-	// Revive functions
-	for (let i = 0; i < capture.functions.length; i++) {
-		const revivedInvocations = reviveLinks(capture.functions[i].invocations, {
-			args: decryptedArgs,
-			outputs: decryptedOutputs
-		})
-		revivedFunctions.push({
-			id: capture.functions[i].id,
-			invocations: revivedInvocations
-		})
-	}
-
-	const decryptedCaptureNew: CaptureDecryptedAndRevived = {
-		projectId: capture.projectId,
-		functionName: capture.functionName,
-		calls: revivedCalls,
-		functions: revivedFunctions,
-		...(capture.error && {
-			error: parse(await decrypt(privateKey, capture.error))
-		})
-	}
-
-	return ok(decryptedCaptureNew)
+export default {
+	persistence: nodePersistence,
+	encryption: nodeEncryptionn
 }

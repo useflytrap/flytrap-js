@@ -104,7 +104,7 @@ export const unpluginOptions: UnpluginOptions = {
 				: new MagicString(code)
 
 		// add missing Flytrap imports
-		addMissingFlytrapImports(ss)
+		addMissingFlytrapImports(ss, config?.browser)
 
 		// add Flytrap init
 		if (process.env.NODE_ENV !== 'test') {

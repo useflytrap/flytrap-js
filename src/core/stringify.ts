@@ -221,37 +221,44 @@ export function addLinks(
 	invocations: CaptureInvocation[],
 	{ args, outputs }: { args: any[][]; outputs: any[] }
 ) {
+	const invocationsWithLinks: CaptureInvocationWithLinks[] = []
 	for (let i = 0; i < invocations.length; i++) {
 		// Args
 		const argsIndex = _findIndexOfMatchingValue(args, invocations[i].args)
 		const outputIndex = _findIndexOfMatchingValue(outputs, invocations[i].output)
 
-		if (argsIndex !== undefined) {
-			// @ts-expect-error
-			invocations[i].args = argsIndex
+		if (argsIndex === undefined || outputIndex === undefined) {
+			// @todo: improve error message
+			throw new Error(`argsIndex undefined or outputIndex undefined.`)
 		}
-		if (outputIndex !== undefined) {
-			invocations[i].output = outputIndex
-		}
+
+		invocationsWithLinks.push({
+			...invocations[i],
+			args: argsIndex,
+			output: outputIndex
+		})
 	}
-	return invocations as unknown as CaptureInvocationWithLinks[]
+	return invocationsWithLinks
 }
 
 export function addLinksToCaptures(
 	captures: (CapturedCall | CapturedFunction)[],
 	{ args, outputs }: { args: any[][]; outputs: any[] }
 ) {
+	const linkedCaptures: (
+		| CapturedCall<CaptureInvocationWithLinks>
+		| CapturedFunction<CaptureInvocationWithLinks>
+	)[] = []
 	for (let i = 0; i < captures.length; i++) {
 		// captures[i].invocations
 		const linkedInvocations = addLinks(captures[i].invocations, { args, outputs })
-		// @ts-expect-error
-		captures[i].invocations = linkedInvocations
+		linkedCaptures.push({
+			...captures[i],
+			invocations: linkedInvocations
+		})
 	}
 
-	return captures as unknown as (
-		| CapturedCall<CaptureInvocationWithLinks>
-		| CapturedFunction<CaptureInvocationWithLinks>
-	)[]
+	return linkedCaptures
 }
 
 export async function decryptCapture(

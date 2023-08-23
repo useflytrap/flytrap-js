@@ -15,6 +15,11 @@
 			"import": "./transform/index.mjs",
 			"require": "./transform/index.cjs",
 			"types": "./transform/index.d.ts"
+		},
+		"./browser": {
+			"import": "./browser/index.mjs",
+			"require": "./browser/index.cjs",
+			"types": "./browser/index.d.ts"
 		}
 	},
 	"main": "./dist/index.cjs",
@@ -22,7 +27,8 @@
 	"types": "./dist/index.d.ts",
 	"files": [
 		"dist",
-		"transform"
+		"transform",
+		"browser"
 	],
 	"type": "module",
 	"scripts": {
@@ -62,9 +68,11 @@
 		"@happy-dom/global-registrator": "^9.20.3",
 		"@nuxtjs/eslint-config-typescript": "latest",
 		"@playwright/test": "^1.36.2",
+		"@rollup/plugin-alias": "^5.0.0",
 		"@rollup/plugin-commonjs": "^25.0.0",
 		"@rollup/plugin-json": "^6.0.0",
 		"@rollup/plugin-node-resolve": "^15.1.0",
+		"@rollup/plugin-replace": "^5.0.2",
 		"@supabase/supabase-js": "^2.21.0",
 		"@trpc/server": "^10.21.1",
 		"@types/babel__traverse": "^7.18.3",
