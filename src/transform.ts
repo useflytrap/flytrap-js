@@ -10,7 +10,7 @@ import { loadConfig } from './transform/config'
 import { setFlytrapConfig } from './core/config'
 import { log } from './core/logging'
 import { extractArtifacts } from './transform/artifacts/artifacts'
-import { tryCatch, tryCatchSync } from './core/util'
+import { normalizeFilepath, tryCatch, tryCatchSync } from './core/util'
 import { readFileSync } from 'node:fs'
 import { excludeDirectoriesIncludeFilePath } from './transform/excludes'
 import { containsScriptTags, parseScriptTags } from './transform/parseScriptTags'
@@ -129,7 +129,7 @@ export const unpluginOptions: UnpluginOptions = {
 			) {
 				const transformedScriptTagContents = flytrapTransformArtifacts(
 					ss.toString(),
-					id.replace(pkgDirPath, ''),
+					normalizeFilepath(pkgDirPath, id),
 					config?.packageIgnores
 				)
 				wholeSourceFile.overwrite(
@@ -148,7 +148,7 @@ export const unpluginOptions: UnpluginOptions = {
 			transformedFiles.push(id)
 			return flytrapTransformArtifacts(
 				ss.toString(),
-				id.replace(pkgDirPath, ''),
+				normalizeFilepath(pkgDirPath, id),
 				config?.packageIgnores
 			)
 		} catch (e) {
@@ -218,11 +218,16 @@ export const unpluginOptions: UnpluginOptions = {
 						artifacts.push(
 							...extractArtifacts(
 								code.substring(scriptStartIndex, scriptEndIndex),
-								transformedFiles[i].replace(pkgDirPath, '')
+								normalizeFilepath(pkgDirPath, transformedFiles[i])
 							)
 						)
 					} else {
-						artifacts.push(...extractArtifacts(code, transformedFiles[i].replace(pkgDirPath, '')))
+						artifacts.push(
+							...extractArtifacts(
+								code,
+								normalizeFilepath(pkgDirPath, transformedFiles[i])
+							)
+						)
 					}
 				} catch (e) {
 					console.warn(`Extracting artifacts failed for file ${transformedFiles[i]}`)
