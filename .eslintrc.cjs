@@ -24,6 +24,7 @@ module.exports = {
 		'@typescript-eslint/explicit-module-boundary-types': 'off',
 		'@typescript-eslint/no-inferrable-types': 1,
 		'@typescript-eslint/no-explicit-any': 'off',
+		'@typescript-eslint/no-unused-vars': 1,
 		'no-unused-vars': 'off',
 		'no-undef': 'off',
 		'no-redeclare': 'off',

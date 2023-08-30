@@ -223,10 +223,7 @@ export const unpluginOptions: UnpluginOptions = {
 						)
 					} else {
 						artifacts.push(
-							...extractArtifacts(
-								code,
-								normalizeFilepath(pkgDirPath, transformedFiles[i])
-							)
+							...extractArtifacts(code, normalizeFilepath(pkgDirPath, transformedFiles[i]))
 						)
 					}
 				} catch (e) {
