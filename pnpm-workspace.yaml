@@ -1,4 +1,8 @@
 packages:
   - 'playground'
   - 'docs'
-  - 'examples/**'
+  # we exclude Nuxt because its dep resolution causes weird problems
+  - 'examples/with-express'
+  - 'examples/with-nextjs'
+  - 'examples/with-nextjs-api'
+  - 'examples/with-sveltekit'
