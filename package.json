@@ -66,7 +66,6 @@
 	},
 	"devDependencies": {
 		"@happy-dom/global-registrator": "^9.20.3",
-		"@nuxtjs/eslint-config-typescript": "latest",
 		"@playwright/test": "^1.36.2",
 		"@rollup/plugin-alias": "^5.0.0",
 		"@rollup/plugin-commonjs": "^25.0.0",
