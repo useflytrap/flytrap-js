@@ -9,22 +9,15 @@ import { createHumanLog } from './core/human-logs'
 import { loadConfig } from './transform/config'
 import { setFlytrapConfig } from './core/config'
 import { log } from './core/logging'
-import { extractArtifacts } from './transform/artifacts/artifacts'
-import { normalizeFilepath, tryCatch, tryCatchSync } from './core/util'
+import { normalizeFilepath, tryCatchSync } from './core/util'
 import { readFileSync } from 'node:fs'
 import { excludeDirectoriesIncludeFilePath } from './transform/excludes'
 import { containsScriptTags, parseScriptTags } from './transform/parseScriptTags'
-import { batchedArtifactsUpload } from './transform/artifacts/batchedArtifactsUpload'
-import { getFileExtension } from './transform/util'
-import {
-	getArtifactsToUpload,
-	markArtifactAsUploaded,
-	upsertArtifact,
-	upsertArtifacts
-} from './transform/artifacts/cache'
-import { Artifact } from './exports'
+import { calculateSHA256Checksum, getFileExtension } from './transform/util'
+import { upsertArtifacts } from './transform/artifacts/cache'
+import { Artifact, encrypt } from './exports'
 
-const transformedFiles: string[] = []
+const transformedFiles = new Set<string>([])
 
 export const unpluginOptions: UnpluginOptions = {
 	name: 'FlytrapTransformPlugin',
@@ -138,14 +131,14 @@ export const unpluginOptions: UnpluginOptions = {
 					transformedScriptTagContents.code
 				)
 
-				transformedFiles.push(id)
+				transformedFiles.add(id)
 				return {
 					code: wholeSourceFile.toString(),
 					map: wholeSourceFile.generateMap()
 				}
 			}
 
-			transformedFiles.push(id)
+			transformedFiles.add(id)
 			return flytrapTransformArtifacts(
 				ss.toString(),
 				normalizeFilepath(pkgDirPath, id),
@@ -189,25 +182,28 @@ export const unpluginOptions: UnpluginOptions = {
 			}).toString()
 		}
 
-		if (!config.disableArtifacts && process?.env?.NODE_ENV === 'production') {
+		if (config.disableArtifacts !== true && process?.env?.NODE_ENV === 'production') {
 			// Push artifacts
 			log.info(
 				'storage',
-				`Generating artifacts for ${transformedFiles.length} transformed source files.`
+				`Generating artifacts for ${transformedFiles.size} transformed source files.`
 			)
 			const artifacts: Artifact[] = []
-			for (let i = 0; i < transformedFiles.length; i++) {
+
+			for (const transformedFilePath of transformedFiles) {
 				const { data: code, error } = tryCatchSync(() =>
-					readFileSync(transformedFiles[i]).toString()
+					readFileSync(transformedFilePath).toString()
 				)
+
 				if (error || !code) {
 					log.error(
 						'transform',
-						`An error occurred while reading file at path "${transformedFiles[i]}". Error:`,
+						`An error occurred while reading file at path "${transformedFilePath}". Error:`,
 						error
 					)
 					continue
 				}
+
 				try {
 					// Script tags support
 					const scriptTags = parseScriptTags(code)
@@ -215,31 +211,44 @@ export const unpluginOptions: UnpluginOptions = {
 					const scriptEndIndex = scriptTags[0]?.end
 
 					if (scriptStartIndex && scriptEndIndex) {
-						artifacts.push(
-							...extractArtifacts(
-								code.substring(scriptStartIndex, scriptEndIndex),
-								normalizeFilepath(pkgDirPath, transformedFiles[i])
-							)
+						const checksum = calculateSHA256Checksum(
+							code.substring(scriptStartIndex, scriptEndIndex)
 						)
+						const encryptedSource = await encrypt(
+							config.publicApiKey,
+							code.substring(scriptStartIndex, scriptEndIndex)
+						)
+						artifacts.push({
+							checksum,
+							encryptedSource,
+							filePath: normalizeFilepath(pkgDirPath, transformedFilePath)
+						})
 					} else {
-						artifacts.push(
-							...extractArtifacts(code, normalizeFilepath(pkgDirPath, transformedFiles[i]))
-						)
+						const checksum = calculateSHA256Checksum(code)
+						const encryptedSource = await encrypt(config.publicApiKey, code)
+						artifacts.push({
+							checksum,
+							encryptedSource,
+							filePath: normalizeFilepath(pkgDirPath, transformedFilePath)
+						})
 					}
 				} catch (e) {
-					console.warn(`Extracting artifacts failed for file ${transformedFiles[i]}`)
+					console.warn(`Extracting artifacts failed for file ${transformedFilePath}`)
 				}
 			}
 
-			// Upload artifacts
-			const { data: uploadedBatches, error } = await tryCatch(
-				upsertArtifacts(config.projectId, config.secretApiKey, artifacts)
+			// Upload new artifacts
+			const { error: artifactsUpsertError } = await upsertArtifacts(
+				config.projectId,
+				config.secretApiKey,
+				artifacts
 			)
-			if (error || !uploadedBatches) {
+
+			if (artifactsUpsertError !== null) {
 				console.error(
 					`Oops! Something went wrong while pushing artifacts to the Flytrap API. Error:`
 				)
-				console.error(error)
+				console.error(artifactsUpsertError)
 				return
 			}
 		}

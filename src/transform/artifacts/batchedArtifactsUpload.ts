@@ -2,7 +2,7 @@ import { FLYTRAP_API_BASE } from '../../core/config'
 import { post } from '../../core/util'
 import { Artifact } from '../../exports'
 
-const ARTIFACTS_BATCH_SIZE = 20
+const MAX_BYTES_PER_BATCH = 3_000_000 // 3MB
 
 export async function batchedArtifactsUpload(
 	artifacts: Artifact[],
@@ -10,16 +10,47 @@ export async function batchedArtifactsUpload(
 	projectId: string
 ) {
 	const batches: Artifact[][] = []
-	for (let i = 0; i < artifacts.length; i += ARTIFACTS_BATCH_SIZE) {
-		const artifactsInBatch = artifacts.slice(i, i + ARTIFACTS_BATCH_SIZE)
-		batches.push(artifactsInBatch)
+	let currentBatch: Artifact[] = []
+	let currentBatchSize = 0
+
+	// a rough approximation
+	const artifactSizeInBytes = (artifact: Artifact) => JSON.stringify(artifact).length
+
+	for (const artifact of artifacts) {
+		const artifactSize = artifactSizeInBytes(artifact)
+
+		// If adding the current string to the current batch exceeds the maxBytes,
+		// push the current batch to batches and start a new batch
+		if (currentBatchSize + artifactSize > MAX_BYTES_PER_BATCH) {
+			if (currentBatch.length > 0) {
+				batches.push(currentBatch)
+			}
+			currentBatch = []
+			currentBatchSize = 0
+		}
+
+		// Handle the edge case where the artifact itself exceeds maxBytes
+		if (artifactSize > MAX_BYTES_PER_BATCH) {
+			batches.push([artifact])
+			continue
+		}
+
+		currentBatch.push(artifact)
+		currentBatchSize += artifactSize
 	}
 
+	// Handle any remaining strings in the current batch
+	if (currentBatch.length > 0) {
+		batches.push(currentBatch)
+	}
+
+	// upload artifacat batches
 	const uploadedArtifactBatches = await Promise.all(
 		batches.map(async (batch) => {
 			const { data, error } = await post<string[]>(
 				`${FLYTRAP_API_BASE}/api/v1/artifacts/${projectId}`,
 				JSON.stringify({
+					projectId,
 					artifacts: batch
 				}),
 				{
@@ -29,11 +60,13 @@ export async function batchedArtifactsUpload(
 					})
 				}
 			)
+
 			if (error || !data) {
 				throw error
 			}
 			return data
 		})
 	)
-	return uploadedArtifactBatches.reduce((acc, curr) => [...acc, ...curr], [] as string[])
+
+	return uploadedArtifactBatches
 }

@@ -8,9 +8,11 @@ import {
 	FunctionExpression,
 	Identifier,
 	ObjectProperty,
+	Pattern,
+	RestElement,
 	VariableDeclarator
 } from '@babel/types'
-import { Artifact } from '../../exports'
+import { ArtifactMarking } from '../../exports'
 import { getRequiredExportsForCapture } from '../imports'
 
 /**
@@ -147,88 +149,110 @@ export function getWrappingFunctionId(
 	}
 }
 
-export function extractArtifacts(code: string, filePath: string): Artifact[] {
-	const artifacts: Artifact[] = []
+export function addArtifactMarkings(code: string, filePath: string) {
+	const functionOrCallIdsAndLocations: ArtifactMarking[] = []
 	const ast = parse(code, { parser: babelTsParser })
-	const functionIdMap = new Map<NodePath<Node>, string>()
+
+	const extractParamsLocation = (
+		params: (Identifier | RestElement | Pattern)[],
+		expressionStartingIndex: number
+	) => {
+		if (params.length === 0) {
+			return [expressionStartingIndex + 1, expressionStartingIndex + 2]
+		}
+		if (!params[0].start || !params[0].end) {
+			// @todo: improved error
+			throw new Error('invalid params start or end')
+		}
+		const startIndex = params[0].start - 1
+		let endIndex = params[0].end
+		for (let i = 0; i < params.length; i++) {
+			endIndex = params[i].end as number
+		}
+
+		return [startIndex, endIndex]
+	}
 
 	_babelInterop(babelTraverse)(ast, {
 		ArrowFunctionExpression(path) {
 			const functionName = extractFunctionName(path.parent as VariableDeclarator | ObjectProperty)
 			const scopes = extractCurrentScope(path)
 			const functionId = extractFunctionId(path, filePath, functionName, scopes)
-			functionIdMap.set(path, functionId)
 
-			artifacts.push({
+			const [startIndex, endIndex] = extractParamsLocation(path.node.params, path.node.end!)
+
+			functionOrCallIdsAndLocations.push({
+				type: 'params',
 				functionOrCallId: functionId,
-				functionOrCallName: functionName,
-				type: 'FUNCTION',
-				params: extractParams(path.node.params as Identifier[]),
-				scopes: extractCurrentScope(path, true),
-				source: {
-					filePath,
-					lineNumber: getLineNumber(path.node)
-				}
+				startIndex,
+				endIndex
 			})
 		},
 		FunctionDeclaration(path) {
 			const functionName = extractFunctionName(path.node)
 			const scopes = extractCurrentScope(path)
 			const functionId = extractFunctionId(path, filePath, functionName, scopes)
-			functionIdMap.set(path, functionId)
 
-			artifacts.push({
+			const [startIndex, endIndex] = extractParamsLocation(path.node.params, path.node.end!)
+
+			functionOrCallIdsAndLocations.push({
+				type: 'function',
 				functionOrCallId: functionId,
-				functionOrCallName: functionName,
-				type: 'FUNCTION',
-				params: extractParams(path.node.params as Identifier[]),
-				scopes: extractCurrentScope(path, true),
-				source: {
-					filePath,
-					lineNumber: getLineNumber(path.node)
-				}
+				startIndex: path.node.start!,
+				endIndex: startIndex
+			})
+			functionOrCallIdsAndLocations.push({
+				type: 'params',
+				functionOrCallId: functionId,
+				startIndex,
+				endIndex
 			})
 		},
 		FunctionExpression(path) {
-			const functionName = extractFunctionName(path.parent as VariableDeclarator)
+			const functionName =
+				path.node.id?.name ?? extractFunctionName(path.parent as VariableDeclarator)
 			const scopes = extractCurrentScope(path)
 			const functionId = extractFunctionId(path, filePath, functionName, scopes)
-			functionIdMap.set(path, functionId)
+			const [startIndex, endIndex] = extractParamsLocation(path.node.params, path.node.end!)
 
-			artifacts.push({
+			functionOrCallIdsAndLocations.push({
+				type: 'function',
 				functionOrCallId: functionId,
-				functionOrCallName: functionName,
-				type: 'FUNCTION',
-				params: extractParams(path.node.params as Identifier[]),
-				scopes: extractCurrentScope(path, true),
-				source: {
-					filePath,
-					lineNumber: getLineNumber(path.node)
-				}
+				startIndex: path.node.start!,
+				endIndex: startIndex
+			})
+			functionOrCallIdsAndLocations.push({
+				type: 'params',
+				functionOrCallId: functionId,
+				startIndex,
+				endIndex
 			})
 		},
 		CallExpression(path) {
 			const functionCallName = extractFunctionCallName(path.node)
-			const fullFunctionCallName = extractFullFunctionCallName(path.node)
 			const scopes = extractCurrentScope(path)
 			const functionCallId = extractFunctionCallId(path, filePath, functionCallName, scopes)
-			const wrappedFunctionId = getWrappingFunctionId(path, functionIdMap)
 
-			artifacts.push({
+			const [startIndex, endIndex] = extractParamsLocation(
+				path.node.arguments as Identifier[],
+				path.node.end! - 2
+			)
+
+			functionOrCallIdsAndLocations.push({
+				type: 'call',
+				startIndex: path.node.start!,
+				endIndex: startIndex - 1,
+				functionOrCallId: functionCallId
+			})
+
+			functionOrCallIdsAndLocations.push({
+				type: 'arguments',
 				functionOrCallId: functionCallId,
-				functionOrCallName: functionCallName,
-				fullFunctionName: fullFunctionCallName,
-				type: 'CALL',
-				params: extractParams(path.node.arguments as Identifier[]),
-				scopes: extractCurrentScope(path, true),
-				source: {
-					filePath,
-					lineNumber: getLineNumber(path.node)
-				},
-				...(wrappedFunctionId && { functionId: wrappedFunctionId })
+				startIndex,
+				endIndex
 			})
 		}
 	})
 
-	return artifacts
+	return functionOrCallIdsAndLocations
 }

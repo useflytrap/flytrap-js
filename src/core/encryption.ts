@@ -16,7 +16,7 @@ import {
 } from './stringify'
 import { serializeError } from 'serialize-error'
 import { NO_SOURCE } from './constants'
-import { tryCatch, tryCatchSync } from './util'
+import { err, ok, tryCatch, tryCatchSync } from './util'
 
 function getCrypto() {
 	// Check if the environment is a Web Worker
@@ -189,20 +189,6 @@ export async function decrypt(privateKeyString: string, ciphertext: string): Pro
 	}
 
 	return new TextDecoder().decode(decrypted)
-}
-
-export function ok<T>(data: T) {
-	return {
-		data,
-		error: null
-	}
-}
-
-export function err<T>(error: T) {
-	return {
-		data: null,
-		error
-	}
 }
 
 export async function encryptCapture(

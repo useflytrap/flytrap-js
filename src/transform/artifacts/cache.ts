@@ -1,164 +1,11 @@
-import { dirname, join } from 'path'
-import { homedir } from 'os'
-import { deepEqual } from 'fast-equals'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
-import { Artifact, CacheFile, CallArtifact, DatabaseArtifact } from '../../exports'
-import { cwd } from 'process'
-import { formatBytes, get } from '../../core/util'
+import { err, formatBytes, get, ok, tryCatch } from '../../core/util'
 import { FLYTRAP_API_BASE } from '../../core/config'
 import { log } from '../../core/logging'
 import { batchedArtifactsUpload } from './batchedArtifactsUpload'
+import { Artifact } from '../../core/types'
 
-export const getCacheFilePath = (projectId: string) => {
-	if (process.env.NODE_ENV === 'test') {
-		return join(cwd(), '.flytrap', 'cache', `${projectId}.json`)
-	}
-	return join(homedir(), '.flytrap', 'cache', `${projectId}.json`)
-}
-
-function _createCacheFile(projectId: string): string {
-	const cacheFilePath = getCacheFilePath(projectId)
-	const cacheDirPath = dirname(cacheFilePath)
-	mkdirSync(cacheDirPath, { recursive: true })
-	if (!existsSync(cacheFilePath)) {
-		const cache: CacheFile = {
-			projectId,
-			createdTimestamp: Date.now(),
-			artifactCacheEntries: []
-		}
-		log.info('cache', `Creating cache file at path ${cacheFilePath}.`)
-		writeFileSync(cacheFilePath, JSON.stringify(cache, null, 2))
-	}
-	return cacheFilePath
-}
-
-function _saveCacheFile(projectId: string, cache: CacheFile) {
-	const cacheFilePath = _createCacheFile(projectId)
-	writeFileSync(cacheFilePath, JSON.stringify(cache, null, 2))
-}
-
-const _getCacheFile = (projectId: string): CacheFile => {
-	const cacheFilePath = _createCacheFile(projectId)
-	const cacheFileContents = readFileSync(cacheFilePath).toString()
-	return JSON.parse(cacheFileContents) as CacheFile
-}
-
-function _removeDatabaseKeys(artifact: DatabaseArtifact): Artifact {
-	const { id: _id, createdAt: _createdAt, projectId: _projectId, ...rest } = artifact
-	if (rest.functionId === null) delete rest.functionId
-	if ((rest as CallArtifact).fullFunctionName === null) delete (rest as any).fullFunctionName
-	return rest
-}
-
-export async function _getArtifactsToUpload(
-	projectId: string,
-	secretApiKey: string,
-	artifacts: Artifact[]
-) {
-	const alreadyUploadedArtifacts = await _fetchUploadedArtifacts(projectId, secretApiKey)
-	const artifactsToUpload: Artifact[] = []
-	for (let i = 0; i < artifacts.length; i++) {
-		const existingArtifactIndex = _indexOfArtifactWithId(
-			alreadyUploadedArtifacts,
-			artifacts[i].functionOrCallId
-		)
-		if (existingArtifactIndex !== -1) {
-			const withoutDatabaseKeys = _removeDatabaseKeys(
-				alreadyUploadedArtifacts[existingArtifactIndex]
-			)
-			// Exists, check if they're the same
-			if (!deepEqual(withoutDatabaseKeys, artifacts[i])) {
-				artifactsToUpload.push(artifacts[i])
-				continue
-			}
-		} else {
-			// Doesn't exist in uploaded artifacts
-			artifactsToUpload.push(artifacts[i])
-		}
-	}
-	return artifactsToUpload
-}
-
-export async function upsertArtifacts(
-	projectId: string,
-	secretApiKey: string,
-	artifacts: Artifact[]
-) {
-	const artifactsToUpload = await _getArtifactsToUpload(projectId, secretApiKey, artifacts)
-	// Upload artifacts
-	const uploadedBatches = await batchedArtifactsUpload(artifactsToUpload, secretApiKey, projectId)
-	log.info(
-		'storage',
-		`Pushed ${
-			artifactsToUpload.length
-		} artifacts in ${uploadedBatches?.length} batches to the Flytrap API. Payload Size: ${formatBytes(
-			JSON.stringify(artifactsToUpload).length
-		)}`
-	)
-	return uploadedBatches
-}
-
-const _indexOfArtifactWithId = (haystack: Artifact[], functionOrCallId: string) =>
-	haystack.findIndex((h) => h.functionOrCallId === functionOrCallId)
-
-export function upsertArtifact(projectId: string, artifact: Artifact) {
-	const cache = _getCacheFile(projectId)
-	const savedArtifacts = cache.artifactCacheEntries.reduce(
-		(acc, curr) => [...acc, curr.artifact],
-		[] as Artifact[]
-	)
-	const artifactIndex = _indexOfArtifactWithId(savedArtifacts, artifact.functionOrCallId)
-
-	if (artifactIndex !== -1) {
-		// check if upserted artifact has changed, if has, mark artifact as not pushed
-		const existingArtifact = savedArtifacts.at(artifactIndex)
-		if (deepEqual(existingArtifact, artifact)) {
-			return
-		}
-		// Update
-		cache.artifactCacheEntries[artifactIndex] = {
-			...cache.artifactCacheEntries[artifactIndex],
-			uploadStatus: 'not-uploaded',
-			artifact
-		}
-		return
-	}
-
-	cache.artifactCacheEntries.push({
-		timestamp: Date.now(),
-		uploadStatus: 'not-uploaded',
-		artifact
-	})
-
-	// Save cache
-	_saveCacheFile(projectId, cache)
-}
-
-export function markArtifactAsUploaded(projectId: string, artifact: Artifact) {
-	const cache = _getCacheFile(projectId)
-	const savedArtifacts = cache.artifactCacheEntries.reduce(
-		(acc, curr) => [...acc, curr.artifact],
-		[] as Artifact[]
-	)
-	const artifactIndex = _indexOfArtifactWithId(savedArtifacts, artifact.functionOrCallId)
-	if (artifactIndex !== -1) {
-		cache.artifactCacheEntries[artifactIndex].uploadStatus = 'uploaded'
-	}
-
-	// Save cache
-	_saveCacheFile(projectId, cache)
-}
-
-export function getArtifactsToUpload(projectId: string) {
-	const cache = _getCacheFile(projectId)
-
-	return cache.artifactCacheEntries
-		.filter((a) => a.uploadStatus !== 'uploaded')
-		.reduce((acc, curr) => [...acc, curr.artifact], [] as Artifact[])
-}
-
-export async function _fetchUploadedArtifacts(projectId: string, secretApiKey: string) {
-	const { data, error } = await get<DatabaseArtifact[]>(
+const getUploadedArtifacts = async (projectId: string, secretApiKey: string) => {
+	const { data, error } = await get<{ checksum: string; filePath: string }[]>(
 		`${FLYTRAP_API_BASE}/api/v1/artifacts/${projectId}`,
 		undefined,
 		{
@@ -169,8 +16,52 @@ export async function _fetchUploadedArtifacts(projectId: string, secretApiKey: s
 		}
 	)
 	if (error || data === null) {
-		throw error
+		return err(error ?? `API returned no data.`)
 	}
 
-	return data
+	return ok(data)
+}
+
+const getArtifactsToUpload = (
+	uploadedArtifacts: { checksum: string; filePath: string }[],
+	newArtifacts: Artifact[]
+) => {
+	type ArtifactApiReturn = { checksum: string; filePath: string }
+	const createUniqueKey = (artifact: ArtifactApiReturn) =>
+		`${artifact.checksum}-${artifact.filePath}`
+	// just take away items where checksum and filePath match
+	const existingKeys = new Set(uploadedArtifacts.map(createUniqueKey))
+
+	return newArtifacts.filter((artifact) => !existingKeys.has(createUniqueKey(artifact)))
+}
+
+export async function upsertArtifacts(
+	projectId: string,
+	secretApiKey: string,
+	artifacts: Artifact[]
+) {
+	const { data: uploadedArtifacts, error } = await getUploadedArtifacts(projectId, secretApiKey)
+	if (error !== null) {
+		return err(error)
+	}
+
+	const artifactsToUpload = getArtifactsToUpload(uploadedArtifacts, artifacts)
+
+	// Upload artifacts
+	const { data: uploadedBatches, error: uploadError } = await tryCatch(
+		batchedArtifactsUpload(artifactsToUpload, secretApiKey, projectId)
+	)
+	if (uploadError) {
+		return err(uploadError as string)
+	}
+	log.info(
+		'storage',
+		`Pushed ${
+			artifactsToUpload.length
+		} artifacts in ${uploadedBatches?.length} batches to the Flytrap API. Payload Size: ${formatBytes(
+			JSON.stringify(artifactsToUpload).length
+		)}`
+	)
+
+	return ok(uploadedBatches)
 }

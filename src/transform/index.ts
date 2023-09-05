@@ -117,7 +117,9 @@ export function flytrapTransformArtifacts(
 		FunctionExpression(path) {
 			if (!shouldBeWrapped(path)) return
 			if (isVariableDeclarator(path.parent)) {
-				const functionName = extractFunctionName(path.parent as VariableDeclarator | ObjectProperty)
+				const functionName =
+					path.node.id?.name ??
+					extractFunctionName(path.parent as VariableDeclarator | ObjectProperty)
 				const scopes = extractCurrentScope(path)
 				const functionId = extractFunctionId(path, filePath, functionName, scopes)
 

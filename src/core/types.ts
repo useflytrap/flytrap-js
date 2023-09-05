@@ -165,59 +165,28 @@ export type CaptureDecryptedAndRevived = Omit<
 
 export type CapturePayload = DatabaseCapture
 
-/* export type Storage = {
-	getItem(captureId: string): CaptureDecryptedAndRevived | null
-	removeItem(captureId: string): void
-	setItem(captureId: string, capture: CaptureDecryptedAndRevived): void
-} */
-
 export type CaptureInvocationWithLinks = Omit<CaptureInvocation, 'args' | 'output'> & {
 	args: number
 	output: number
 }
 
-export type CallArtifact = {
-	type: 'CALL'
+export type ArtifactMarking = {
+	type: 'arguments' | 'call' | 'function' | 'params'
 	functionOrCallId: string
-	functionOrCallName: string
-	fullFunctionName: string
-	source: SourceType
-	scopes: string[]
-	params: string
-	/**
-	 * `functionId` can only defined if `type` === 'CALL'
-	 */
-	functionId?: string
+	startIndex: number
+	endIndex: number
 }
 
-export type FunctionArtifact = {
-	type: 'FUNCTION'
-	functionOrCallId: string
-	functionOrCallName: string
-	source: SourceType
-	scopes: string[]
-	params: string
+export type Artifact = {
+	encryptedSource: string
+	checksum: string
+	filePath: string
 }
-
-export type Artifact = FunctionArtifact | CallArtifact
 
 export type DatabaseArtifact = Artifact & {
 	id: string
 	createdAt: string
 	projectId: string
-	functionId: null | undefined | string
-}
-
-export type ArtifactCacheEntry = {
-	timestamp: number
-	uploadStatus: 'not-uploaded' | 'uploaded' | 'upload-failed'
-	artifact: Artifact
-}
-
-export type CacheFile = {
-	projectId: string
-	createdTimestamp: number
-	artifactCacheEntries: ArtifactCacheEntry[]
 }
 
 // Adapter types

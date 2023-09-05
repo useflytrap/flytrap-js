@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import {
 	_babelInterop,
-	extractArtifacts,
+	addArtifactMarkings,
 	extractCurrentScope,
 	extractFunctionCallId
 } from '../src/transform/artifacts/artifacts'
@@ -10,76 +10,8 @@ import { parse } from 'recast'
 import babelTsParser from 'recast/parsers/babel-ts.js'
 import { Identifier } from '@babel/types'
 import { flytrapTransformArtifacts } from '../src/transform/index'
-import {
-	_fetchUploadedArtifacts,
-	_getArtifactsToUpload,
-	getArtifactsToUpload,
-	getCacheFilePath,
-	markArtifactAsUploaded,
-	upsertArtifact,
-	upsertArtifacts
-} from '../src/transform/artifacts/cache'
-import { Artifact, CallArtifact } from '../src/exports'
-import { rmSync } from 'fs'
 import { config } from 'dotenv'
 config()
-
-describe('Artifacts for functions', () => {
-	const arrowFunctionFixture = `
-	const foo = (bar, baz) => {
-		return bar + baz;
-	}
-	`
-	const functionDeclarationFixture = `
-	function foo(bar, baz) {
-		return bar + baz;
-	}
-	`
-	const functionExpressionFixture = `
-	const foo = function(bar, baz) {
-		return bar + baz;
-	}
-	`
-
-	const fixtures = [arrowFunctionFixture, functionDeclarationFixture, functionExpressionFixture]
-
-	it('source', () => {
-		for (let i = 0; i < fixtures.length; i++) {
-			expect(extractArtifacts(fixtures[i], '/file.js')[0].source).toEqual({
-				filePath: '/file.js',
-				lineNumber: 2
-			})
-		}
-	})
-
-	it('scopes', () => {
-		for (let i = 0; i < fixtures.length; i++) {
-			expect(extractArtifacts(fixtures[i], '/file.js')[0].scopes).toEqual([])
-		}
-	})
-	it('functionOrCallId', () => {
-		for (let i = 0; i < fixtures.length; i++) {
-			expect(extractArtifacts(fixtures[i], '/file.js')[0].functionOrCallId).toEqual('/file.js-_foo')
-		}
-	})
-	it('functionOrCallName', () => {
-		for (let i = 0; i < fixtures.length; i++) {
-			expect(extractArtifacts(fixtures[i], '/file.js')[0].functionOrCallName).toEqual('foo')
-		}
-	})
-	it('params', () => {
-		for (let i = 0; i < fixtures.length; i++) {
-			expect(extractArtifacts(fixtures[i], '/file.js')[0].params).toEqual('bar, baz')
-		}
-	})
-	it('functionId is undefined', () => {
-		for (let i = 0; i < fixtures.length; i++) {
-			expect((extractArtifacts(fixtures[i], '/file.js')[0] as CallArtifact).functionId).toEqual(
-				undefined
-			)
-		}
-	})
-})
 
 describe('extractFunction(Call)Id', () => {
 	it('extractFunctionCallId', () => {
@@ -192,81 +124,6 @@ describe('extractCurrentScope', () => {
 	})
 })
 
-describe('Artifacts for function calls', () => {
-	const syncCallExpressionFixture = `
-	const foo = bar(a, b)
-	`
-	const asyncCallExpressionFixture = `
-	const foo = await bar(a, b)
-	`
-	const chainedCallExpressionFixture = `
-	const foo = bar(a, b).baz()
-	`
-
-	const fixtures = [syncCallExpressionFixture, asyncCallExpressionFixture]
-
-	it('source', () => {
-		for (let i = 0; i < fixtures.length; i++) {
-			expect(extractArtifacts(fixtures[i], '/file.js')[0].source).toEqual({
-				filePath: '/file.js',
-				lineNumber: 2
-			})
-		}
-	})
-
-	it('scopes', () => {
-		for (let i = 0; i < fixtures.length; i++) {
-			expect(extractArtifacts(fixtures[i], '/file.js')[0].scopes).toEqual([])
-		}
-	})
-	it('functionOrCallId', () => {
-		for (let i = 0; i < fixtures.length; i++) {
-			expect(extractArtifacts(fixtures[i], '/file.js')[0].functionOrCallId).toEqual(
-				'/file.js-call-_bar'
-			)
-		}
-	})
-	it('functionOrCallName', () => {
-		for (let i = 0; i < fixtures.length; i++) {
-			expect(extractArtifacts(fixtures[i], '/file.js')[0].functionOrCallName).toEqual('bar')
-		}
-
-		expect(
-			extractArtifacts(chainedCallExpressionFixture, '/file.js')[0].functionOrCallName
-		).toEqual('baz')
-
-		// Namespaced call name
-		expect(
-			extractArtifacts(`supabase.auth.admin.listUsers()`, '/file.js')[0].functionOrCallName
-		).toEqual('listUsers')
-	})
-	it('fullFunctionName', () => {
-		expect(
-			(extractArtifacts(chainedCallExpressionFixture, '/file.js')[0] as CallArtifact)
-				.fullFunctionName
-		).toEqual('bar(a, b).baz')
-
-		// Namespaced call name
-		expect(
-			(extractArtifacts(`supabase.auth.admin.listUsers()`, '/file.js')[0] as CallArtifact)
-				.fullFunctionName
-		).toEqual('supabase.auth.admin.listUsers')
-	})
-	it('params', () => {
-		for (let i = 0; i < fixtures.length; i++) {
-			expect(extractArtifacts(fixtures[i], '/file.js')[0].params).toEqual('a, b')
-		}
-		expect(extractArtifacts(chainedCallExpressionFixture, '/file.js')[0].params).toEqual('')
-	})
-	it('functionId', () => {
-		for (let i = 0; i < fixtures.length; i++) {
-			expect((extractArtifacts(fixtures[i], '/file.js')[0] as CallArtifact).functionId).toEqual(
-				undefined
-			)
-		}
-	})
-})
-
 it.skip('getWrappingFunctionId', () => {
 	const ast = parse(
 		`
@@ -295,86 +152,141 @@ function Home() {
 `
 
 it('generates values same as transform', () => {
-	const extracted = extractArtifacts(pageCodeFixture, '/file.js') as CallArtifact[]
+	const extractedMarkings = addArtifactMarkings(pageCodeFixture, '/file.js')
 	const transformedCode = flytrapTransformArtifacts(pageCodeFixture, '/file.js')
 
-	const functionIds = extracted.map((e) => e.functionId).filter(Boolean)
+	const functionIds = extractedMarkings.map((e) => e.functionOrCallId).filter(Boolean)
 	for (let i = 0; i < functionIds.length; i++) {
 		expect(transformedCode.code).toContain(functionIds[i] as string)
 	}
 })
 
-describe('Cache', () => {
-	const testEnvProjectId = process.env['FLYTRAP_PROJECT_ID']
-	const testEnvSecretApiKey = process.env['FLYTRAP_SECRET_KEY']
-	if (!testEnvProjectId) {
-		throw new Error(`Flytrap Testing Environment project ID not defined.`)
-	}
-	if (!testEnvSecretApiKey) {
-		throw new Error(`Flytrap Testing Environment secret API key not defined.`)
-	}
-	const cacheFilePath = getCacheFilePath('mock-project-id')
-	const mockArtifact: Artifact = {
-		functionOrCallId: `mock-call-id-${new Date().toISOString()}`,
-		functionOrCallName: '',
-		fullFunctionName: '',
-		params: '',
-		scopes: [],
-		type: 'CALL',
-		source: {
-			filePath: '/file.js',
-			lineNumber: -1
-		}
-	}
-
-	afterAll(() => {
-		rmSync(cacheFilePath, { recursive: true })
-	})
-
-	it(
-		'_fetchUploadedArtifacts',
-		async () => {
-			const uploadedArtifacts = await _fetchUploadedArtifacts(testEnvProjectId, testEnvSecretApiKey)
-			expect(
-				uploadedArtifacts.find((u) => u.functionOrCallId === mockArtifact.functionOrCallId) !==
-					undefined
-			)
-		},
-		{ timeout: 10_000 }
-	)
-
-	it('_getArtifactsToUpload', async () => {
-		const artifactsToUpload = await _getArtifactsToUpload(testEnvProjectId, testEnvSecretApiKey, [
-			mockArtifact
+describe('artifacts markings', () => {
+	it('function calls', () => {
+		expect(addArtifactMarkings(`console.log(a)`, '/file.js')).toEqual([
+			{
+				type: 'call',
+				functionOrCallId: '/file.js-call-_log',
+				startIndex: 0,
+				endIndex: 10
+			},
+			{
+				type: 'arguments',
+				functionOrCallId: '/file.js-call-_log',
+				startIndex: 11,
+				endIndex: 13
+			}
 		])
-		expect(artifactsToUpload).toEqual([mockArtifact])
-	})
 
-	it('upsertArtifacts', async () => {
-		const response = await upsertArtifacts(testEnvProjectId, testEnvSecretApiKey, [mockArtifact])
-		expect(response.includes(mockArtifact.functionOrCallId))
-	})
-
-	it('_getArtifactsToUpload no longer include the mock artifact', async () => {
-		const artifactsToUpload = await _getArtifactsToUpload(testEnvProjectId, testEnvSecretApiKey, [
-			mockArtifact
+		expect(addArtifactMarkings(`console.log()`, '/file.js')).toEqual([
+			{
+				type: 'call',
+				functionOrCallId: '/file.js-call-_log',
+				startIndex: 0,
+				endIndex: 11
+			},
+			{
+				type: 'arguments',
+				functionOrCallId: '/file.js-call-_log',
+				startIndex: 12,
+				endIndex: 13
+			}
 		])
-		expect(artifactsToUpload).toEqual([])
 	})
 
-	it('upserts artifact', () => {
-		upsertArtifact('mock-project-id', mockArtifact)
-	})
-
-	it('gets artifacts to upload', () => {
-		expect(getArtifactsToUpload('mock-project-id')).toEqual([mockArtifact])
-	})
-
-	it('marks artifact as uploaded', () => {
-		markArtifactAsUploaded('mock-project-id', mockArtifact)
-	})
-
-	it('doesnt return already uploaded artifacts', () => {
-		expect(getArtifactsToUpload('mock-project-id')).toEqual([])
+	describe('function definitions', () => {
+		it('function def inside function call', () => {
+			expect(addArtifactMarkings(`useEffect((a) => {}, [])`, '/file.js')).toEqual([
+				{
+					type: 'call',
+					functionOrCallId: '/file.js-call-_useEffect',
+					startIndex: 0,
+					endIndex: 8
+				},
+				{
+					type: 'arguments',
+					functionOrCallId: '/file.js-call-_useEffect',
+					startIndex: 9,
+					endIndex: 23
+				},
+				{
+					type: 'params',
+					functionOrCallId: '/file.js-_anonymous',
+					startIndex: 10,
+					endIndex: 12
+				}
+			])
+		})
+		it('func decl', () => {
+			expect(addArtifactMarkings(`function foo(a) {}`, '/file.js')).toEqual([
+				{
+					type: 'function',
+					functionOrCallId: '/file.js-_foo',
+					startIndex: 0,
+					endIndex: 12
+				},
+				{
+					type: 'params',
+					functionOrCallId: '/file.js-_foo',
+					startIndex: 12,
+					endIndex: 14
+				}
+			])
+		})
+		it('arrow func', () => {
+			expect(addArtifactMarkings(`const x = (a) => {}`, '/file.js')).toEqual([
+				{
+					type: 'params',
+					functionOrCallId: '/file.js-_x',
+					startIndex: 10,
+					endIndex: 12
+				}
+			])
+			// without parenthesis
+			expect(addArtifactMarkings(`const x = a => {}`, '/file.js')).toEqual([
+				/* {
+					type: 'function',
+					functionOrCallId: '/file.js-_x',
+					startIndex: 0,
+					endIndex: 12,
+				}, */
+				{
+					type: 'params',
+					functionOrCallId: '/file.js-_x',
+					startIndex: 9,
+					endIndex: 11
+				}
+			])
+		})
+		it('function expression', () => {
+			expect(addArtifactMarkings(`const x = function (a) {}`, '/file.js')).toEqual([
+				{
+					type: 'function',
+					functionOrCallId: '/file.js-_x',
+					startIndex: 10,
+					endIndex: 19
+				},
+				{
+					type: 'params',
+					functionOrCallId: '/file.js-_x',
+					startIndex: 19,
+					endIndex: 21
+				}
+			])
+			expect(addArtifactMarkings(`const x = function foo(a) {}`, '/file.js')).toEqual([
+				{
+					type: 'function',
+					functionOrCallId: '/file.js-_foo',
+					startIndex: 10,
+					endIndex: 22
+				},
+				{
+					type: 'params',
+					functionOrCallId: '/file.js-_foo',
+					startIndex: 22,
+					endIndex: 24
+				}
+			])
+		})
 	})
 })

@@ -225,3 +225,17 @@ export const formatBytes = (bytes: number) => {
 export function normalizeFilepath(pkgDirPath: string, filePath: string) {
 	return filePath.replace(pkgDirPath, '').replace(/\0/g, '')
 }
+
+export function ok<T>(data: T) {
+	return {
+		data,
+		error: null
+	}
+}
+
+export function err<T>(error: T) {
+	return {
+		data: null,
+		error
+	}
+}
