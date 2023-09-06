@@ -13,6 +13,20 @@ import { flytrapTransformArtifacts } from '../src/transform/index'
 import { config } from 'dotenv'
 config()
 
+const largeFixture = `
+function Home() {
+	const [inputValue, setInputValue] = useState('')
+
+	function submit() {
+		console.log('Input Value:', inputValue)
+		if (inputValue === 'wrong') {
+			throw new Error("Input value is wrong")
+		}
+		alert("Submitted wrong")
+	}
+}
+`
+
 describe('extractFunction(Call)Id', () => {
 	it('extractFunctionCallId', () => {
 		const functionCallIdFixture = `
@@ -161,132 +175,163 @@ it('generates values same as transform', () => {
 	}
 })
 
-describe('artifacts markings', () => {
-	it('function calls', () => {
-		expect(addArtifactMarkings(`console.log(a)`, '/file.js')).toEqual([
-			{
-				type: 'call',
-				functionOrCallId: '/file.js-call-_log',
-				startIndex: 0,
-				endIndex: 10
-			},
-			{
-				type: 'arguments',
-				functionOrCallId: '/file.js-call-_log',
-				startIndex: 11,
-				endIndex: 13
-			}
-		])
+type ArtifactMarkingsTest = {
+	fixture: string
+	functionDef?: string
+	paramsDef?: string
+	argumentsDef?: string
+	callDef?: string
+}
 
-		expect(addArtifactMarkings(`console.log()`, '/file.js')).toEqual([
-			{
-				type: 'call',
-				functionOrCallId: '/file.js-call-_log',
-				startIndex: 0,
-				endIndex: 11
-			},
-			{
-				type: 'arguments',
-				functionOrCallId: '/file.js-call-_log',
-				startIndex: 12,
-				endIndex: 13
-			}
-		])
-	})
+function codeToArtifactMarkingsTest(fixture: string): ArtifactMarkingsTest {
+	const markings = addArtifactMarkings(fixture, '/file.js')
+	const functionMarking = markings.find((m) => m.type === 'function')
+	const callMarking = markings.find((m) => m.type === 'call')
+	const argumentsMarking = markings.find((m) => m.type === 'arguments')
+	const paramsMarking = markings.find((m) => m.type === 'params')
+	return {
+		fixture,
+		...(functionMarking && {
+			functionDef: fixture.substring(functionMarking.startIndex, functionMarking.endIndex)
+		}),
+		...(callMarking && {
+			callDef: fixture.substring(callMarking.startIndex, callMarking.endIndex)
+		}),
+		...(argumentsMarking && {
+			argumentsDef: fixture.substring(argumentsMarking.startIndex, argumentsMarking.endIndex)
+		}),
+		...(paramsMarking && {
+			paramsDef: fixture.substring(paramsMarking.startIndex, paramsMarking.endIndex)
+		})
+	}
+}
 
-	describe('function definitions', () => {
-		it('function def inside function call', () => {
-			expect(addArtifactMarkings(`useEffect((a) => {}, [])`, '/file.js')).toEqual([
-				{
-					type: 'call',
-					functionOrCallId: '/file.js-call-_useEffect',
-					startIndex: 0,
-					endIndex: 8
-				},
-				{
-					type: 'arguments',
-					functionOrCallId: '/file.js-call-_useEffect',
-					startIndex: 9,
-					endIndex: 23
-				},
-				{
-					type: 'params',
-					functionOrCallId: '/file.js-_anonymous',
-					startIndex: 10,
-					endIndex: 12
-				}
-			])
+const artifactMarkingsFixtures: Record<string, ArtifactMarkingsTest[]> = {
+	'function calls': [
+		{
+			fixture: 'console.log(a)',
+			callDef: 'console.log',
+			argumentsDef: '(a)'
+		},
+		{
+			fixture: 'console.log()',
+			callDef: 'console.log',
+			argumentsDef: '()'
+		},
+		// random spacing
+		{
+			fixture: 'console.log  (a) ',
+			callDef: 'console.log  ',
+			argumentsDef: '(a)'
+		},
+		{
+			fixture: 'console.log  () ',
+			callDef: 'console.log  ',
+			argumentsDef: '()'
+		}
+	],
+	'function definitions': [
+		// function def inside function call
+		{
+			fixture: 'useEffect((a) => {}, [])',
+			callDef: 'useEffect',
+			paramsDef: '(a)',
+			argumentsDef: '((a) => {}, [])'
+		},
+		// function declaration
+		{
+			fixture: 'function foo(a) {}',
+			functionDef: 'function foo',
+			paramsDef: '(a)'
+		},
+		{
+			fixture: 'function foo() {}',
+			functionDef: 'function foo',
+			paramsDef: '()'
+		},
+		// function declaration weird spacing
+		{
+			fixture: 'function foo  (a)    {}',
+			functionDef: 'function foo',
+			paramsDef: '(a)'
+		},
+		{
+			fixture: 'function foo  ()   {}',
+			functionDef: 'function foo',
+			paramsDef: '()'
+		},
+		// arrow function
+		{
+			fixture: 'const x = (a) => {}',
+			paramsDef: '(a)'
+		},
+		{
+			fixture: 'const x = a => {}',
+			paramsDef: ' a '
+		},
+		{
+			fixture: 'const x = () => {}',
+			paramsDef: '()'
+		},
+		// arrow functions weird spacing
+		{
+			fixture: 'const x =  (a)   => {}',
+			paramsDef: '(a)'
+		},
+		{
+			fixture: 'const x =   a   => {}',
+			paramsDef: ' a '
+		},
+		{
+			fixture: 'const x =   ()   =>  {}',
+			paramsDef: '()'
+		},
+		// function expression
+		{
+			fixture: 'const x = function(a) {}',
+			functionDef: 'function',
+			paramsDef: '(a)'
+		},
+		{
+			fixture: 'const x = function foo(a) {}',
+			functionDef: 'function foo',
+			paramsDef: '(a)'
+		},
+		{
+			fixture: 'const x = function() {}',
+			functionDef: 'function',
+			paramsDef: '()'
+		},
+		// function expression weird spacing
+		{
+			fixture: 'const x = function  (a)   {}',
+			functionDef: 'function  ',
+			paramsDef: '(a)'
+		},
+		{
+			fixture: 'const x = function foo  (a)  {}',
+			functionDef: 'function foo  ',
+			paramsDef: '(a)'
+		},
+		{
+			fixture: 'const x = function  ()   {}',
+			functionDef: 'function  ',
+			paramsDef: '()'
+		}
+	]
+}
+
+describe('artifact markings new', () => {
+	for (const [suiteName, artifactTests] of Object.entries(artifactMarkingsFixtures)) {
+		it(suiteName, () => {
+			for (let i = 0; i < artifactTests.length; i++) {
+				expect(codeToArtifactMarkingsTest(artifactTests[i].fixture)).toEqual(artifactTests[i])
+			}
 		})
-		it('func decl', () => {
-			expect(addArtifactMarkings(`function foo(a) {}`, '/file.js')).toEqual([
-				{
-					type: 'function',
-					functionOrCallId: '/file.js-_foo',
-					startIndex: 0,
-					endIndex: 12
-				},
-				{
-					type: 'params',
-					functionOrCallId: '/file.js-_foo',
-					startIndex: 12,
-					endIndex: 14
-				}
-			])
-		})
-		it('arrow func', () => {
-			expect(addArtifactMarkings(`const x = (a) => {}`, '/file.js')).toEqual([
-				{
-					type: 'params',
-					functionOrCallId: '/file.js-_x',
-					startIndex: 10,
-					endIndex: 12
-				}
-			])
-			// without parenthesis
-			expect(addArtifactMarkings(`const x = a => {}`, '/file.js')).toEqual([
-				/* {
-					type: 'function',
-					functionOrCallId: '/file.js-_x',
-					startIndex: 0,
-					endIndex: 12,
-				}, */
-				{
-					type: 'params',
-					functionOrCallId: '/file.js-_x',
-					startIndex: 9,
-					endIndex: 11
-				}
-			])
-		})
-		it('function expression', () => {
-			expect(addArtifactMarkings(`const x = function (a) {}`, '/file.js')).toEqual([
-				{
-					type: 'function',
-					functionOrCallId: '/file.js-_x',
-					startIndex: 10,
-					endIndex: 19
-				},
-				{
-					type: 'params',
-					functionOrCallId: '/file.js-_x',
-					startIndex: 19,
-					endIndex: 21
-				}
-			])
-			expect(addArtifactMarkings(`const x = function foo(a) {}`, '/file.js')).toEqual([
-				{
-					type: 'function',
-					functionOrCallId: '/file.js-_foo',
-					startIndex: 10,
-					endIndex: 22
-				},
-				{
-					type: 'params',
-					functionOrCallId: '/file.js-_foo',
-					startIndex: 22,
-					endIndex: 24
-				}
-			])
-		})
-	})
+	}
+})
+
+it('artifacts markings complete', () => {
+	const markings = addArtifactMarkings(largeFixture, '/file.js')
+	// @todo: finish this test
 })

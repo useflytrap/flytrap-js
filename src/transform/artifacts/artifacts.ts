@@ -12,7 +12,7 @@ import {
 	RestElement,
 	VariableDeclarator
 } from '@babel/types'
-import { ArtifactMarking } from '../../exports'
+import { ArtifactMarking } from '../../core/types'
 import { getRequiredExportsForCapture } from '../imports'
 
 /**
@@ -150,24 +150,22 @@ export function getWrappingFunctionId(
 }
 
 export function addArtifactMarkings(code: string, filePath: string) {
+	code = code.replaceAll('\t', '    ')
 	const functionOrCallIdsAndLocations: ArtifactMarking[] = []
 	const ast = parse(code, { parser: babelTsParser })
 
-	const extractParamsLocation = (
-		params: (Identifier | RestElement | Pattern)[],
-		expressionStartingIndex: number
-	) => {
+	const extractParamsLocation = (params: (Identifier | RestElement | Pattern)[]) => {
 		if (params.length === 0) {
-			return [expressionStartingIndex + 1, expressionStartingIndex + 2]
+			return undefined
 		}
 		if (!params[0].start || !params[0].end) {
 			// @todo: improved error
 			throw new Error('invalid params start or end')
 		}
 		const startIndex = params[0].start - 1
-		let endIndex = params[0].end
+		let endIndex = params[0].end + 1
 		for (let i = 0; i < params.length; i++) {
-			endIndex = params[i].end as number
+			endIndex = (params[i].end as number) + 1
 		}
 
 		return [startIndex, endIndex]
@@ -179,78 +177,89 @@ export function addArtifactMarkings(code: string, filePath: string) {
 			const scopes = extractCurrentScope(path)
 			const functionId = extractFunctionId(path, filePath, functionName, scopes)
 
-			const [startIndex, endIndex] = extractParamsLocation(path.node.params, path.node.end!)
+			const paramsLocation = extractParamsLocation(path.node.params)
+			const firstIndexOfOpenParen = print(path.node).code.indexOf('(')
 
-			functionOrCallIdsAndLocations.push({
-				type: 'params',
-				functionOrCallId: functionId,
-				startIndex,
-				endIndex
-			})
+			if (paramsLocation || firstIndexOfOpenParen !== -1) {
+				functionOrCallIdsAndLocations.push({
+					type: 'params',
+					functionOrCallId: functionId,
+					startIndex: paramsLocation?.[0] ?? path.node.start! + firstIndexOfOpenParen,
+					endIndex: paramsLocation?.[1] ?? path.node.start! + firstIndexOfOpenParen + 2
+				})
+			}
 		},
 		FunctionDeclaration(path) {
 			const functionName = extractFunctionName(path.node)
 			const scopes = extractCurrentScope(path)
 			const functionId = extractFunctionId(path, filePath, functionName, scopes)
 
-			const [startIndex, endIndex] = extractParamsLocation(path.node.params, path.node.end!)
+			const paramsLocation = extractParamsLocation(path.node.params)
+			const firstIndexOfOpenParen = print(path.node).code.indexOf('(')
 
 			functionOrCallIdsAndLocations.push({
 				type: 'function',
 				functionOrCallId: functionId,
 				startIndex: path.node.start!,
-				endIndex: startIndex
+				// @ts-expect-error
+				endIndex: path.node.id.end
 			})
-			functionOrCallIdsAndLocations.push({
-				type: 'params',
-				functionOrCallId: functionId,
-				startIndex,
-				endIndex
-			})
+			if (paramsLocation || firstIndexOfOpenParen !== -1) {
+				functionOrCallIdsAndLocations.push({
+					type: 'params',
+					functionOrCallId: functionId,
+					startIndex: paramsLocation?.[0] ?? path.node.start! + firstIndexOfOpenParen,
+					endIndex: paramsLocation?.[1] ?? path.node.start! + firstIndexOfOpenParen + 2
+				})
+			}
 		},
 		FunctionExpression(path) {
 			const functionName =
 				path.node.id?.name ?? extractFunctionName(path.parent as VariableDeclarator)
 			const scopes = extractCurrentScope(path)
 			const functionId = extractFunctionId(path, filePath, functionName, scopes)
-			const [startIndex, endIndex] = extractParamsLocation(path.node.params, path.node.end!)
+
+			const paramsLocation = extractParamsLocation(path.node.params)
+			const firstIndexOfOpenParen = print(path.node).code.indexOf('(')
 
 			functionOrCallIdsAndLocations.push({
 				type: 'function',
 				functionOrCallId: functionId,
 				startIndex: path.node.start!,
-				endIndex: startIndex
+				endIndex: path.node.start! + firstIndexOfOpenParen
 			})
-			functionOrCallIdsAndLocations.push({
-				type: 'params',
-				functionOrCallId: functionId,
-				startIndex,
-				endIndex
-			})
+			if (paramsLocation || firstIndexOfOpenParen !== -1) {
+				functionOrCallIdsAndLocations.push({
+					type: 'params',
+					functionOrCallId: functionId,
+					startIndex: paramsLocation?.[0] ?? path.node.start! + firstIndexOfOpenParen,
+					endIndex: paramsLocation?.[1] ?? path.node.start! + firstIndexOfOpenParen + 2
+				})
+			}
 		},
 		CallExpression(path) {
 			const functionCallName = extractFunctionCallName(path.node)
 			const scopes = extractCurrentScope(path)
 			const functionCallId = extractFunctionCallId(path, filePath, functionCallName, scopes)
 
-			const [startIndex, endIndex] = extractParamsLocation(
-				path.node.arguments as Identifier[],
-				path.node.end! - 2
-			)
+			const paramsLocation = extractParamsLocation(path.node.arguments as Identifier[])
+			const firstIndexOfOpenParen = print(path.node).code.indexOf('(')
 
 			functionOrCallIdsAndLocations.push({
 				type: 'call',
 				startIndex: path.node.start!,
-				endIndex: startIndex - 1,
+				endIndex: path.node.start! + firstIndexOfOpenParen,
 				functionOrCallId: functionCallId
 			})
 
-			functionOrCallIdsAndLocations.push({
-				type: 'arguments',
-				functionOrCallId: functionCallId,
-				startIndex,
-				endIndex
-			})
+			if (paramsLocation || firstIndexOfOpenParen !== -1) {
+				functionOrCallIdsAndLocations.push({
+					type: 'arguments',
+					functionOrCallId: functionCallId,
+					startIndex: paramsLocation?.[0] ?? path.node.start! + firstIndexOfOpenParen,
+					endIndex: paramsLocation?.[1] ?? path.node.start! + firstIndexOfOpenParen + 2
+				})
+			}
 		}
 	})
 
