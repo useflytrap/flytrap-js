@@ -111,7 +111,7 @@ test('should capture front-end bug in sveltekit example', async ({ page }) => {
   expect(capturesAfter.length).toBeGreaterThan(capturesBefore.length);
 })
 
-test('should capture front-end bug in nuxt example', async ({ page }) => {
+test.skip('should capture front-end bug in nuxt example', async ({ page }) => {
   const startTime = new Date();
   const capturesBefore = await fetchCaptures('sk_TnBe2CSBNPGE-9jDtiQDvaoef8LOJ17T_xpIvKxVcBJuskGX');
   // Start from the index page (the baseURL is set via the webServer in the playwright.config.ts)

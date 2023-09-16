@@ -24,6 +24,15 @@ function Home() {
 		}
 		alert("Submitted wrong")
 	}
+
+	return (
+		<main className="flex min-h-screen flex-col items-center justify-between p-24">
+			<div className='text-black'>
+				<input value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
+			</div>
+			<button onClick={() => submit()}>Submit</button>
+		</main>
+	)
 }
 `
 
@@ -334,4 +343,46 @@ describe('artifact markings new', () => {
 it('artifacts markings complete', () => {
 	const markings = addArtifactMarkings(largeFixture, '/file.js')
 	// @todo: finish this test
+	expect(markings).toContainEqual({
+		type: 'call',
+		startIndex: 486,
+		endIndex: 499,
+		functionOrCallId: '/file.js-call-_HomeAnonymousSetInputValue'
+	})
+	expect(markings).toContainEqual({
+		type: 'arguments',
+		functionOrCallId: '/file.js-call-_HomeAnonymousSetInputValue',
+		startIndex: 499,
+		endIndex: 515
+	})
+	expect(markings).toContainEqual({
+		type: 'params',
+		functionOrCallId: '/file.js-_HomeAnonymous2',
+		startIndex: 568,
+		endIndex: 570
+	})
+	expect(markings).toContainEqual({
+		type: 'call',
+		startIndex: 574,
+		endIndex: 580,
+		functionOrCallId: '/file.js-call-_HomeAnonymousSubmit'
+	})
+	expect(markings).toContainEqual({
+		type: 'arguments',
+		functionOrCallId: '/file.js-call-_HomeAnonymousSubmit',
+		startIndex: 580,
+		endIndex: 582
+	})
+	expect(markings).toContainEqual({
+		type: 'call',
+		startIndex: 486,
+		endIndex: 499,
+		functionOrCallId: '/file.js-call-_HomeAnonymousSetInputValue'
+	})
+	expect(markings).toContainEqual({
+		type: 'arguments',
+		functionOrCallId: '/file.js-call-_HomeAnonymousSetInputValue',
+		startIndex: 499,
+		endIndex: 515
+	})
 })

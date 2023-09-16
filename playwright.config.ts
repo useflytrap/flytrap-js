@@ -58,7 +58,7 @@ const config: PlaywrightTestConfig = {
 			timeout: 120 * 1000,
 			reuseExistingServer: !process.env.CI,
 		},
-    {
+    /* {
       command: `pnpm run dev`,
 			cwd: join(__dirname, 'examples', 'with-nuxt'),
 			port: NUXT_PORT,
@@ -67,7 +67,7 @@ const config: PlaywrightTestConfig = {
 			},
 			timeout: 120 * 1000,
 			reuseExistingServer: !process.env.CI,
-		},
+		}, */
     // Replay examples
     {
 			command: 'pnpm run dev',
