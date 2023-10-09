@@ -30,6 +30,7 @@ import {
 	extractFunctionName
 } from './artifacts/artifacts'
 import { findIgnoredImports, shouldIgnoreCall } from './packageIgnores'
+import { shouldIgnoreFunctionName } from './excludes'
 
 export function shouldBeWrapped(path: NodePath) {
 	if (
@@ -63,7 +64,8 @@ function _babelInterop(fn: typeof babelTraverse): typeof babelTraverse {
 export function flytrapTransformArtifacts(
 	code: string,
 	filePath: string,
-	packageIgnores?: string[]
+	packageIgnores?: string[],
+	excludeFunctionNames?: string[]
 ) {
 	const ast = parse(code, { parser: babelTsParser })
 	const ignoredImports = packageIgnores ? findIgnoredImports(code, packageIgnores) : undefined
@@ -135,7 +137,10 @@ export function flytrapTransformArtifacts(
 			if (!shouldBeWrapped(path)) return
 
 			// Ignored calls (eg. packageIgnores & reserved words)
-			if (shouldIgnoreCall(path, ignoredImports ?? [])) {
+			if (
+				shouldIgnoreCall(path, ignoredImports ?? []) ||
+				shouldIgnoreFunctionName(path, excludeFunctionNames ?? [])
+			) {
 				return
 			}
 

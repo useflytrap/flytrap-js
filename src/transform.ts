@@ -123,7 +123,8 @@ export const unpluginOptions: UnpluginOptions = {
 				const transformedScriptTagContents = flytrapTransformArtifacts(
 					ss.toString(),
 					normalizeFilepath(pkgDirPath, id),
-					config?.packageIgnores
+					config?.packageIgnores,
+					config?.excludeFunctionNames
 				)
 				wholeSourceFile.overwrite(
 					scriptStartIndex,
@@ -142,7 +143,8 @@ export const unpluginOptions: UnpluginOptions = {
 			return flytrapTransformArtifacts(
 				ss.toString(),
 				normalizeFilepath(pkgDirPath, id),
-				config?.packageIgnores
+				config?.packageIgnores,
+				config?.excludeFunctionNames
 			)
 		} catch (e) {
 			if (process.env.NODE_ENV === 'test') {

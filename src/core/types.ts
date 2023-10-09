@@ -50,6 +50,19 @@ export type FlytrapConfig = {
 	 */
 	excludeDirectories?: string[]
 	/**
+	 * Define function names to ignore when transforming function calls.
+	 * Helpful to ignore function macros such as Vue's `defineProps` macro.
+	 *
+	 * @example
+	 * ```typescript
+	 * defineFlytrapConfig({
+	 * 	 excludeFunctionNames: ['defineProps']
+	 * })
+	 * ```
+	 * [Learn more](https://docs.useflytrap.com/config/introduction)
+	 */
+	excludeFunctionNames?: string[]
+	/**
 	 * Prevent certain captures from being sent to the Flytrap API. Ignoring
 	 * captures is useful if there are certain errors that are expected to be
 	 * thrown, for example "UNAUTHORIZED" tRPC responses.

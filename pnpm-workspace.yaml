@@ -6,3 +6,4 @@ packages:
   - 'examples/with-nextjs'
   - 'examples/with-nextjs-api'
   - 'examples/with-sveltekit'
+  - 'examples/with-vue-3'

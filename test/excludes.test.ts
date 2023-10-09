@@ -4,7 +4,10 @@ import babelTsParser from 'recast/parsers/babel-ts.js'
 import { _babelInterop } from '../src/transform/artifacts/artifacts'
 import babelTraverse from '@babel/traverse'
 import { findIgnoredImports, shouldIgnoreCall } from '../src/transform/packageIgnores'
-import { excludeDirectoriesIncludeFilePath } from '../src/transform/excludes'
+import {
+	excludeDirectoriesIncludeFilePath,
+	shouldIgnoreFunctionName
+} from '../src/transform/excludes'
 import { CapturePayload } from '../src/exports'
 import { shouldIgnoreCapture } from '../src/core/captureIgnores'
 
@@ -197,6 +200,32 @@ describe('captureIgnores', () => {
 					`fixture "${keyFixtures[i][0]}"`
 				).toEqual(keyFixtures[i][1])
 			}
+		})
+	}
+})
+
+describe('ignoredFunctionNames', () => {
+	const fixtures = [
+		{
+			name: 'namespaced calls',
+			ignoredFunctionNames: ['console.log'],
+			fixture: `console.log('foo bar')`
+		},
+		{
+			name: 'normal calls',
+			ignoredFunctionNames: ['defineProps'],
+			fixture: `defineProps({})`
+		}
+	]
+
+	for (let i = 0; i < fixtures.length; i++) {
+		it(`ignores ${fixtures[i].name}`, () => {
+			const ast = parse(fixtures[i].fixture, { parser: babelTsParser })
+			_babelInterop(babelTraverse)(ast, {
+				CallExpression(path) {
+					expect(shouldIgnoreFunctionName(path, fixtures[i].ignoredFunctionNames)).toEqual(true)
+				}
+			})
 		})
 	}
 })
