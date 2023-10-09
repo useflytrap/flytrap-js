@@ -1,6 +1,19 @@
 <script setup lang="ts">
 import HelloWorld from './components/HelloWorld.vue'
 import TheWelcome from './components/TheWelcome.vue'
+import { ref } from 'vue'
+
+const inputValue = ref('')
+
+function submit() {
+  console.log('Input Value:', inputValue.value)
+	if (inputValue.value === 'wrong') {
+		throw new Error(`Input value "${inputValue.value}" is wrong!`)
+	}
+	alert(`Submitted inputValue "${inputValue.value}"`)
+}
+
+
 </script>
 
 <template>
@@ -9,6 +22,8 @@ import TheWelcome from './components/TheWelcome.vue'
 
     <div class="wrapper">
       <HelloWorld msg="You did it!" />
+      <input v-model="inputValue" placeholder="Don't input wrong" />
+      <button @click="submit">Submit</button>
     </div>
   </header>
 
