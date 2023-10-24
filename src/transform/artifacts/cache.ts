@@ -1,12 +1,12 @@
 import { err, formatBytes, get, ok, tryCatch } from '../../core/util'
-import { FLYTRAP_API_BASE } from '../../core/config'
+import { getApiBase } from '../../core/config'
 import { log } from '../../core/logging'
 import { batchedArtifactsUpload } from './batchedArtifactsUpload'
 import { Artifact } from '../../core/types'
 
 const getUploadedArtifacts = async (projectId: string, secretApiKey: string) => {
 	const { data, error } = await get<{ checksum: string; filePath: string }[]>(
-		`${FLYTRAP_API_BASE}/api/v1/artifacts/${projectId}`,
+		`${getApiBase()}/api/v1/artifacts/${projectId}`,
 		undefined,
 		{
 			headers: new Headers({

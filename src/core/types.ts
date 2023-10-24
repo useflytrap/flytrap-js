@@ -24,6 +24,11 @@ export type FlytrapConfig = {
 	mode?: FlytrapMode
 	logging?: LogGroup[]
 	/**
+	 * The API base address.
+	 * @default "https://www.useflytrap.com"
+	 */
+	apiBase?: string
+	/**
 	 * Set this to `true` to not push artifacts
 	 * to the Flytrap API during builds. [Learn more](https://docs.useflytrap.com/config/introduction)
 	 */

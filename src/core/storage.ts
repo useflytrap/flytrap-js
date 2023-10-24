@@ -6,7 +6,7 @@ import type {
 	DatabaseCapture,
 	Storage
 } from './types'
-import { FLYTRAP_API_BASE, getLoadedConfig } from './config'
+import { getApiBase, getLoadedConfig } from './config'
 import { getUserId } from '../index'
 import { empty, formatBytes, get, post, tryCatchSync } from './util'
 import { createHumanLog } from './human-logs'
@@ -80,7 +80,7 @@ export const liveFlytrapStorage: FlytrapStorage = {
 		loadedCaptures.set(captureId, undefined) // mark it as being loaded
 
 		const { data, error } = await get<DatabaseCapture>(
-			`${FLYTRAP_API_BASE}/api/v1/captures/${captureId}`,
+			`${getApiBase()}/api/v1/captures/${captureId}`,
 			undefined,
 			{
 				headers: new Headers({
@@ -212,7 +212,7 @@ export const liveFlytrapStorage: FlytrapStorage = {
 		}
 
 		const { error: captureError } = await post(
-			`${FLYTRAP_API_BASE}/api/v1/captures`,
+			`${getApiBase()}/api/v1/captures`,
 			stringifiedPayload,
 			{
 				headers: new Headers({

@@ -2,7 +2,7 @@ import { FlytrapConfig } from './types'
 import { empty } from './util'
 
 export const FLYTRAP_PACKAGE_NAME = 'useflytrap'
-export const FLYTRAP_API_BASE = 'https://www.useflytrap.com'
+const FLYTRAP_API_BASE = 'https://www.useflytrap.com'
 
 let _loadedConfig: FlytrapConfig | undefined = undefined
 
@@ -26,3 +26,4 @@ export function setFlytrapConfig(config: FlytrapConfig) {
 }
 
 export const getLoadedConfig = () => _loadedConfig
+export const getApiBase = () => getLoadedConfig()?.apiBase ?? FLYTRAP_API_BASE
