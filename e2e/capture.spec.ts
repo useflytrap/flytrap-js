@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { NEXTJS_API_PORT, NEXTJS_PORT, NUXT_PORT, SVELTE_PORT, fetchCaptures, getBaseUrl, getLatestCapture, waitMs } from './util'
 import { join } from 'path'
 import { existsSync, rmSync } from 'fs'
+import { getApiBase } from '../src/core/config'
 
 test.afterAll(() => {
   // Delete cache directories
@@ -72,7 +73,7 @@ test('should capture front-end bug in nextjs example', async ({ page }) => {
   // Wait for some console .log
   const consolePromise = await page.waitForEvent('console');
   const consoleLogsArgs = await consolePromise.args()
-  // expect(await consoleLogsArgs[0]?.jsonValue()).toContain('[🐛 post] https://www.useflytrap.com/api/v1/captures')
+  // expect(await consoleLogsArgs[0]?.jsonValue()).toContain(`[🐛 post] ${getApiBase()}/api/v1/captures`)
 
   await waitMs(3_000);
 
@@ -101,7 +102,7 @@ test('should capture front-end bug in sveltekit example', async ({ page }) => {
   const consolePromise = await page.waitForEvent('console')
   const consoleArgs = await consolePromise.args();
   
-  expect(await consoleArgs[0]?.jsonValue()).toContain('[🐛 post] https://www.useflytrap.com/api/v1/captures')
+  expect(await consoleArgs[0]?.jsonValue()).toContain(`[🐛 post] ${getApiBase()}/api/v1/captures`)
   await waitMs(3_000);
 
   // Check the API for the capture
@@ -128,7 +129,7 @@ test.skip('should capture front-end bug in nuxt example', async ({ page }) => {
   const consolePromise = await page.waitForEvent('console')
   const consoleArgs = await consolePromise.args();
   
-  expect(await consoleArgs[0]?.jsonValue()).toContain('[🐛 post] https://www.useflytrap.com/api/v1/captures')
+  expect(await consoleArgs[0]?.jsonValue()).toContain(`[🐛 post] ${getApiBase()}/api/v1/captures`)
   await waitMs(3_000);
 
   // Check the API for the capture
@@ -136,15 +137,4 @@ test.skip('should capture front-end bug in nuxt example', async ({ page }) => {
   const latestCapture = getLatestCapture(capturesAfter, startTime)
   expect(latestCapture?.functionName).toEqual('Input value "wrong" is wrong!')
   expect(capturesAfter.length).toBeGreaterThan(capturesBefore.length);
-})
-
-test.skip('should navigate to the about page', async ({ page }) => {
-  // Start from the index page (the baseURL is set via the webServer in the playwright.config.ts)
-  await page.goto('/')
-  // Find an element with the text 'About Page' and click on it
-  await page.click('text=About Page')
-  // The new url should be "/about" (baseURL is used there)
-  await expect(page).toHaveURL('/about')
-  // The new page should contain an h1 with "About Page"
-  await expect(page.locator('h1')).toContainText('About Page')
 })

@@ -1,3 +1,5 @@
+import { getApiBase } from "../src/core/config";
+
 // Capturing
 export const NEXTJS_API_PORT = 3000;
 export const NEXTJS_PORT = 3001;
@@ -13,7 +15,7 @@ export const getBaseUrl = (port: number) => `http://localhost:${port}`;
 export const waitMs = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 export async function fetchCaptures(secretApiKey: string): Promise<any[]> {
-	const response = await (await fetch(`https://www.useflytrap.com/api/v1/captures`, {
+	const response = await (await fetch(`${getApiBase()}/api/v1/captures`, {
 		headers: new Headers({
 			Authorization: `Bearer ${secretApiKey}`
 		})
