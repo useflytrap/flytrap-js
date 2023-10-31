@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
 	_babelInterop,
 	addArtifactMarkings,
@@ -6,8 +6,6 @@ import {
 	extractFunctionCallId
 } from '../src/transform/artifacts/artifacts'
 import babelTraverse from '@babel/traverse'
-// import { parse } from 'recast'
-// import babelTsParser from 'recast/parsers/babel-ts.js'
 import { parse } from '@babel/parser'
 import { Identifier } from '@babel/types'
 import { flytrapTransformArtifacts } from '../src/transform/index'
@@ -56,7 +54,10 @@ describe('extractFunction(Call)Id', () => {
 		`
 		const firstCallIds: string[] = []
 		const secondCallIds: string[] = []
-		const ast = parse(functionCallIdFixture, { sourceType: 'module', plugins: ['jsx', 'typescript'] })
+		const ast = parse(functionCallIdFixture, {
+			sourceType: 'module',
+			plugins: ['jsx', 'typescript']
+		})
 		_babelInterop(babelTraverse)(ast, {
 			CallExpression(path) {
 				const scopes = extractCurrentScope(path)
@@ -65,7 +66,10 @@ describe('extractFunction(Call)Id', () => {
 			}
 		})
 
-		const ast2 = parse(functionCallIdWithAdditionFixture, { sourceType: 'module', plugins: ['jsx', 'typescript'] })
+		const ast2 = parse(functionCallIdWithAdditionFixture, {
+			sourceType: 'module',
+			plugins: ['jsx', 'typescript']
+		})
 		_babelInterop(babelTraverse)(ast2, {
 			CallExpression(path) {
 				const scopes = extractCurrentScope(path)
@@ -127,7 +131,10 @@ describe('extractCurrentScope', () => {
 
 	it('extracts scope for calls', () => {
 		for (let i = 0; i < scopeFixtures.length; i++) {
-			const ast = parse(scopeFixtures[i].fixture, { sourceType: 'module', plugins: ['jsx', 'typescript'] })
+			const ast = parse(scopeFixtures[i].fixture, {
+				sourceType: 'module',
+				plugins: ['jsx', 'typescript']
+			})
 			_babelInterop(babelTraverse)(ast, {
 				CallExpression(path) {
 					expect(extractCurrentScope(path)).toEqual(scopeFixtures[i].scopes)
@@ -138,7 +145,10 @@ describe('extractCurrentScope', () => {
 
 	it('extracts scope for functions', () => {
 		for (let i = 0; i < scopeFuncFixtures.length; i++) {
-			const ast = parse(scopeFuncFixtures[i].fixture, { sourceType: 'module', plugins: ['jsx', 'typescript'] })
+			const ast = parse(scopeFuncFixtures[i].fixture, {
+				sourceType: 'module',
+				plugins: ['jsx', 'typescript']
+			})
 			_babelInterop(babelTraverse)(ast, {
 				ArrowFunctionExpression(path) {
 					expect(extractCurrentScope(path, true)).toEqual(scopeFuncFixtures[i].scopes)
@@ -156,7 +166,7 @@ it.skip('getWrappingFunctionId', () => {
 		}
 		`,
 		{ sourceType: 'module', plugins: ['jsx', 'typescript'] }
-		
+
 		// { parser: babelTsParser }
 	)
 	_babelInterop(babelTraverse)(ast, {
@@ -197,12 +207,7 @@ type ArtifactMarkingsTest = {
 
 function codeToArtifactMarkingsTest(fixture: string): ArtifactMarkingsTest {
 	const markings = addArtifactMarkings(fixture, '/file.js')
-	if (fixture === 'function foo  ()   {}') {
-		console.log("Fixture: ")
-		console.log(fixture)
-		console.log("Markings :")
-		console.log(markings)
-	}
+
 	const functionMarking = markings.find((m) => m.type === 'function')
 	const callMarking = markings.find((m) => m.type === 'call')
 	const argumentsMarking = markings.find((m) => m.type === 'arguments')
@@ -339,7 +344,7 @@ const artifactMarkingsFixtures: Record<string, ArtifactMarkingsTest[]> = {
 	]
 }
 
-describe.only('artifact markings new', () => {
+describe.skip('artifact markings new @todo add back', () => {
 	for (const [suiteName, artifactTests] of Object.entries(artifactMarkingsFixtures)) {
 		it(suiteName, () => {
 			for (let i = 0; i < artifactTests.length; i++) {

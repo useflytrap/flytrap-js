@@ -712,7 +712,7 @@ it('parses script tags from .vue & .svelte files', () => {
 })
 
 export function toOneLine(code: string) {
-	return code.split('\n').join('').replace(/\s+/g, '').replaceAll('\'', '"').replaceAll(';', '')
+	return code.split('\n').join('').replace(/\s+/g, '').replaceAll("'", '"').replaceAll(';', '')
 }
 
 export function transform(code: string) {

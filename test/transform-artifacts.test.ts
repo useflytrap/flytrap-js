@@ -202,8 +202,7 @@ describe('useFlytrapCall(Async) transform', () => {
 })
 
 export function toOneLine(code: string) {
-	// return code.split('\n').join('').replace(/\s+/g, '')
-	return code.split('\n').join('').replace(/\s+/g, '').replaceAll('\'', '"').replaceAll(';', '')
+	return code.split('\n').join('').replace(/\s+/g, '').replaceAll("'", '"').replaceAll(';', '')
 }
 
 export function transform(code: string) {

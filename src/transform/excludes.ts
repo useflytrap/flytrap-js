@@ -1,7 +1,6 @@
 import { NodePath } from '@babel/traverse'
 import { CallExpression, Expression, V8IntrinsicIdentifier } from '@babel/types'
 import { resolve } from 'path'
-// import { print } from 'recast'
 import generate from '@babel/generator'
 
 /**

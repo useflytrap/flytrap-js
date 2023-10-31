@@ -1,7 +1,6 @@
 import { findStaticImports, parseStaticImport } from 'mlly'
 import { NodePath } from '@babel/traverse'
 import { CallExpression, Expression, V8IntrinsicIdentifier } from '@babel/types'
-// import { print } from 'recast'
 import generate from '@babel/generator'
 
 const reservedWords = [

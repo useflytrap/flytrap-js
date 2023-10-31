@@ -1,6 +1,4 @@
 import babelTraverse, { Node, NodePath } from '@babel/traverse'
-// import { parse, print } from 'recast'
-// import babelTsParser from 'recast/parsers/babel-ts.js'
 import { parse } from '@babel/parser'
 import generate from '@babel/generator'
 import {
@@ -204,13 +202,6 @@ export function addArtifactMarkings(code: string, filePath: string) {
 			// const firstIndexOfOpenParen = print(path.node).code.indexOf('(')
 			const firstIndexOfOpenParen = generate(path.node).code.indexOf('(')
 
-
-			if (code === 'function foo  ()   {}') {
-				console.log("PARAMS LOCATION ")
-				console.log(paramsLocation)
-				console.log(path.node.params)
-			}
-
 			functionOrCallIdsAndLocations.push({
 				type: 'function',
 				functionOrCallId: functionId,
@@ -219,14 +210,6 @@ export function addArtifactMarkings(code: string, filePath: string) {
 				endIndex: path.node.id.end
 			})
 			if (paramsLocation || firstIndexOfOpenParen !== -1) {
-				if (code === 'function foo  ()   {}') {
-					console.log("here getting params location")
-					console.log(paramsLocation)
-					console.log("first index", firstIndexOfOpenParen)
-					console.log("Generated code")
-					console.log(generate(path.node).code)
-
-				}
 				functionOrCallIdsAndLocations.push({
 					type: 'params',
 					functionOrCallId: functionId,

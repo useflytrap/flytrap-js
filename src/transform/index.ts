@@ -19,8 +19,6 @@ import {
 	ObjectProperty,
 	VariableDeclarator
 } from '@babel/types'
-// import { parse, print } from 'recast'
-// import babelTsParser from 'recast/parsers/babel-ts.js'
 import { parse } from '@babel/parser'
 import generate from '@babel/generator'
 

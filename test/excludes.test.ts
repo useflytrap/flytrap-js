@@ -1,6 +1,4 @@
 import { describe, expect, it } from 'vitest'
-// import { parse } from 'recast'
-// import babelTsParser from 'recast/parsers/babel-ts.js'
 import { parse } from '@babel/parser'
 import { _babelInterop } from '../src/transform/artifacts/artifacts'
 import babelTraverse from '@babel/traverse'
@@ -140,7 +138,10 @@ describe('packageIgnores', () => {
 	for (let i = 0; i < fixtures.length; i++) {
 		it(`ignores ${fixtures[i].name}`, () => {
 			// const ast = parse(fixtures[i].fixture, { parser: babelTsParser })
-			const ast = parse(fixtures[i].fixture, { sourceType: 'module', plugins: ['jsx', 'typescript'] })
+			const ast = parse(fixtures[i].fixture, {
+				sourceType: 'module',
+				plugins: ['jsx', 'typescript']
+			})
 			_babelInterop(babelTraverse)(ast, {
 				CallExpression(path) {
 					expect(shouldIgnoreCall(path, fixtures[i].ignoredImports)).toEqual(true)
@@ -223,7 +224,10 @@ describe('ignoredFunctionNames', () => {
 	for (let i = 0; i < fixtures.length; i++) {
 		it(`ignores ${fixtures[i].name}`, () => {
 			// const ast = parse(fixtures[i].fixture, { parser: babelTsParser })
-			const ast = parse(fixtures[i].fixture, { sourceType: 'module', plugins: ['jsx', 'typescript'] })
+			const ast = parse(fixtures[i].fixture, {
+				sourceType: 'module',
+				plugins: ['jsx', 'typescript']
+			})
 			_babelInterop(babelTraverse)(ast, {
 				CallExpression(path) {
 					expect(shouldIgnoreFunctionName(path, fixtures[i].ignoredFunctionNames)).toEqual(true)
