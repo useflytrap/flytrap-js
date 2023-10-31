@@ -2,6 +2,7 @@ import { NodePath } from '@babel/traverse'
 import { CallExpression, Expression, V8IntrinsicIdentifier } from '@babel/types'
 import { resolve } from 'path'
 import generate from '@babel/generator'
+import { _babelInterop } from './util'
 
 /**
  * Exclude directories
@@ -16,8 +17,7 @@ export function excludeDirectoriesIncludeFilePath(filePath: string, excludeDirec
 }
 
 function getFunctionPath(node: Expression | V8IntrinsicIdentifier): string {
-	// return print(node).code
-	return generate(node).code
+	return _babelInterop(generate)(node).code
 }
 
 export function shouldIgnoreFunctionName(

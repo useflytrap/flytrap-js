@@ -70,10 +70,10 @@ test('should capture front-end bug in nextjs example', async ({ page }) => {
   // Click the submit button
   await page.click('text=Submit')
 
-  // Wait for some console .log
+  // Wait for some console.log
   const consolePromise = await page.waitForEvent('console');
   const consoleLogsArgs = await consolePromise.args()
-  // expect(await consoleLogsArgs[0]?.jsonValue()).toContain(`[🐛 post] ${getApiBase()}/api/v1/captures`)
+  expect(await consoleLogsArgs[0]?.jsonValue()).toContain(`[🐛 post] ${getApiBase()}/api/v1/captures`)
 
   await waitMs(3_000);
 

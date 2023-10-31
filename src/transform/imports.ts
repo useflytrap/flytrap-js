@@ -4,6 +4,7 @@ import { FLYTRAP_PACKAGE_NAME } from '../core/config'
 import { parse } from '@babel/parser'
 import { FlytrapConfig } from '../core/types'
 import * as flytrapExports from '../index'
+import { getParseConfig } from './config'
 
 export function getRequiredExportsForCapture(): string[] {
 	return ['useFlytrapCall', 'useFlytrapCallAsync', 'useFlytrapFunction', 'setFlytrapConfig']
@@ -14,7 +15,7 @@ export function getCoreExports(): string[] {
 }
 
 export function findStartingIndex(s: MagicString) {
-	const ast = parse(s.toString(), { sourceType: 'module', plugins: ['jsx', 'typescript'] })
+	const ast = parse(s.toString(), getParseConfig())
 
 	if (ast.program.interpreter && ast.program.interpreter.end) {
 		return ast.program.interpreter.end

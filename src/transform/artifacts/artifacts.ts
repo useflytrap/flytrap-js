@@ -12,18 +12,10 @@ import {
 	RestElement,
 	VariableDeclarator
 } from '@babel/types'
-import { ArtifactMarking } from '../../core/types'
+import { ArtifactMarking, FlytrapConfig } from '../../core/types'
 import { getRequiredExportsForCapture } from '../imports'
-
-/**
- * An interop function to make babel's exports work
- * @param fn default export from `@babel/traverse`
- * @returns the correct traverse function
- */
-export function _babelInterop(fn: typeof babelTraverse): typeof babelTraverse {
-	// @ts-ignore
-	return fn.default ?? fn
-}
+import { getParseConfig } from '../config'
+import { _babelInterop } from '../util'
 
 function getLineNumber(node: Node) {
 	// @ts-ignore
@@ -33,8 +25,7 @@ function getLineNumber(node: Node) {
 export function extractParams(identifiers: Identifier[]) {
 	const params: string[] = []
 	for (let i = 0; i < identifiers.length; i++) {
-		// params.push(print(identifiers[i]).code)
-		params.push(generate(identifiers[i]).code)
+		params.push(_babelInterop(generate)(identifiers[i]).code)
 	}
 
 	return params.join(', ')
@@ -53,8 +44,7 @@ export function extractFunctionName(
 }
 
 export function extractFullFunctionCallName(node: CallExpression): string {
-	// const fullNamespacedFunctionCall = print(node).code
-	const fullNamespacedFunctionCall = generate(node).code
+	const fullNamespacedFunctionCall = _babelInterop(generate)(node).code
 	const lastIndexOfOpeningParen = fullNamespacedFunctionCall.lastIndexOf('(')
 	return fullNamespacedFunctionCall.slice(0, lastIndexOfOpeningParen)
 }
@@ -151,11 +141,10 @@ export function getWrappingFunctionId(
 	}
 }
 
-export function addArtifactMarkings(code: string, filePath: string) {
+export function addArtifactMarkings(code: string, filePath: string, config?: FlytrapConfig) {
 	code = code.replaceAll('\t', '    ')
 	const functionOrCallIdsAndLocations: ArtifactMarking[] = []
-	// const ast = parse(code, { parser: babelTsParser })
-	const ast = parse(code, { sourceType: 'module', plugins: ['jsx', 'typescript'] })
+	const ast = parse(code, getParseConfig(config?.babel?.parserOptions))
 
 	const extractParamsLocation = (params: (Identifier | RestElement | Pattern)[]) => {
 		if (params.length === 0) {
@@ -181,8 +170,7 @@ export function addArtifactMarkings(code: string, filePath: string) {
 			const functionId = extractFunctionId(path, filePath, functionName, scopes)
 
 			const paramsLocation = extractParamsLocation(path.node.params)
-			// const firstIndexOfOpenParen = print(path.node).code.indexOf('(')
-			const firstIndexOfOpenParen = generate(path.node).code.indexOf('(')
+			const firstIndexOfOpenParen = _babelInterop(generate)(path.node).code.indexOf('(')
 
 			if (paramsLocation || firstIndexOfOpenParen !== -1) {
 				functionOrCallIdsAndLocations.push({
@@ -199,8 +187,7 @@ export function addArtifactMarkings(code: string, filePath: string) {
 			const functionId = extractFunctionId(path, filePath, functionName, scopes)
 
 			const paramsLocation = extractParamsLocation(path.node.params)
-			// const firstIndexOfOpenParen = print(path.node).code.indexOf('(')
-			const firstIndexOfOpenParen = generate(path.node).code.indexOf('(')
+			const firstIndexOfOpenParen = _babelInterop(generate)(path.node).code.indexOf('(')
 
 			functionOrCallIdsAndLocations.push({
 				type: 'function',
@@ -225,8 +212,7 @@ export function addArtifactMarkings(code: string, filePath: string) {
 			const functionId = extractFunctionId(path, filePath, functionName, scopes)
 
 			const paramsLocation = extractParamsLocation(path.node.params)
-			// const firstIndexOfOpenParen = print(path.node).code.indexOf('(')
-			const firstIndexOfOpenParen = generate(path.node).code.indexOf('(')
+			const firstIndexOfOpenParen = _babelInterop(generate)(path.node).code.indexOf('(')
 
 			functionOrCallIdsAndLocations.push({
 				type: 'function',
@@ -249,8 +235,7 @@ export function addArtifactMarkings(code: string, filePath: string) {
 			const functionCallId = extractFunctionCallId(path, filePath, functionCallName, scopes)
 
 			const paramsLocation = extractParamsLocation(path.node.arguments as Identifier[])
-			// const firstIndexOfOpenParen = print(path.node).code.indexOf('(')
-			const firstIndexOfOpenParen = generate(path.node).code.indexOf('(')
+			const firstIndexOfOpenParen = _babelInterop(generate)(path.node).code.indexOf('(')
 
 			functionOrCallIdsAndLocations.push({
 				type: 'call',

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { parse } from '@babel/parser'
-import { _babelInterop } from '../src/transform/artifacts/artifacts'
 import babelTraverse from '@babel/traverse'
 import { findIgnoredImports, shouldIgnoreCall } from '../src/transform/packageIgnores'
 import {
@@ -9,6 +8,8 @@ import {
 } from '../src/transform/excludes'
 import { CapturePayload } from '../src/exports'
 import { shouldIgnoreCapture } from '../src/core/captureIgnores'
+import { getParseConfig } from '../src/transform/config'
+import { _babelInterop } from '../src/transform/util'
 
 describe('excludeDirectories', () => {
 	it('excludeDirectoriesIncludeFilePath', () => {
@@ -137,11 +138,7 @@ describe('packageIgnores', () => {
 
 	for (let i = 0; i < fixtures.length; i++) {
 		it(`ignores ${fixtures[i].name}`, () => {
-			// const ast = parse(fixtures[i].fixture, { parser: babelTsParser })
-			const ast = parse(fixtures[i].fixture, {
-				sourceType: 'module',
-				plugins: ['jsx', 'typescript']
-			})
+			const ast = parse(fixtures[i].fixture, getParseConfig())
 			_babelInterop(babelTraverse)(ast, {
 				CallExpression(path) {
 					expect(shouldIgnoreCall(path, fixtures[i].ignoredImports)).toEqual(true)
@@ -223,11 +220,7 @@ describe('ignoredFunctionNames', () => {
 
 	for (let i = 0; i < fixtures.length; i++) {
 		it(`ignores ${fixtures[i].name}`, () => {
-			// const ast = parse(fixtures[i].fixture, { parser: babelTsParser })
-			const ast = parse(fixtures[i].fixture, {
-				sourceType: 'module',
-				plugins: ['jsx', 'typescript']
-			})
+			const ast = parse(fixtures[i].fixture, getParseConfig())
 			_babelInterop(babelTraverse)(ast, {
 				CallExpression(path) {
 					expect(shouldIgnoreFunctionName(path, fixtures[i].ignoredFunctionNames)).toEqual(true)

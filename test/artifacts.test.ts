@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-	_babelInterop,
 	addArtifactMarkings,
 	extractCurrentScope,
 	extractFunctionCallId
@@ -10,6 +9,8 @@ import { parse } from '@babel/parser'
 import { Identifier } from '@babel/types'
 import { flytrapTransformArtifacts } from '../src/transform/index'
 import { config } from 'dotenv'
+import { getParseConfig } from '../src/transform/config'
+import { _babelInterop } from '../src/transform/util'
 config()
 
 const largeFixture = `
@@ -54,10 +55,7 @@ describe('extractFunction(Call)Id', () => {
 		`
 		const firstCallIds: string[] = []
 		const secondCallIds: string[] = []
-		const ast = parse(functionCallIdFixture, {
-			sourceType: 'module',
-			plugins: ['jsx', 'typescript']
-		})
+		const ast = parse(functionCallIdFixture, getParseConfig())
 		_babelInterop(babelTraverse)(ast, {
 			CallExpression(path) {
 				const scopes = extractCurrentScope(path)
@@ -66,10 +64,7 @@ describe('extractFunction(Call)Id', () => {
 			}
 		})
 
-		const ast2 = parse(functionCallIdWithAdditionFixture, {
-			sourceType: 'module',
-			plugins: ['jsx', 'typescript']
-		})
+		const ast2 = parse(functionCallIdWithAdditionFixture, getParseConfig())
 		_babelInterop(babelTraverse)(ast2, {
 			CallExpression(path) {
 				const scopes = extractCurrentScope(path)
@@ -131,10 +126,7 @@ describe('extractCurrentScope', () => {
 
 	it('extracts scope for calls', () => {
 		for (let i = 0; i < scopeFixtures.length; i++) {
-			const ast = parse(scopeFixtures[i].fixture, {
-				sourceType: 'module',
-				plugins: ['jsx', 'typescript']
-			})
+			const ast = parse(scopeFixtures[i].fixture, getParseConfig())
 			_babelInterop(babelTraverse)(ast, {
 				CallExpression(path) {
 					expect(extractCurrentScope(path)).toEqual(scopeFixtures[i].scopes)
@@ -165,9 +157,7 @@ it.skip('getWrappingFunctionId', () => {
 			bar()
 		}
 		`,
-		{ sourceType: 'module', plugins: ['jsx', 'typescript'] }
-
-		// { parser: babelTsParser }
+		getParseConfig()
 	)
 	_babelInterop(babelTraverse)(ast, {
 		CallExpression(path) {

@@ -1,3 +1,5 @@
+import { ParserOptions } from '@babel/parser'
+
 export type FlytrapPublicKey = `pk_${string}`
 export type FlytrapSecretKey = `sk_${string}`
 
@@ -23,6 +25,9 @@ export type FlytrapConfig = {
 	captureId?: string
 	mode?: FlytrapMode
 	logging?: LogGroup[]
+	babel?: {
+		parserOptions?: ParserOptions
+	}
 	/**
 	 * The API base address.
 	 * @default "https://www.useflytrap.com"

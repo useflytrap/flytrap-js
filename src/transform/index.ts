@@ -32,6 +32,9 @@ import {
 } from './artifacts/artifacts'
 import { findIgnoredImports, shouldIgnoreCall } from './packageIgnores'
 import { shouldIgnoreFunctionName } from './excludes'
+import { FlytrapConfig } from '../core/types'
+import { getParseConfig } from './config'
+import { _babelInterop } from './util'
 
 export function shouldBeWrapped(path: NodePath) {
 	if (
@@ -52,25 +55,11 @@ export function shouldBeWrapped(path: NodePath) {
 	return true
 }
 
-/**
- * An interop function to make babel's exports work
- * @param fn default export from `@babel/traverse`
- * @returns the correct traverse function
- */
-function _babelInterop(fn: typeof babelTraverse): typeof babelTraverse {
-	// @ts-ignore
-	return fn.default ?? fn
-}
-
-export function flytrapTransformArtifacts(
-	code: string,
-	filePath: string,
-	packageIgnores?: string[],
-	excludeFunctionNames?: string[]
-) {
-	// const ast = parse(code, { parser: babelTsParser })
-	const ast = parse(code, { sourceType: 'module', plugins: ['jsx', 'typescript'] })
-	const ignoredImports = packageIgnores ? findIgnoredImports(code, packageIgnores) : undefined
+export function flytrapTransformArtifacts(code: string, filePath: string, config?: FlytrapConfig) {
+	const ast = parse(code, getParseConfig(config?.babel?.parserOptions))
+	const ignoredImports = config?.packageIgnores
+		? findIgnoredImports(code, config.packageIgnores)
+		: undefined
 
 	_babelInterop(babelTraverse)(ast, {
 		ArrowFunctionExpression(path) {
@@ -141,7 +130,7 @@ export function flytrapTransformArtifacts(
 			// Ignored calls (eg. packageIgnores & reserved words)
 			if (
 				shouldIgnoreCall(path, ignoredImports ?? []) ||
-				shouldIgnoreFunctionName(path, excludeFunctionNames ?? [])
+				shouldIgnoreFunctionName(path, config?.excludeFunctionNames ?? [])
 			) {
 				return
 			}
@@ -174,8 +163,5 @@ export function flytrapTransformArtifacts(
 		}
 	})
 
-	// return print(ast, { quote: 'single' })
-	return generate(ast, {
-		// ''
-	})
+	return _babelInterop(generate)(ast)
 }
