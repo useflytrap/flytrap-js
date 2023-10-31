@@ -1,7 +1,8 @@
 import { findStaticImports, parseStaticImport } from 'mlly'
 import { NodePath } from '@babel/traverse'
 import { CallExpression, Expression, V8IntrinsicIdentifier } from '@babel/types'
-import { print } from 'recast'
+// import { print } from 'recast'
+import generate from '@babel/generator'
 
 const reservedWords = [
 	'await',
@@ -75,7 +76,8 @@ export function findIgnoredImports(code: string, packageIgnores: string[]) {
 }
 
 function getFunctionPath(node: Expression | V8IntrinsicIdentifier): string {
-	return print(node).code
+	//return print(node).code
+	return generate(node).code
 }
 
 export function shouldIgnoreCall(path: NodePath<CallExpression>, ignoredImports: string[]) {

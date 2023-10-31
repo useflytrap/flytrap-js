@@ -5,16 +5,12 @@ describe('useFlytrapFunction', () => {
 	it('transforms (J|T)SX', () => {
 		const jsxFixture = `
 		export function HelloWorld({ children }: any) {
-			return (
-				<h1>{children}</h1>
-			)
+			return <h1>{children}</h1>
 		}
 		`
 		const jsxFixtureTarget = `
 		export const HelloWorld = useFlytrapFunction(function HelloWorld({ children }: any) {
-			return (
-				<h1>{children}</h1>
-			)
+			return <h1>{children}</h1>
 		}, { id: '/file.js-_HelloWorld' });
 		`
 
@@ -206,7 +202,8 @@ describe('useFlytrapCall(Async) transform', () => {
 })
 
 export function toOneLine(code: string) {
-	return code.split('\n').join('').replace(/\s+/g, '')
+	// return code.split('\n').join('').replace(/\s+/g, '')
+	return code.split('\n').join('').replace(/\s+/g, '').replaceAll('\'', '"').replaceAll(';', '')
 }
 
 export function transform(code: string) {

@@ -14,16 +14,12 @@ import { unpluginOptions } from '../src/transform'
 
 const jsxFixture = `
 export function HelloWorld({ children }: any) {
-	return (
-		<h1>{children}</h1>
-	)
+	return <h1>{children}</h1>
 }
 `
 const jsxFixtureTarget = `
 export const HelloWorld = useFlytrapFunction(function HelloWorld({ children }: any) {
-	return (
-		<h1>{children}</h1>
-	)
+	return <h1>{children}</h1>
 }, { id: '/file.js-_HelloWorld' });
 `
 
@@ -76,7 +72,7 @@ describe('useFlytrapFunction transform', () => {
 		expect(transform(objExprCode)).toStrictEqual(
 			toOneLine(`const x = {
 			hello: useFlytrapFunction(() => {}, { id: '/file.js-_hello' }),
-			world: useFlytrapFunction(() => {}, { id: '/file.js-_world' }),
+			world: useFlytrapFunction(() => {}, { id: '/file.js-_world' })
 		}`)
 		)
 		expect(transform(deepObjExprCode)).toStrictEqual(
@@ -136,13 +132,13 @@ describe('useFlytrapFunction transform', () => {
 
 		expect(transform(someFixture)).toStrictEqual(
 			toOneLine(`
-			;(useFlytrapFunction((() => {}), {
+			useFlytrapFunction(() => {}, {
 				id: '/file.js-_anonymous'
-			}))
+			})
 
-			;(useFlytrapFunction((() => {}), {
+			useFlytrapFunction(() => {}, {
 				id: '/file.js-_anonymous2'
-			}));
+			});
 			`)
 		)
 	})
@@ -585,7 +581,7 @@ class Foo extends Bar {
 
 it('doesnt transform reserved words', () => {
 	expect(transform(superFixture)).toEqual(`classFooextendsBar{constructor(){super()}}`)
-	expect(transform(`import('foo')`)).toEqual(`import('foo')`)
+	expect(transform(`import("foo")`)).toEqual(`import("foo")`)
 })
 
 it('transforms .vue files', async () => {
@@ -716,7 +712,7 @@ it('parses script tags from .vue & .svelte files', () => {
 })
 
 export function toOneLine(code: string) {
-	return code.split('\n').join('').replace(/\s+/g, '')
+	return code.split('\n').join('').replace(/\s+/g, '').replaceAll('\'', '"').replaceAll(';', '')
 }
 
 export function transform(code: string) {

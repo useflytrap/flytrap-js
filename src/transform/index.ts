@@ -19,8 +19,11 @@ import {
 	ObjectProperty,
 	VariableDeclarator
 } from '@babel/types'
-import { parse, print } from 'recast'
-import babelTsParser from 'recast/parsers/babel-ts.js'
+// import { parse, print } from 'recast'
+// import babelTsParser from 'recast/parsers/babel-ts.js'
+import { parse } from '@babel/parser'
+import generate from '@babel/generator'
+
 import { getCoreExports } from './imports'
 import {
 	extractCurrentScope,
@@ -67,7 +70,8 @@ export function flytrapTransformArtifacts(
 	packageIgnores?: string[],
 	excludeFunctionNames?: string[]
 ) {
-	const ast = parse(code, { parser: babelTsParser })
+	// const ast = parse(code, { parser: babelTsParser })
+	const ast = parse(code, { sourceType: 'module', plugins: ['jsx', 'typescript'] })
 	const ignoredImports = packageIgnores ? findIgnoredImports(code, packageIgnores) : undefined
 
 	_babelInterop(babelTraverse)(ast, {
@@ -172,5 +176,8 @@ export function flytrapTransformArtifacts(
 		}
 	})
 
-	return print(ast, { quote: 'single' })
+	// return print(ast, { quote: 'single' })
+	return generate(ast, {
+		// ''
+	})
 }

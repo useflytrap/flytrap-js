@@ -1,6 +1,8 @@
 import babelTraverse, { Node, NodePath } from '@babel/traverse'
-import { parse, print } from 'recast'
-import babelTsParser from 'recast/parsers/babel-ts.js'
+// import { parse, print } from 'recast'
+// import babelTsParser from 'recast/parsers/babel-ts.js'
+import { parse } from '@babel/parser'
+import generate from '@babel/generator'
 import {
 	ArrowFunctionExpression,
 	CallExpression,
@@ -31,9 +33,10 @@ function getLineNumber(node: Node) {
 }
 
 export function extractParams(identifiers: Identifier[]) {
-	const params = []
+	const params: string[] = []
 	for (let i = 0; i < identifiers.length; i++) {
-		params.push(print(identifiers[i]).code)
+		// params.push(print(identifiers[i]).code)
+		params.push(generate(identifiers[i]).code)
 	}
 
 	return params.join(', ')
@@ -52,7 +55,8 @@ export function extractFunctionName(
 }
 
 export function extractFullFunctionCallName(node: CallExpression): string {
-	const fullNamespacedFunctionCall = print(node).code
+	// const fullNamespacedFunctionCall = print(node).code
+	const fullNamespacedFunctionCall = generate(node).code
 	const lastIndexOfOpeningParen = fullNamespacedFunctionCall.lastIndexOf('(')
 	return fullNamespacedFunctionCall.slice(0, lastIndexOfOpeningParen)
 }
@@ -152,7 +156,8 @@ export function getWrappingFunctionId(
 export function addArtifactMarkings(code: string, filePath: string) {
 	code = code.replaceAll('\t', '    ')
 	const functionOrCallIdsAndLocations: ArtifactMarking[] = []
-	const ast = parse(code, { parser: babelTsParser })
+	// const ast = parse(code, { parser: babelTsParser })
+	const ast = parse(code, { sourceType: 'module', plugins: ['jsx', 'typescript'] })
 
 	const extractParamsLocation = (params: (Identifier | RestElement | Pattern)[]) => {
 		if (params.length === 0) {
@@ -178,7 +183,8 @@ export function addArtifactMarkings(code: string, filePath: string) {
 			const functionId = extractFunctionId(path, filePath, functionName, scopes)
 
 			const paramsLocation = extractParamsLocation(path.node.params)
-			const firstIndexOfOpenParen = print(path.node).code.indexOf('(')
+			// const firstIndexOfOpenParen = print(path.node).code.indexOf('(')
+			const firstIndexOfOpenParen = generate(path.node).code.indexOf('(')
 
 			if (paramsLocation || firstIndexOfOpenParen !== -1) {
 				functionOrCallIdsAndLocations.push({
@@ -195,7 +201,15 @@ export function addArtifactMarkings(code: string, filePath: string) {
 			const functionId = extractFunctionId(path, filePath, functionName, scopes)
 
 			const paramsLocation = extractParamsLocation(path.node.params)
-			const firstIndexOfOpenParen = print(path.node).code.indexOf('(')
+			// const firstIndexOfOpenParen = print(path.node).code.indexOf('(')
+			const firstIndexOfOpenParen = generate(path.node).code.indexOf('(')
+
+
+			if (code === 'function foo  ()   {}') {
+				console.log("PARAMS LOCATION ")
+				console.log(paramsLocation)
+				console.log(path.node.params)
+			}
 
 			functionOrCallIdsAndLocations.push({
 				type: 'function',
@@ -205,6 +219,14 @@ export function addArtifactMarkings(code: string, filePath: string) {
 				endIndex: path.node.id.end
 			})
 			if (paramsLocation || firstIndexOfOpenParen !== -1) {
+				if (code === 'function foo  ()   {}') {
+					console.log("here getting params location")
+					console.log(paramsLocation)
+					console.log("first index", firstIndexOfOpenParen)
+					console.log("Generated code")
+					console.log(generate(path.node).code)
+
+				}
 				functionOrCallIdsAndLocations.push({
 					type: 'params',
 					functionOrCallId: functionId,
@@ -220,7 +242,8 @@ export function addArtifactMarkings(code: string, filePath: string) {
 			const functionId = extractFunctionId(path, filePath, functionName, scopes)
 
 			const paramsLocation = extractParamsLocation(path.node.params)
-			const firstIndexOfOpenParen = print(path.node).code.indexOf('(')
+			// const firstIndexOfOpenParen = print(path.node).code.indexOf('(')
+			const firstIndexOfOpenParen = generate(path.node).code.indexOf('(')
 
 			functionOrCallIdsAndLocations.push({
 				type: 'function',
@@ -243,7 +266,8 @@ export function addArtifactMarkings(code: string, filePath: string) {
 			const functionCallId = extractFunctionCallId(path, filePath, functionCallName, scopes)
 
 			const paramsLocation = extractParamsLocation(path.node.arguments as Identifier[])
-			const firstIndexOfOpenParen = print(path.node).code.indexOf('(')
+			// const firstIndexOfOpenParen = print(path.node).code.indexOf('(')
+			const firstIndexOfOpenParen = generate(path.node).code.indexOf('(')
 
 			functionOrCallIdsAndLocations.push({
 				type: 'call',
