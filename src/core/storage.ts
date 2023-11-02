@@ -9,7 +9,6 @@ import type {
 import { getApiBase, getLoadedConfig } from './config'
 import { getUserId } from '../index'
 import { empty, formatBytes, get, post, tryCatchSync } from './util'
-import { createHumanLog } from './human-logs'
 import SuperJSON from 'superjson'
 import { FLYTRAP_UNSERIALIZABLE_VALUE, NO_SOURCE } from './constants'
 import { encrypt } from './encryption'
@@ -28,6 +27,7 @@ import {
 } from './stringify'
 import { shouldIgnoreCapture } from './captureIgnores'
 import { getPersistence } from './persistence/isomorphic'
+import { createHumanLog } from './errors'
 
 const loadedCaptures = new Map<string, CaptureDecryptedAndRevived | undefined>()
 
@@ -93,25 +93,25 @@ export const liveFlytrapStorage: FlytrapStorage = {
 		if (error || !data) {
 			if (error?.includes('Failed to fetch')) {
 				const errorLog = createHumanLog({
-					event: 'replay_failed',
-					explanation: 'api_unreachable',
-					solution: 'try_again_contact_us'
+					events: ['replay_failed'],
+					explanations: ['api_unreachable'],
+					solutions: ['try_again_contact_us']
 				})
 				throw errorLog.toString()
 			}
 
 			if (error?.includes('UNAUTHORIZED')) {
 				const errorLog = createHumanLog({
-					event: 'replay_failed',
-					explanation: 'api_unauthorized'
+					events: ['replay_failed'],
+					explanations: ['api_unauthorized']
 				})
 				throw errorLog.toString()
 			}
 
 			const errorLog = createHumanLog({
-				event: 'replay_failed',
-				explanation: 'generic_unexpected_error',
-				solution: 'try_again_contact_us'
+				events: ['replay_failed'],
+				explanations: ['generic_unexpected_error'],
+				solutions: ['try_again_contact_us']
 			})
 			throw errorLog.toString()
 		}
@@ -130,9 +130,9 @@ export const liveFlytrapStorage: FlytrapStorage = {
 		if (!publicApiKey || !projectId || empty(publicApiKey, projectId)) {
 			console.error(
 				createHumanLog({
-					event: 'capture_failed',
-					explanation: 'replay_missing_config_values',
-					solution: 'configuration_fix'
+					events: ['capture_failed'],
+					explanations: ['replay_missing_config_values'],
+					solutions: ['configuration_fix']
 				}).toString()
 			)
 			return
@@ -202,9 +202,9 @@ export const liveFlytrapStorage: FlytrapStorage = {
 
 		if (stringifyError || !stringifiedPayload) {
 			const errorLog = createHumanLog({
-				event: 'capture_failed',
-				explanation: 'stringify_capture_failed',
-				solution: 'stringify_capture_failed_solution'
+				events: ['capture_failed'],
+				explanations: ['stringify_capture_failed'],
+				solutions: ['stringify_capture_failed_solution']
 			})
 			console.error(errorLog.toString())
 			console.error(stringifyError)
@@ -224,9 +224,9 @@ export const liveFlytrapStorage: FlytrapStorage = {
 
 		if (captureError) {
 			const errorLog = createHumanLog({
-				event: 'capture_failed',
-				explanation: 'api_capture_error_response',
-				solution: 'try_again_contact_us'
+				events: ['capture_failed'],
+				explanations: ['api_capture_error_response'],
+				solutions: ['try_again_contact_us']
 			})
 			console.error(errorLog.toString())
 			console.error(captureError)

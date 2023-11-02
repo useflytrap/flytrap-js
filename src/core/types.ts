@@ -247,3 +247,29 @@ export type Adapter = {
 	// storage: Storage;
 	encryption: Encryption
 }
+
+// Source: https://github.com/babel/babel/blob/main/packages/babel-parser/src/parse-error.ts
+// Babel doesn't export these types correctly in v7
+
+type SyntaxPlugin = 'flow' | 'typescript' | 'jsx' | 'pipelineOperator' | 'placeholders'
+
+type ParseErrorCode = 'BABEL_PARSER_SYNTAX_ERROR' | 'BABEL_PARSER_SOURCETYPE_MODULE_REQUIRED'
+
+export type Position = {
+	line: number
+	column: number
+	index: number
+}
+
+export interface ParseErrorSpecification<ErrorDetails = unknown> extends Error {
+	code: ParseErrorCode
+	reasonCode: string
+	syntaxPlugin?: SyntaxPlugin
+	missingPlugin?: string | string[]
+	loc: Position
+	details: ErrorDetails
+
+	// We should consider removing this as it now just contains the same
+	// information as `loc.index`.
+	// pos: number;
+}

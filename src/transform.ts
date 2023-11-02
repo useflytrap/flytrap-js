@@ -5,7 +5,6 @@ import MagicString from 'magic-string'
 import { addFlytrapInit, addMissingFlytrapImports } from './transform/imports'
 import { flytrapTransformArtifacts } from './transform/index'
 import { packageDirectorySync } from 'pkg-dir'
-import { createHumanLog } from './core/human-logs'
 import { loadConfig } from './transform/config'
 import { setFlytrapConfig } from './core/config'
 import { log } from './core/logging'
@@ -16,6 +15,7 @@ import { containsScriptTags, parseScriptTags } from './transform/parseScriptTags
 import { calculateSHA256Checksum, getFileExtension } from './transform/util'
 import { upsertArtifacts } from './transform/artifacts/cache'
 import { Artifact, encrypt } from './exports'
+import { createHumanLog } from './core/errors'
 
 const transformedFiles = new Set<string>([])
 
@@ -108,8 +108,8 @@ export const unpluginOptions: UnpluginOptions = {
 		const pkgDirPath = packageDirectorySync()
 		if (!pkgDirPath) {
 			throw createHumanLog({
-				event: 'transform_failed',
-				explanation: 'transform_pkg_not_found'
+				events: ['transform_failed'],
+				explanations: ['transform_pkg_not_found']
 			}).toString()
 		}
 
@@ -154,18 +154,18 @@ export const unpluginOptions: UnpluginOptions = {
 		const config = await loadConfig()
 		if (!config) {
 			const log = createHumanLog({
-				event: 'transform_failed',
-				explanation: 'config_not_found',
-				solution: 'define_flytrap_config'
+				events: ['transform_failed'],
+				explanations: ['config_not_found'],
+				solutions: ['define_flytrap_config']
 			})
 			throw log.toString()
 		}
 
 		if (!config.projectId || !config.secretApiKey) {
 			const log = createHumanLog({
-				event: 'transform_failed',
-				explanation: 'invalid_config',
-				solution: 'configuration_fix'
+				events: ['transform_failed'],
+				explanations: ['invalid_config'],
+				solutions: ['configuration_fix']
 			})
 			throw log.toString()
 		}
@@ -173,8 +173,8 @@ export const unpluginOptions: UnpluginOptions = {
 		const pkgDirPath = packageDirectorySync()
 		if (!pkgDirPath) {
 			throw createHumanLog({
-				event: 'transform_failed',
-				explanation: 'transform_pkg_not_found'
+				events: ['transform_failed'],
+				explanations: ['transform_pkg_not_found']
 			}).toString()
 		}
 

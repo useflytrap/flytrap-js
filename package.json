@@ -55,6 +55,7 @@
 		"@babel/types": "^7.23.0",
 		"c12": "^1.4.1",
 		"fast-equals": "^5.0.1",
+		"human-logs": "^0.3.0",
 		"lilconfig": "^2.1.0",
 		"magic-string": "^0.30.0",
 		"mlly": "^1.0.0",

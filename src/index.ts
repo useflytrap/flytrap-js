@@ -14,10 +14,10 @@ import {
 	tryCatchSync as utilTryCatchSync
 } from './core/util'
 import { getFlytrapStorage, getLoadedCapture, loadAndPersist } from './core/storage'
-import { createHumanLog } from './core/human-logs'
 import { log } from './core/logging'
 import { getLoadedConfig } from './core/config'
 import { CaptureInvocation } from './exports'
+import { createHumanLog } from './core/errors'
 
 /**
  * All function definitions are wrapped with the useFlytrapFunction
@@ -70,9 +70,9 @@ export function useFlytrapFunction<
 					.catch((saveError) => {
 						console.error(
 							createHumanLog({
-								event: 'capture_failed',
-								explanation: 'api_capture_error_response',
-								solution: 'try_again_contact_us'
+								events: ['capture_failed'],
+								explanations: ['api_capture_error_response'],
+								solutions: ['try_again_contact_us']
 							}).toString()
 						)
 						console.error(saveError)
@@ -128,9 +128,9 @@ export function useFlytrapFunction<
 				.saveCapture(_executingFunctions, _functionCalls, error as Error)
 				.catch((saveError) => {
 					const errorLog = createHumanLog({
-						event: 'capture_failed',
-						explanation: 'generic_unexpected_error',
-						solution: 'try_again_contact_us'
+						events: ['capture_failed'],
+						explanations: ['generic_unexpected_error'],
+						solutions: ['try_again_contact_us']
 					})
 					console.error(errorLog.toString())
 					console.error(saveError)
@@ -370,9 +370,9 @@ export async function capture<T extends Error>({
 	)
 	if (saveError) {
 		const errorLog = createHumanLog({
-			event: 'capture_failed',
-			explanation: 'generic_unexpected_error',
-			solution: 'try_again_contact_us'
+			events: ['capture_failed'],
+			explanations: ['generic_unexpected_error'],
+			solutions: ['try_again_contact_us']
 		})
 		console.error(errorLog.toString())
 		console.error(saveError)
