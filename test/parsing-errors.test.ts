@@ -1,28 +1,5 @@
-import { describe, it } from 'vitest'
-import { createHumanLog } from '../src/core/errors'
-import { parse as babelParse } from '@babel/parser'
-import { getParseConfig } from '../src/transform/config'
-import { ParseErrorSpecification } from '../src/exports'
-import { formatBabelParseError } from '../src/transform/formatParserErrors'
-
-const parse = (code: string, fileNamePath?: string) => {
-	try {
-		return babelParse(code, getParseConfig())
-	} catch (e) {
-		const parseError = e as ParseErrorSpecification
-		const formattedParsingError = formatBabelParseError(parseError, code, fileNamePath)
-
-		return createHumanLog({
-			events: ['parsing_failed'],
-			explanations: ['parsing_error_explanation'],
-			solutions: ['parsing_error_open_issue', 'parsing_error_configure_babel_parser_options'],
-			params: {
-				fileNamePath: fileNamePath === undefined ? 'unknown file' : fileNamePath,
-				parsingError: formattedParsingError
-			}
-		}).toString()
-	}
-}
+import { describe, expect, it } from 'vitest'
+import { parseCode } from '../src/transform/parser'
 
 const redeclaringImportedTypeAsConstFixture = `
 import { CapturedCall } from 'useflytrap';
@@ -96,21 +73,22 @@ describe('gives human-friendly errors when parsing invalid code', () => {
 	for (const [suiteName, parseErrorTests] of Object.entries(parsingErrorFixtures)) {
 		it(suiteName, () => {
 			for (let i = 0; i < parseErrorTests.length; i++) {
-				const parseResponse = parse(parseErrorTests[i].fixture, '/file.js')
-				// const expectedResponse = parseErrorTests[i].getErrorMessage(parseErrorTests[i].fixture)
+				const { error, data } = parseCode(parseErrorTests[i].fixture, '/file.js')
+				expect(data).toBe(null)
 
 				parseErrorTests[i].requiredErrorMessageParts.forEach((messagePart) => {
-					if (!(parseResponse as string).includes(messagePart)) {
+					if (error === null) {
+						throw new Error('Parsing succeeded.')
+					}
+					const errorString = error.toString()
+
+					if (!errorString.includes(messagePart)) {
 						console.error('Parse response: ')
-						console.error(parseResponse)
+						console.error(errorString)
 						console.error("Didn't include:", messagePart)
 						throw new Error('messagePart missing.')
 					}
-					// expect((parseResponse as string).includes(messagePart)).toBe(true)
-					// expect(parseResponse).
 				})
-				// expect(parseResponse).toEqual(expectedResponse)
-				// expect(parseResponse).toContain(expectedResponse)
 			}
 		})
 	}

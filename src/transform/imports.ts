@@ -1,10 +1,9 @@
 import MagicString from 'magic-string'
 import { findStaticImports, parseStaticImport } from 'mlly'
 import { FLYTRAP_PACKAGE_NAME } from '../core/config'
-import { parse } from '@babel/parser'
 import { FlytrapConfig } from '../core/types'
 import * as flytrapExports from '../index'
-import { getParseConfig } from './config'
+import { parseCode } from './parser'
 
 export function getRequiredExportsForCapture(): string[] {
 	return ['useFlytrapCall', 'useFlytrapCallAsync', 'useFlytrapFunction', 'setFlytrapConfig']
@@ -14,8 +13,13 @@ export function getCoreExports(): string[] {
 	return Object.keys(flytrapExports)
 }
 
-export function findStartingIndex(s: MagicString) {
-	const ast = parse(s.toString(), getParseConfig())
+export function findStartingIndex(s: MagicString, fileNamePath?: string) {
+	const { error, data: ast } = parseCode(s.toString(), fileNamePath)
+
+	if (error !== null) {
+		console.error(error.toString())
+		throw new Error(error.toString())
+	}
 
 	if (ast.program.interpreter && ast.program.interpreter.end) {
 		return ast.program.interpreter.end
@@ -28,7 +32,7 @@ export function findStartingIndex(s: MagicString) {
 	return 0
 }
 
-export function addMissingFlytrapImports(s: MagicString, browser = false) {
+export function addMissingFlytrapImports(s: MagicString, fileNamePath: string, browser = false) {
 	const statements = findStaticImports(s.toString()).filter(
 		(i) => i.specifier === FLYTRAP_PACKAGE_NAME || i.specifier === FLYTRAP_PACKAGE_NAME + '/browser'
 	)
@@ -42,7 +46,7 @@ export function addMissingFlytrapImports(s: MagicString, browser = false) {
 	)
 
 	if (importsToBeAdded.length > 0) {
-		const startingIndex = findStartingIndex(s)
+		const startingIndex = findStartingIndex(s, fileNamePath)
 		s.appendLeft(
 			startingIndex,
 			`\n\nimport { ${importsToBeAdded.join(', ')} } from '${FLYTRAP_PACKAGE_NAME}${
@@ -54,7 +58,11 @@ export function addMissingFlytrapImports(s: MagicString, browser = false) {
 	return s
 }
 
-export async function addFlytrapInit(s: MagicString, config: FlytrapConfig | undefined) {
+export async function addFlytrapInit(
+	s: MagicString,
+	fileNamePath: string,
+	config: FlytrapConfig | undefined
+) {
 	if (!config) return s
 
 	const copiedConfig = { ...config }
@@ -67,7 +75,10 @@ export async function addFlytrapInit(s: MagicString, config: FlytrapConfig | und
 	}
 
 	// Append flytrap init
-	s.appendLeft(findStartingIndex(s), `\n\nsetFlytrapConfig(${JSON.stringify(copiedConfig)});\n\n`)
+	s.appendLeft(
+		findStartingIndex(s, fileNamePath),
+		`\n\nsetFlytrapConfig(${JSON.stringify(copiedConfig)});\n\n`
+	)
 
 	return s
 }

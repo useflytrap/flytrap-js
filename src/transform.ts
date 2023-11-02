@@ -97,11 +97,11 @@ export const unpluginOptions: UnpluginOptions = {
 				: new MagicString(code)
 
 		// add missing Flytrap imports
-		addMissingFlytrapImports(ss, config?.browser)
+		addMissingFlytrapImports(ss, id, config?.browser)
 
 		// add Flytrap init
 		if (process.env.NODE_ENV !== 'test') {
-			await addFlytrapInit(ss, config)
+			await addFlytrapInit(ss, id, config)
 		}
 
 		// Find package root
@@ -144,10 +144,8 @@ export const unpluginOptions: UnpluginOptions = {
 			if (process.env.NODE_ENV === 'test') {
 				throw e
 			}
-			if (!String(e).includes("reading 'buildError'")) {
-				console.warn(`Oops! Something went wrong while transforming file ${id}. Error:`)
-				console.warn(e)
-			}
+			console.warn(`Oops! Something went wrong while transforming file ${id}. Error:`)
+			console.warn(e)
 		}
 	},
 	async buildEnd() {

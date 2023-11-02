@@ -1,5 +1,4 @@
 import babelTraverse, { Node, NodePath } from '@babel/traverse'
-import { parse } from '@babel/parser'
 import generate from '@babel/generator'
 import {
 	ArrowFunctionExpression,
@@ -16,6 +15,8 @@ import { ArtifactMarking, FlytrapConfig } from '../../core/types'
 import { getRequiredExportsForCapture } from '../imports'
 import { getParseConfig } from '../config'
 import { _babelInterop } from '../util'
+import { parseCode } from '../parser'
+import { err, ok } from '../../core/util'
 
 function getLineNumber(node: Node) {
 	// @ts-ignore
@@ -144,7 +145,15 @@ export function getWrappingFunctionId(
 export function addArtifactMarkings(code: string, filePath: string, config?: FlytrapConfig) {
 	code = code.replaceAll('\t', '    ')
 	const functionOrCallIdsAndLocations: ArtifactMarking[] = []
-	const ast = parse(code, getParseConfig(config?.babel?.parserOptions))
+	const { error, data: ast } = parseCode(
+		code,
+		filePath,
+		getParseConfig(config?.babel?.parserOptions)
+	)
+
+	if (error) {
+		return err(error)
+	}
 
 	const extractParamsLocation = (params: (Identifier | RestElement | Pattern)[]) => {
 		if (params.length === 0) {
@@ -255,5 +264,5 @@ export function addArtifactMarkings(code: string, filePath: string, config?: Fly
 		}
 	})
 
-	return functionOrCallIdsAndLocations
+	return ok(functionOrCallIdsAndLocations)
 }

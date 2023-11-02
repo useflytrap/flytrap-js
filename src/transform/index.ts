@@ -33,8 +33,8 @@ import {
 import { findIgnoredImports, shouldIgnoreCall } from './packageIgnores'
 import { shouldIgnoreFunctionName } from './excludes'
 import { FlytrapConfig } from '../core/types'
-import { getParseConfig } from './config'
 import { _babelInterop } from './util'
+import { parseCode } from './parser'
 
 export function shouldBeWrapped(path: NodePath) {
 	if (
@@ -56,7 +56,13 @@ export function shouldBeWrapped(path: NodePath) {
 }
 
 export function flytrapTransformArtifacts(code: string, filePath: string, config?: FlytrapConfig) {
-	const ast = parse(code, getParseConfig(config?.babel?.parserOptions))
+	const { error, data: ast } = parseCode(code, filePath, config?.babel?.parserOptions)
+
+	if (error !== null) {
+		console.error(error.toString())
+		throw new Error(error.toString())
+	}
+
 	const ignoredImports = config?.packageIgnores
 		? findIgnoredImports(code, config.packageIgnores)
 		: undefined

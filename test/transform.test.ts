@@ -316,7 +316,9 @@ describe('addMissingImports transform', () => {
 		'use client';
 		`
 
-		expect(toOneLine(addMissingFlytrapImports(new MagicString(useClientFixture)).toString())).toBe(
+		expect(
+			toOneLine(addMissingFlytrapImports(new MagicString(useClientFixture), '/file.js').toString())
+		).toBe(
 			toOneLine(`
 			'use client';
 
@@ -327,7 +329,9 @@ describe('addMissingImports transform', () => {
 		)
 
 		// use client fixture 2
-		expect(toOneLine(addMissingFlytrapImports(new MagicString(useClientFixture2)).toString())).toBe(
+		expect(
+			toOneLine(addMissingFlytrapImports(new MagicString(useClientFixture2), '/file.js').toString())
+		).toBe(
 			toOneLine(`
 			// comment
 			'use client';
@@ -340,7 +344,9 @@ describe('addMissingImports transform', () => {
 
 		// wrong use fixture
 		expect(
-			toOneLine(addMissingFlytrapImports(new MagicString(wrongUseClientFixture)).toString())
+			toOneLine(
+				addMissingFlytrapImports(new MagicString(wrongUseClientFixture), '/file.js').toString()
+			)
 		).toBe(
 			toOneLine(`
 			${getFlytrapRequiredImports()}
@@ -352,7 +358,7 @@ describe('addMissingImports transform', () => {
 
 	it('adds only needed imports', () => {
 		const fixture = `import { capture } from 'useflytrap';`
-		const transformed = addMissingFlytrapImports(new MagicString(fixture))
+		const transformed = addMissingFlytrapImports(new MagicString(fixture), '/file.js')
 		expect(toOneLine(transformed.toString())).toEqual(
 			toOneLine(`
 			${getFlytrapRequiredImports()}
@@ -364,7 +370,8 @@ describe('addMissingImports transform', () => {
 		import { capture, useFlytrapCall } from 'useflytrap';
 		`
 		const transformedWithRequired = addMissingFlytrapImports(
-			new MagicString(fixtureWithRequiredImports)
+			new MagicString(fixtureWithRequiredImports),
+			'/file.js'
 		)
 		expect(toOneLine(transformedWithRequired.toString())).toEqual(
 			toOneLine(`
