@@ -38,6 +38,9 @@ importers:
       mlly:
         specifier: ^1.0.0
         version: 1.0.0
+      picocolors:
+        specifier: ^1.0.0
+        version: 1.0.0
       pkg-dir:
         specifier: ^7.0.0
         version: 7.0.0

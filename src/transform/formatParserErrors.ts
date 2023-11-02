@@ -1,4 +1,5 @@
 import { ParseErrorSpecification } from '../core/types'
+import pico from 'picocolors'
 
 const getNumDigits = (number: number) => (Math.log(number) * Math.LOG10E + 1) | 0
 
@@ -16,12 +17,12 @@ export function formatBabelParseError(
 
 	// Format the error message.
 	const topLine = [
-		`babel parse error: ${errorName}`,
+		`🐛 babel parse error: ${errorName}`,
 		error.syntaxPlugin !== undefined && `syntax plugin: ${error.syntaxPlugin}`,
 		error.missingPlugin !== undefined && `missing plugin(s): "${error.missingPlugin}"`,
-		`---> ${fileNamePath === undefined ? 'unspecified file' : fileNamePath}:${error.loc.line}:${
-			error.loc.column
-		}`
+		`${pico.green('--->')} ${fileNamePath === undefined ? 'unspecified file' : fileNamePath}:${
+			error.loc.line
+		}:${error.loc.column}`
 	]
 		.filter(Boolean)
 		.join('\n')
@@ -30,13 +31,13 @@ export function formatBabelParseError(
 
 	const pointerLine =
 		' '.repeat(getNumDigits(error.loc.line) + error.loc.column - getNumDigits(error.loc.line)) +
-		'^'.repeat(errorUnderlineLength) +
+		pico.red('^').repeat(errorUnderlineLength) +
 		' ' +
-		errorMessage
+		pico.red(errorMessage)
 	const codeDisplay = [
-		' '.repeat(getNumDigits(error.loc.line) + 1) + '|',
-		`${error.loc.line} | ${errorLine}`,
-		`${' '.repeat(getNumDigits(error.loc.line) + 1) + '|'} ${pointerLine}`
+		' '.repeat(getNumDigits(error.loc.line) + 1) + pico.green('|'),
+		`${pico.green(error.loc.line)} ${pico.green('|')} ${errorLine}`,
+		`${' '.repeat(getNumDigits(error.loc.line) + 1) + pico.green('|')} ${pointerLine}`
 	].join('\n')
 
 	return `${topLine}\n${codeDisplay}\n`

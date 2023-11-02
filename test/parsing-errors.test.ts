@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, it } from 'vitest'
 import { createHumanLog } from '../src/core/errors'
 import { parse as babelParse } from '@babel/parser'
 import { getParseConfig } from '../src/transform/config'
@@ -36,77 +36,26 @@ export const CapturedCall = () => {
 
 type ParsingErrorTest = {
 	fixture: string
-	getErrorMessage: (fixture: string) => string
-}
-
-const createParsingError = (
-	code: string,
-	fileNamePath: string,
-	lineNumber: number,
-	column: number,
-	errorMessage: string
-) => {
-	const parsingErrorMessage = formatBabelParseError(
-		{
-			name: 'SyntaxError',
-			message: errorMessage,
-			loc: {
-				line: lineNumber,
-				column: column,
-				index: -1
-			},
-			code: 'BABEL_PARSER_SYNTAX_ERROR',
-			reasonCode: 'some reason code',
-			details: {}
-		},
-		code,
-		fileNamePath
-	)
-
-	return createHumanLog({
-		events: ['parsing_failed'],
-		explanations: ['parsing_error_explanation'],
-		solutions: ['parsing_error_open_issue', 'parsing_error_configure_babel_parser_options'],
-		params: {
-			fileNamePath,
-			parsingError: parsingErrorMessage
-		}
-	}).toString()
+	requiredErrorMessageParts: string[]
 }
 
 const parsingErrorFixtures: Record<string, ParsingErrorTest[]> = {
 	'illegal code': [
 		{
 			fixture: `function foo() {-}`,
-			getErrorMessage: (fixture) =>
-				createParsingError(
-					fixture,
-					'/file.js',
-					1,
-					fixture.indexOf('-') + 1,
-					`Unexpected token (1:17)`
-				)
+			requiredErrorMessageParts: ['Unexpected token (1:17)']
 		},
 		{
 			fixture: `funct foo() {}`,
-			getErrorMessage: (fixture) =>
-				createParsingError(fixture, '/file.js', 1, 5, `Missing semicolon. (1:5)`)
+			requiredErrorMessageParts: ['Missing semicolon. (1:5)']
 		},
 		{
 			fixture: `function foo#() {}`,
-			getErrorMessage: (fixture) =>
-				createParsingError(fixture, '/file.js', 1, 12, `Unexpected token, expected "(" (1:12)`)
+			requiredErrorMessageParts: ['Unexpected token, expected "(" (1:12)']
 		},
 		{
 			fixture: `const x = 1 ++ 2;`,
-			getErrorMessage: (fixture) =>
-				createParsingError(
-					fixture,
-					'/file.js',
-					1,
-					10,
-					`Invalid left-hand side in postfix operation. (1:10)`
-				)
+			requiredErrorMessageParts: ['Invalid left-hand side in postfix operation. (1:10)']
 		}
 	],
 	// @todo: write more examples
@@ -114,7 +63,10 @@ const parsingErrorFixtures: Record<string, ParsingErrorTest[]> = {
 		// throw Expressions
 		{
 			fixture: `function save(filename = throw new TypeError("Argument required")) {}`,
-			getErrorMessage: (fixture) => ''
+			requiredErrorMessageParts: [
+				'missing plugin(s): "throwExpressions"',
+				'This experimental syntax requires enabling the parser plugin: "throwExpressions". (1:25)'
+			]
 		},
 		// do expressions
 		{
@@ -126,7 +78,10 @@ const parsingErrorFixtures: Record<string, ParsingErrorTest[]> = {
 					("small");
 				}
 			};`,
-			getErrorMessage: (fixture) => 'todo'
+			requiredErrorMessageParts: [
+				'missing plugin(s): "doExpressions"',
+				'This experimental syntax requires enabling the parser plugin: "doExpressions". (2:11)'
+			]
 		}
 	]
 	/* 'regression tests': [
@@ -142,8 +97,20 @@ describe('gives human-friendly errors when parsing invalid code', () => {
 		it(suiteName, () => {
 			for (let i = 0; i < parseErrorTests.length; i++) {
 				const parseResponse = parse(parseErrorTests[i].fixture, '/file.js')
-				const expectedResponse = parseErrorTests[i].getErrorMessage(parseErrorTests[i].fixture)
-				expect(parseResponse).toEqual(expectedResponse)
+				// const expectedResponse = parseErrorTests[i].getErrorMessage(parseErrorTests[i].fixture)
+
+				parseErrorTests[i].requiredErrorMessageParts.forEach((messagePart) => {
+					if (!(parseResponse as string).includes(messagePart)) {
+						console.error('Parse response: ')
+						console.error(parseResponse)
+						console.error("Didn't include:", messagePart)
+						throw new Error('messagePart missing.')
+					}
+					// expect((parseResponse as string).includes(messagePart)).toBe(true)
+					// expect(parseResponse).
+				})
+				// expect(parseResponse).toEqual(expectedResponse)
+				// expect(parseResponse).toContain(expectedResponse)
 			}
 		})
 	}

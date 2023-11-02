@@ -59,6 +59,7 @@
 		"lilconfig": "^2.1.0",
 		"magic-string": "^0.30.0",
 		"mlly": "^1.0.0",
+		"picocolors": "^1.0.0",
 		"pkg-dir": "^7.0.0",
 		"serialize-error": "^11.0.0",
 		"superjson": "^1.13.1",
