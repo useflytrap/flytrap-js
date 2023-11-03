@@ -35,6 +35,7 @@ import { shouldIgnoreFunctionName } from './excludes'
 import { FlytrapConfig } from '../core/types'
 import { _babelInterop } from './util'
 import { parseCode } from './parser'
+import { createHumanLog } from '../core/errors'
 
 export function shouldBeWrapped(path: NodePath) {
 	if (
@@ -67,107 +68,121 @@ export function flytrapTransformArtifacts(code: string, filePath: string, config
 		? findIgnoredImports(code, config.packageIgnores)
 		: undefined
 
-	_babelInterop(babelTraverse)(ast, {
-		ArrowFunctionExpression(path) {
-			if (!shouldBeWrapped(path)) return
+	try {
+		_babelInterop(babelTraverse)(ast, {
+			ArrowFunctionExpression(path) {
+				if (!shouldBeWrapped(path)) return
 
-			const functionName = extractFunctionName(path.parent as VariableDeclarator | ObjectProperty)
-			const scopes = extractCurrentScope(path)
-			const functionId = extractFunctionId(path, filePath, functionName, scopes)
-
-			const newNode = callExpression(identifier('useFlytrapFunction'), [
-				path.node,
-				objectExpression([objectProperty(identifier('id'), stringLiteral(functionId))])
-			])
-
-			path.replaceWith(newNode)
-		},
-		FunctionDeclaration(path) {
-			if (!shouldBeWrapped(path)) return
-
-			const functionName = extractFunctionName(path.node)
-			const scopes = extractCurrentScope(path)
-			const functionId = extractFunctionId(path, filePath, functionName, scopes)
-
-			const useFlytrapCallExpressionNode = callExpression(identifier('useFlytrapFunction'), [
-				toExpression(path.node),
-				objectExpression([objectProperty(identifier('id'), stringLiteral(functionId))])
-			])
-
-			// Handle default export
-			if (path.parent.type === 'ExportDefaultDeclaration') {
-				path.replaceWith(useFlytrapCallExpressionNode)
-				return
-			}
-
-			const transformedNode = variableDeclaration('const', [
-				variableDeclarator(
-					// @ts-ignore
-					identifier(path.node.id.name),
-					callExpression(identifier('useFlytrapFunction'), [
-						toExpression(path.node),
-						objectExpression([objectProperty(identifier('id'), stringLiteral(functionId))])
-					])
-				)
-			])
-
-			path.replaceWith(transformedNode)
-		},
-		FunctionExpression(path) {
-			if (!shouldBeWrapped(path)) return
-			if (isVariableDeclarator(path.parent)) {
-				const functionName =
-					path.node.id?.name ??
-					extractFunctionName(path.parent as VariableDeclarator | ObjectProperty)
+				const functionName = extractFunctionName(path.parent as VariableDeclarator | ObjectProperty)
 				const scopes = extractCurrentScope(path)
 				const functionId = extractFunctionId(path, filePath, functionName, scopes)
 
-				const transformedNode = callExpression(identifier('useFlytrapFunction'), [
+				const newNode = callExpression(identifier('useFlytrapFunction'), [
 					path.node,
 					objectExpression([objectProperty(identifier('id'), stringLiteral(functionId))])
 				])
-				path.replaceWith(transformedNode)
-			}
-		},
-		// For FlytrapFunctionCall
-		CallExpression(path) {
-			if (!shouldBeWrapped(path)) return
 
-			// Ignored calls (eg. packageIgnores & reserved words)
-			if (
-				shouldIgnoreCall(path, ignoredImports ?? []) ||
-				shouldIgnoreFunctionName(path, config?.excludeFunctionNames ?? [])
-			) {
-				return
-			}
+				path.replaceWith(newNode)
+			},
+			FunctionDeclaration(path) {
+				if (!shouldBeWrapped(path)) return
 
-			const functionCallName = extractFunctionCallName(path.node)
-			const scopes = extractCurrentScope(path)
-			const functionCallId = extractFunctionCallId(path, filePath, functionCallName, scopes)
-			const useFunctionName = isAwaitExpression(path.parent)
-				? 'useFlytrapCallAsync'
-				: 'useFlytrapCall'
+				const functionName = extractFunctionName(path.node)
+				const scopes = extractCurrentScope(path)
+				const functionId = extractFunctionId(path, filePath, functionName, scopes)
 
-			function transformCallee(callee: V8IntrinsicIdentifier | Expression) {
-				if (callee.type === 'MemberExpression') {
-					return callee.object
-				}
-				return callee
-			}
-
-			const newNode = callExpression(identifier(useFunctionName), [
-				// @ts-ignore
-				transformCallee(path.node.callee),
-				objectExpression([
-					objectProperty(identifier('id'), stringLiteral(functionCallId)),
-					// @ts-ignore
-					objectProperty(identifier('args'), arrayExpression(path.node.arguments)),
-					objectProperty(identifier('name'), stringLiteral(functionCallName))
+				const useFlytrapCallExpressionNode = callExpression(identifier('useFlytrapFunction'), [
+					toExpression(path.node),
+					objectExpression([objectProperty(identifier('id'), stringLiteral(functionId))])
 				])
-			])
-			path.replaceWith(newNode)
-		}
-	})
+
+				// Handle default export
+				if (path.parent.type === 'ExportDefaultDeclaration') {
+					path.replaceWith(useFlytrapCallExpressionNode)
+					return
+				}
+
+				const transformedNode = variableDeclaration('const', [
+					variableDeclarator(
+						// @ts-ignore
+						identifier(path.node.id.name),
+						callExpression(identifier('useFlytrapFunction'), [
+							toExpression(path.node),
+							objectExpression([objectProperty(identifier('id'), stringLiteral(functionId))])
+						])
+					)
+				])
+
+				path.replaceWith(transformedNode)
+			},
+			FunctionExpression(path) {
+				if (!shouldBeWrapped(path)) return
+				if (isVariableDeclarator(path.parent)) {
+					const functionName =
+						path.node.id?.name ??
+						extractFunctionName(path.parent as VariableDeclarator | ObjectProperty)
+					const scopes = extractCurrentScope(path)
+					const functionId = extractFunctionId(path, filePath, functionName, scopes)
+
+					const transformedNode = callExpression(identifier('useFlytrapFunction'), [
+						path.node,
+						objectExpression([objectProperty(identifier('id'), stringLiteral(functionId))])
+					])
+					path.replaceWith(transformedNode)
+				}
+			},
+			// For FlytrapFunctionCall
+			CallExpression(path) {
+				if (!shouldBeWrapped(path)) return
+
+				// Ignored calls (eg. packageIgnores & reserved words)
+				if (
+					shouldIgnoreCall(path, ignoredImports ?? []) ||
+					shouldIgnoreFunctionName(path, config?.excludeFunctionNames ?? [])
+				) {
+					return
+				}
+
+				const functionCallName = extractFunctionCallName(path.node)
+				const scopes = extractCurrentScope(path)
+				const functionCallId = extractFunctionCallId(path, filePath, functionCallName, scopes)
+				const useFunctionName = isAwaitExpression(path.parent)
+					? 'useFlytrapCallAsync'
+					: 'useFlytrapCall'
+
+				function transformCallee(callee: V8IntrinsicIdentifier | Expression) {
+					if (callee.type === 'MemberExpression') {
+						return callee.object
+					}
+					return callee
+				}
+
+				const newNode = callExpression(identifier(useFunctionName), [
+					// @ts-ignore
+					transformCallee(path.node.callee),
+					objectExpression([
+						objectProperty(identifier('id'), stringLiteral(functionCallId)),
+						// @ts-ignore
+						objectProperty(identifier('args'), arrayExpression(path.node.arguments)),
+						objectProperty(identifier('name'), stringLiteral(functionCallName))
+					])
+				])
+				path.replaceWith(newNode)
+			}
+		})
+	} catch (e) {
+		const errorLog = createHumanLog({
+			events: ['transform_traverse_failed'],
+			explanations: ['traverse_failed'],
+			solutions: ['parsing_error_open_issue'],
+			params: {
+				fileNamePath: filePath,
+				traverseError: String(e)
+			}
+		})
+
+		throw errorLog.toString()
+	}
 
 	return _babelInterop(generate)(ast)
 }

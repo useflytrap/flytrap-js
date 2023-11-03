@@ -10,6 +10,10 @@ export const createHumanLog = createHumanLogs({
 		parsing_failed: {
 			template: 'Parsing file "{fileNamePath}" failed.',
 			params: { fileNamePath: '' }
+		},
+		transform_traverse_failed: {
+			template: 'Transforming file "{fileNamePath}" failed',
+			params: { fileNamePath: '' }
 		}
 	},
 	explanations: {
@@ -33,11 +37,18 @@ export const createHumanLog = createHumanLogs({
 		// Generic errors
 		generic_unexpected_error: 'because of an unexpected error.',
 
-		// Parsing errors
+		// Parsing / traversing errors
 		parsing_error_explanation: {
 			template: 'View the error below: \n\n{parsingError}\n',
 			params: {
 				parsingError: ''
+			}
+		},
+		traverse_failed: {
+			template:
+				'because traversing your source-code failed. View the error below: \n\n{traverseError}\n',
+			params: {
+				traverseError: ''
 			}
 		}
 	},
@@ -128,10 +139,10 @@ export const createHumanLog = createHumanLogs({
 				}
 			]
 		},
-		// Parsing error solutions
+		// Parsing / Traversing error solutions
 		parsing_error_open_issue: {
 			template:
-				"If you think this error shouldn't be happening, open an issue on GitHub and provide the code that caused this parsing error.",
+				"If you think this error shouldn't be happening, open an issue on GitHub and provide the code that caused this error.",
 			params: {},
 			actions: [
 				{

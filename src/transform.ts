@@ -51,7 +51,8 @@ export const unpluginOptions: UnpluginOptions = {
 		if (
 			code.includes('@flytrap-ignore') ||
 			id.includes('/node_modules/') ||
-			id.includes('flytrap-libs/dist')
+			id.includes('flytrap-libs/dist') ||
+			id.includes('flytrap-libs/browser')
 		) {
 			return
 		}
@@ -144,6 +145,8 @@ export const unpluginOptions: UnpluginOptions = {
 			if (process.env.NODE_ENV === 'test') {
 				throw e
 			}
+			console.log('ERROROROOR : ')
+			console.log(e)
 			console.warn(`Oops! Something went wrong while transforming file ${id}. Error:`)
 			console.warn(e)
 		}
