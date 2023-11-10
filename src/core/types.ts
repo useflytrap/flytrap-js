@@ -3,7 +3,7 @@ import { ParserOptions } from '@babel/parser'
 export type FlytrapPublicKey = `pk_${string}`
 export type FlytrapSecretKey = `sk_${string}`
 
-export type FlytrapMode = 'capture' | 'replay'
+export type FlytrapMode = 'capture' | 'replay' | 'troubleshoot'
 
 export type LogGroup =
 	| 'storage'
@@ -273,3 +273,5 @@ export interface ParseErrorSpecification<ErrorDetails = unknown> extends Error {
 	// information as `loc.index`.
 	// pos: number;
 }
+
+export type AnyFunction = (...args: any[]) => any

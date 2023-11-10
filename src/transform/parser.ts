@@ -2,7 +2,7 @@ import { ParserOptions, parse as babelParse } from '@babel/parser'
 import { err, ok } from '../core/util'
 import { getParseConfig } from './config'
 import { ParseErrorSpecification } from '../core/types'
-import { formatBabelParseError } from './formatParserErrors'
+import { formatBabelParseError } from './formatErrors'
 import { createHumanLog } from '../core/errors'
 
 export function parseCode(code: string, fileNamePath?: string, config?: ParserOptions) {

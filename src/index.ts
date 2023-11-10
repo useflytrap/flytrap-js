@@ -1,5 +1,6 @@
 import { serializeError } from 'serialize-error'
 import {
+	AnyFunction,
 	CapturedCall,
 	CapturedFunction,
 	FlytrapCallOptions,
@@ -18,6 +19,18 @@ import { log } from './core/logging'
 import { getLoadedConfig } from './core/config'
 import { CaptureInvocation } from './exports'
 import { createHumanLog } from './core/errors'
+
+export function uff<T extends AnyFunction>(
+	func: T,
+	context: any = null,
+	id: string | null = null
+): T {
+	return function (this: any) {
+		// @ts-ignore
+		// eslint-disable-next-line
+		return func.apply(context ?? this, arguments)
+	} as T
+}
 
 /**
  * All function definitions are wrapped with the useFlytrapFunction

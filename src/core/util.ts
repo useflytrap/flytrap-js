@@ -1,7 +1,7 @@
 import { getLoadedConfig } from './config'
 import { FLYTRAP_REPLACE_VALUES, FLYTRAP_UNSERIALIZABLE_VALUE } from './constants'
 import { log } from './logging'
-import { SourceType } from './types'
+import { FlytrapMode, SourceType } from './types'
 
 /**
  * Get the caller source file name and line number
@@ -113,7 +113,7 @@ export function isSameArgs(args1: any, args2: any) {
 	return JSON.stringify(args1) === JSON.stringify(args2)
 }
 
-export function getMode(): 'replay' | 'capture' {
+export function getMode(): FlytrapMode {
 	if (getLoadedConfig()) return getLoadedConfig()?.mode ?? 'capture'
 	return 'capture'
 }

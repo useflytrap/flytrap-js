@@ -69,6 +69,24 @@ export type FlytrapStorage = {
 	) => Promise<void>
 }
 
+function findWithLatestErrorInvocation<T extends CapturedCall | CapturedFunction>(
+	capturedFunctions: T[]
+): T | undefined {
+	let latestFunction: T | undefined
+	let latestTimestamp = -Infinity
+
+	capturedFunctions.forEach((func) => {
+		func.invocations.forEach((invocation) => {
+			if (invocation.error && invocation.timestamp > latestTimestamp) {
+				latestTimestamp = invocation.timestamp
+				latestFunction = func
+			}
+		})
+	})
+
+	return latestFunction
+}
+
 export const liveFlytrapStorage: FlytrapStorage = {
 	getCapture(captureId) {
 		return getPersistence().getItem(captureId)
@@ -124,8 +142,30 @@ export const liveFlytrapStorage: FlytrapStorage = {
 		return decryptedCapture
 	},
 	async saveCapture(functions, calls, error?) {
-		// Here error if
-		const { publicApiKey, projectId, captureIgnores } = (await getLoadedConfig()) ?? {}
+		const { publicApiKey, projectId, captureIgnores, mode } = (await getLoadedConfig()) ?? {}
+
+		// We want troubleshooting mode to work even without
+		// proper `publicApiKey` and `projectId` setup.
+
+		if (mode === 'troubleshoot') {
+			// @todo: log out the helpful errors
+
+			const lastErroredFunction = findWithLatestErrorInvocation(functions)
+			const lastErroredCall = findWithLatestErrorInvocation(calls)
+
+			const troubleshootingErrorLog = createHumanLog({
+				events: ['troubleshooting_error_captured'],
+				explanations: ['troubleshooting_capture_explanation'],
+				solutions: ['troubleshooting_open_issue', 'troubleshooting_join_discord'],
+				params: {
+					lastErroredFunctionId: lastErroredFunction?.id ?? 'undefined',
+					lastErroredCallId: lastErroredCall?.id ?? 'undefined'
+				}
+			})
+
+			console.error(troubleshootingErrorLog.toString())
+			return
+		}
 
 		if (!publicApiKey || !projectId || empty(publicApiKey, projectId)) {
 			console.error(

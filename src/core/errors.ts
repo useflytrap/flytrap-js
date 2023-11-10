@@ -11,10 +11,12 @@ export const createHumanLog = createHumanLogs({
 			template: 'Parsing file "{fileNamePath}" failed.',
 			params: { fileNamePath: '' }
 		},
-		transform_traverse_failed: {
+		transform_file_failed: {
 			template: 'Transforming file "{fileNamePath}" failed',
 			params: { fileNamePath: '' }
-		}
+		},
+		// Troubleshooting mode
+		troubleshooting_error_captured: 'An error was captured while in troubleshooting mode.'
 	},
 	explanations: {
 		database_unresponsive: 'because we could not connect to our database.',
@@ -36,6 +38,20 @@ export const createHumanLog = createHumanLogs({
 
 		// Generic errors
 		generic_unexpected_error: 'because of an unexpected error.',
+
+		// `Arguments` errors
+		invalid_arguments_callee_use:
+			'because you use `arguments.callee` in your code, which Flytrap does not support.',
+
+		// Troubleshooting mode
+		troubleshooting_capture_explanation: {
+			template:
+				'This can happen if there is an error in your code, but also because of some unexpected behavior with the Flytrap SDK. View details below: \n\nLast errored function ID: "{lastErroredFunctionId}"\nLast errored call ID: "{lastErroredCallId}"\nIf your code works perfectly without the Flytrap plugin, but has errors with the Flytrap plugin, please reach out to us and we will help you immediately.',
+			params: {
+				lastErroredFunctionId: '',
+				lastErroredCallId: ''
+			}
+		},
 
 		// Parsing / traversing errors
 		parsing_error_explanation: {
@@ -136,6 +152,27 @@ export const createHumanLog = createHumanLogs({
 				{
 					text: 'If the problem continues, please contact us.',
 					href: 'mailto:rasmus@useflytrap.com'
+				}
+			]
+		},
+		// Troubleshooting mode solutions
+		troubleshooting_open_issue: {
+			template: 'Open an issue',
+			params: {},
+			actions: [
+				{
+					text: 'Open an issue',
+					href: 'https://github.com/useflytrap/flytrap-js/issues/new?assignees=skoshx&labels=bug&projects=&template=---bug-report.yml'
+				}
+			]
+		},
+		troubleshooting_join_discord: {
+			template: 'Our Discord server is the fastest way to get help with your problem.',
+			params: {},
+			actions: [
+				{
+					text: 'Join our Discord',
+					href: 'https://github.com/useflytrap/flytrap-js/issues/new?assignees=skoshx&labels=bug&projects=&template=---bug-report.yml'
 				}
 			]
 		},

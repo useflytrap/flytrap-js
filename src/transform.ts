@@ -57,6 +57,20 @@ export const unpluginOptions: UnpluginOptions = {
 			return
 		}
 
+		if (code.includes(`arguments.callee`)) {
+			const argumentsCalleeError = createHumanLog({
+				events: ['transform_file_failed'],
+				explanations: ['invalid_arguments_callee_use'],
+				params: {
+					fileNamePath: id
+				}
+			})
+
+			log.warn('transform', argumentsCalleeError.toString())
+			console.warn(argumentsCalleeError.toString())
+			return
+		}
+
 		// Logging config
 		const config = await loadConfig()
 		if (config) setFlytrapConfig(config)
@@ -145,8 +159,6 @@ export const unpluginOptions: UnpluginOptions = {
 			if (process.env.NODE_ENV === 'test') {
 				throw e
 			}
-			console.log('ERROROROOR : ')
-			console.log(e)
 			console.warn(`Oops! Something went wrong while transforming file ${id}. Error:`)
 			console.warn(e)
 		}

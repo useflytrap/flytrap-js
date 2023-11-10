@@ -172,7 +172,7 @@ export function flytrapTransformArtifacts(code: string, filePath: string, config
 		})
 	} catch (e) {
 		const errorLog = createHumanLog({
-			events: ['transform_traverse_failed'],
+			events: ['transform_file_failed'],
 			explanations: ['traverse_failed'],
 			solutions: ['parsing_error_open_issue'],
 			params: {
