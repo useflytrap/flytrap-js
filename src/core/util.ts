@@ -239,3 +239,5 @@ export function err<T>(error: T) {
 		error
 	}
 }
+
+export const extname = (filePath: string) => '.' + filePath.split('.').at(-1)

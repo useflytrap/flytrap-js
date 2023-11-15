@@ -4,9 +4,11 @@ import { FLYTRAP_PACKAGE_NAME } from '../core/config'
 import { FlytrapConfig } from '../core/types'
 import * as flytrapExports from '../index'
 import { parseCode } from './parser'
+import { extname } from '../core/util'
 
 export function getRequiredExportsForCapture(): string[] {
-	return ['useFlytrapCall', 'useFlytrapCallAsync', 'useFlytrapFunction', 'setFlytrapConfig']
+	// return ['useFlytrapCall', 'useFlytrapCallAsync', 'useFlytrapFunction', 'setFlytrapConfig', 'uff']
+	return ['uff']
 }
 
 export function getCoreExports(): string[] {
@@ -32,7 +34,11 @@ export function findStartingIndex(s: MagicString, fileNamePath?: string) {
 	return 0
 }
 
-export function addMissingFlytrapImports(s: MagicString, fileNamePath: string, browser = false) {
+export function addMissingFlytrapImports(
+	s: MagicString,
+	fileNamePath: string,
+	config?: Partial<FlytrapConfig>
+) {
 	const statements = findStaticImports(s.toString()).filter(
 		(i) => i.specifier === FLYTRAP_PACKAGE_NAME || i.specifier === FLYTRAP_PACKAGE_NAME + '/browser'
 	)
@@ -47,12 +53,29 @@ export function addMissingFlytrapImports(s: MagicString, fileNamePath: string, b
 
 	if (importsToBeAdded.length > 0) {
 		const startingIndex = findStartingIndex(s, fileNamePath)
-		s.appendLeft(
-			startingIndex,
-			`\n\nimport { ${importsToBeAdded.join(', ')} } from '${FLYTRAP_PACKAGE_NAME}${
-				browser ? '/browser' : ''
-			}';\n\n`
-		)
+
+		let useCommonjsImportSyntax = config?.transformOptions?.importFormat === 'commonjs'
+		if (extname(fileNamePath) === '.cjs') {
+			useCommonjsImportSyntax = true
+		}
+		if (extname(fileNamePath) === '.mjs') {
+			useCommonjsImportSyntax = false
+		}
+		if (useCommonjsImportSyntax) {
+			s.appendLeft(
+				startingIndex,
+				`\n\nconst { ${importsToBeAdded.join(', ')} } = require('${FLYTRAP_PACKAGE_NAME}${
+					config?.browser === true ? '/browser' : ''
+				}');\n\n`
+			)
+		} else {
+			s.appendLeft(
+				startingIndex,
+				`\n\nimport { ${importsToBeAdded.join(', ')} } from '${FLYTRAP_PACKAGE_NAME}${
+					config?.browser === true ? '/browser' : ''
+				}';\n\n`
+			)
+		}
 	}
 
 	return s

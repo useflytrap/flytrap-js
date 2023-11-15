@@ -37,6 +37,25 @@ import { _babelInterop } from './util'
 import { parseCode } from './parser'
 import { createHumanLog } from '../core/errors'
 
+export function shouldBeWrappedUff(path: NodePath) {
+	if (
+		isCallExpression(path.parent) &&
+		isIdentifier(path.parent.callee) &&
+		['uff'].includes(path.parent.callee.name)
+	) {
+		return false
+	}
+
+	if (
+		isCallExpression(path.node) &&
+		// @ts-ignore
+		getCoreExports().includes(path.node.callee.name)
+	) {
+		return false
+	}
+	return true
+}
+
 export function shouldBeWrapped(path: NodePath) {
 	if (
 		isCallExpression(path.parent) &&
@@ -54,6 +73,164 @@ export function shouldBeWrapped(path: NodePath) {
 		return false
 	}
 	return true
+}
+
+/**
+ * Transforms code using the new more minimal `uff` wrapper.
+ * @param code
+ * @param filePath
+ * @param config
+ * @returns The generated code and sourcemap
+ */
+export function flytrapTransformUff(
+	code: string,
+	filePath: string,
+	config?: Partial<FlytrapConfig>
+) {
+	const { error, data: ast } = parseCode(code, filePath, config?.babel?.parserOptions)
+
+	if (error !== null) {
+		console.error(error.toString())
+		throw new Error(error.toString())
+	}
+
+	const ignoredImports = config?.packageIgnores
+		? findIgnoredImports(code, config.packageIgnores)
+		: undefined
+
+	// What gets transformed and captured is defined in the config.
+	// const shouldTransformFunctions = config?.captureDataFrom === "calls" ? false : true;
+	// const shouldTransformCalls = config?.captureDataFrom === 'functions' ? false : true;
+
+	try {
+		_babelInterop(babelTraverse)(ast, {
+			...(!config?.transformOptions?.disableTransformation?.includes('arrow-function') && {
+				ArrowFunctionExpression(path) {
+					if (!shouldBeWrappedUff(path)) return
+
+					const functionName = extractFunctionName(
+						path.parent as VariableDeclarator | ObjectProperty
+					)
+					const scopes = extractCurrentScope(path)
+					const functionId = extractFunctionId(path, filePath, functionName, scopes)
+
+					const newNode = callExpression(identifier('uff'), [path.node, stringLiteral(functionId)])
+
+					path.replaceWith(newNode)
+				}
+			}),
+
+			...(!config?.transformOptions?.disableTransformation?.includes('function-declaration') && {
+				FunctionDeclaration(path) {
+					if (!shouldBeWrappedUff(path)) return
+
+					const functionName = extractFunctionName(path.node)
+					const scopes = extractCurrentScope(path)
+					const functionId = extractFunctionId(path, filePath, functionName, scopes)
+
+					const useFlytrapCallExpressionNode = callExpression(identifier('uff'), [
+						toExpression(path.node),
+						stringLiteral(functionId)
+						// objectExpression([objectProperty(identifier('id'), stringLiteral(functionId))])
+					])
+
+					// Handle default export
+					if (path.parent.type === 'ExportDefaultDeclaration') {
+						path.replaceWith(useFlytrapCallExpressionNode)
+						return
+					}
+
+					const transformedNode = variableDeclaration('const', [
+						variableDeclarator(
+							// @ts-ignore
+							identifier(path.node.id.name),
+							callExpression(identifier('uff'), [
+								toExpression(path.node),
+								stringLiteral(functionId)
+								// objectExpression([objectProperty(identifier('id'), stringLiteral(functionId))])
+							])
+						)
+					])
+
+					path.replaceWith(transformedNode)
+				}
+			}),
+
+			...(!config?.transformOptions?.disableTransformation?.includes('function-expression') && {
+				FunctionExpression(path) {
+					if (!shouldBeWrappedUff(path)) return
+					if (isVariableDeclarator(path.parent)) {
+						const functionName =
+							path.node.id?.name ??
+							extractFunctionName(path.parent as VariableDeclarator | ObjectProperty)
+						const scopes = extractCurrentScope(path)
+						const functionId = extractFunctionId(path, filePath, functionName, scopes)
+
+						const transformedNode = callExpression(identifier('uff'), [
+							path.node,
+							stringLiteral(functionId)
+							// objectExpression([objectProperty(identifier('id'), stringLiteral(functionId))])
+						])
+						path.replaceWith(transformedNode)
+					}
+				}
+			}),
+
+			...(!config?.transformOptions?.disableTransformation?.includes('call-expression') && {
+				CallExpression(path) {
+					if (!shouldBeWrappedUff(path)) return
+
+					// Ignored calls (eg. packageIgnores & reserved words)
+					if (
+						shouldIgnoreCall(path, ignoredImports ?? []) ||
+						shouldIgnoreFunctionName(path, config?.excludeFunctionNames ?? [])
+					) {
+						return
+					}
+
+					const functionCallName = extractFunctionCallName(path.node)
+					const scopes = extractCurrentScope(path)
+					const functionCallId = extractFunctionCallId(path, filePath, functionCallName, scopes)
+					const useFunctionName = isAwaitExpression(path.parent)
+						? 'useFlytrapCallAsync'
+						: 'useFlytrapCall'
+
+					function transformCallee(callee: V8IntrinsicIdentifier | Expression) {
+						if (callee.type === 'MemberExpression') {
+							return callee.object
+						}
+						return callee
+					}
+
+					const newNode = callExpression(identifier(useFunctionName), [
+						// @ts-ignore
+						transformCallee(path.node.callee),
+						objectExpression([
+							objectProperty(identifier('id'), stringLiteral(functionCallId)),
+							// @ts-ignore
+							objectProperty(identifier('args'), arrayExpression(path.node.arguments)),
+							objectProperty(identifier('name'), stringLiteral(functionCallName))
+						])
+					])
+					path.replaceWith(newNode)
+				}
+			})
+		})
+	} catch (e) {
+		const errorLog = createHumanLog({
+			events: ['transform_file_failed'],
+			explanations: ['traverse_failed'],
+			solutions: ['parsing_error_open_issue'],
+			params: {
+				fileNamePath: filePath,
+				traverseError: String(e)
+			}
+		})
+
+		throw errorLog.toString()
+	}
+
+	return _babelInterop(generate)(ast)
 }
 
 export function flytrapTransformArtifacts(code: string, filePath: string, config?: FlytrapConfig) {

@@ -46,7 +46,8 @@
 		"test:unit": "vitest run",
 		"test:e2e": "playwright test",
 		"test:types": "tsc --noEmit",
-		"test:ecosystem": "vitest run test/transform/generate.test.ts && vitest run test/transform/generated-fixtures"
+		"test:ecosystem": "vitest run test/transform/generate.test.ts && vitest run test/transform/generated-fixtures",
+		"test:ecosystem:expanded": "vitest run test/transform/ecosystem-expanded.test.ts"
 	},
 	"dependencies": {
 		"@babel/generator": "^7.23.0",
@@ -90,6 +91,7 @@
 		"eslint": "8.36.0",
 		"eslint-config-prettier": "latest",
 		"eslint-plugin-prettier": "latest",
+		"execa": "^8.0.1",
 		"expect-type": "0.15.0",
 		"jiti": "^1.18.2",
 		"jsdom": "^22.1.0",

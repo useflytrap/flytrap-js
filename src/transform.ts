@@ -3,18 +3,18 @@ import { UnpluginOptions, createUnplugin } from 'unplugin'
 import { parseURL, parseQuery } from 'ufo'
 import MagicString from 'magic-string'
 import { addFlytrapInit, addMissingFlytrapImports } from './transform/imports'
-import { flytrapTransformArtifacts } from './transform/index'
+import { flytrapTransformArtifacts, flytrapTransformUff } from './transform/index'
 import { packageDirectorySync } from 'pkg-dir'
 import { loadConfig } from './transform/config'
 import { setFlytrapConfig } from './core/config'
 import { log } from './core/logging'
-import { normalizeFilepath, tryCatchSync } from './core/util'
+import { empty, normalizeFilepath, tryCatchSync } from './core/util'
 import { readFileSync } from 'node:fs'
 import { excludeDirectoriesIncludeFilePath } from './transform/excludes'
 import { containsScriptTags, parseScriptTags } from './transform/parseScriptTags'
 import { calculateSHA256Checksum, getFileExtension } from './transform/util'
 import { upsertArtifacts } from './transform/artifacts/cache'
-import { Artifact, encrypt } from './exports'
+import { Artifact, FlytrapConfig, encrypt } from './exports'
 import { createHumanLog } from './core/errors'
 
 const transformedFiles = new Set<string>([])
@@ -47,7 +47,7 @@ export const unpluginOptions: UnpluginOptions = {
 
 		return false
 	},
-	async transform(code, id) {
+	async transform(code, id, config?: FlytrapConfig) {
 		if (
 			code.includes('@flytrap-ignore') ||
 			id.includes('/node_modules/') ||
@@ -72,7 +72,10 @@ export const unpluginOptions: UnpluginOptions = {
 		}
 
 		// Logging config
-		const config = await loadConfig()
+		if (!config) {
+			const loadedConfig = await loadConfig()
+			config = loadedConfig
+		}
 		if (config) setFlytrapConfig(config)
 
 		// Exclude directories
@@ -112,7 +115,7 @@ export const unpluginOptions: UnpluginOptions = {
 				: new MagicString(code)
 
 		// add missing Flytrap imports
-		addMissingFlytrapImports(ss, id, config?.browser)
+		addMissingFlytrapImports(ss, id, config)
 
 		// add Flytrap init
 		if (process.env.NODE_ENV !== 'test') {
@@ -154,7 +157,8 @@ export const unpluginOptions: UnpluginOptions = {
 			}
 
 			transformedFiles.add(id)
-			return flytrapTransformArtifacts(ss.toString(), normalizeFilepath(pkgDirPath, id), config)
+			return flytrapTransformUff(ss.toString(), normalizeFilepath(pkgDirPath, id), config)
+			// return flytrapTransformArtifacts(ss.toString(), normalizeFilepath(pkgDirPath, id), config)
 		} catch (e) {
 			if (process.env.NODE_ENV === 'test') {
 				throw e
@@ -174,7 +178,7 @@ export const unpluginOptions: UnpluginOptions = {
 			throw log.toString()
 		}
 
-		if (!config.projectId || !config.secretApiKey) {
+		if (!config.projectId || !config.secretApiKey || empty(config.projectId, config.secretApiKey)) {
 			const log = createHumanLog({
 				events: ['transform_failed'],
 				explanations: ['invalid_config'],
@@ -182,6 +186,7 @@ export const unpluginOptions: UnpluginOptions = {
 			})
 			throw log.toString()
 		}
+
 		// Find package root
 		const pkgDirPath = packageDirectorySync()
 		if (!pkgDirPath) {

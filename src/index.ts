@@ -22,13 +22,51 @@ import { createHumanLog } from './core/errors'
 
 export function uff<T extends AnyFunction>(
 	func: T,
-	context: any = null,
+	// context: any = null,
 	id: string | null = null
 ): T {
 	return function (this: any) {
-		// @ts-ignore
-		// eslint-disable-next-line
-		return func.apply(context ?? this, arguments)
+		if (id) {
+			addFunctionInvocation(id, {
+				// eslint-disable-next-line
+				args: Array.from(arguments),
+				timestamp: Date.now()
+			})
+		}
+		try {
+			const context = null
+			// @ts-ignore
+			// eslint-disable-next-line
+			const functionOutput = func.apply(context ?? this, arguments)
+			if (id) {
+				saveOutputForFunction(id, functionOutput)
+			}
+			return functionOutput
+		} catch (error) {
+			/**
+			 * Oops! We found a bug, let's send the current
+			 * executing function along with its data to the
+			 * Flytrap API.
+			 */
+			if (id) {
+				saveErrorForFunction(id, error)
+				log.info('capture', `Captured error in async function with ID "${id}".`, { error })
+				getFlytrapStorage()
+					.saveCapture(_executingFunctions, _functionCalls, error as Error)
+					.catch((saveError) => {
+						console.error(
+							createHumanLog({
+								events: ['capture_failed'],
+								explanations: ['api_capture_error_response'],
+								solutions: ['try_again_contact_us']
+							}).toString()
+						)
+						console.error(saveError)
+					})
+			}
+
+			throw error
+		}
 	} as T
 }
 

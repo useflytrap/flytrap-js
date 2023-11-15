@@ -99,9 +99,27 @@ export type FlytrapConfig = {
 	captureIgnores?: CaptureIgnore[]
 	/**
 	 * Use Flytrap in environments with access to only browser APIs, eg. Cloudflare
-	 * Workers & Pages and Deno.
+	 * Workers & Pages and Deno Deploy.
 	 */
 	browser?: true
+	transformOptions?: {
+		/**
+		 * Allows you to define what code gets transformed by the Flytrap code transform and subsequently, what code data gets captured from. By default all code gets transformed and captured.
+		 *
+		 * By default, nothing is disabled.
+		 */
+		disableTransformation?: (
+			| 'arrow-function'
+			| 'function-declaration'
+			| 'function-expression'
+			| 'call-expression'
+		)[]
+		/**
+		 * What import format to use for the automatically injected Flytrap imports.
+		 * @default "esm"
+		 */
+		importFormat?: 'esm' | 'commonjs'
+	}
 }
 
 export type ErrorType = {
