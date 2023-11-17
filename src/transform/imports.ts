@@ -7,8 +7,7 @@ import { parseCode } from './parser'
 import { extname } from '../core/util'
 
 export function getRequiredExportsForCapture(): string[] {
-	// return ['useFlytrapCall', 'useFlytrapCallAsync', 'useFlytrapFunction', 'setFlytrapConfig', 'uff']
-	return ['uff']
+	return ['uff', 'ufc', 'setFlytrapConfig']
 }
 
 export function getCoreExports(): string[] {

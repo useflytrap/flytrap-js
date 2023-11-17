@@ -20,16 +20,61 @@ import { getLoadedConfig } from './core/config'
 import { CaptureInvocation } from './exports'
 import { createHumanLog } from './core/errors'
 
-export function uff<T extends AnyFunction>(
+/* export function ufc<T extends AnyFunction>(
 	func: T,
-	// context: any = null,
-	id: string | null = null
-): T {
+	context: any = null
+) {
 	return function (this: any) {
+		// @ts-ignore
+		return func.apply(context ?? this, arguments)
+	} as T;
+} */
+export function ufc<T extends AnyFunction>(
+	functionOrNamespace: T,
+	opts: FlytrapCallOptions
+): ReturnType<T> {
+	try {
+		saveFunctionCall(opts)
+
+		const execFunctionCall = <T>(fn: T, name: string, args: any[]) => {
+			log.info('call-execution', `Executing function ${name}()`, { args })
+			// @ts-ignore
+			if (fn?.[name]) {
+				if (typeof fn === 'object' && typeof (fn as any)?.[name] === 'function') {
+					// @ts-ignore
+					return fn[name].call(fn, ...args)
+				}
+
+				// @ts-ignore
+				return fn[name](...args)
+			} else {
+				// @ts-ignore
+				return fn(...args)
+			}
+		}
+
+		const output = execFunctionCall(functionOrNamespace, opts.name, opts.args)
+		saveOutputForFunctionCall(opts.id, output)
+		return output
+	} catch (error) {
+		/**
+		 * Oops! We found a bug, let's send the current
+		 * executing function along with its data to the
+		 * Flytrap API.
+		 */
+		saveErrorForFunctionCall(opts.id, error as Error)
+		log.info('capture', `Captured error in function call with ID "${opts.id}".`, { error })
+		throw error
+	}
+}
+
+export function uff<T extends AnyFunction>(func: T, id: string | null = null): T {
+	return function (this: any, ...args: any[]) {
 		if (id) {
 			addFunctionInvocation(id, {
 				// eslint-disable-next-line
-				args: Array.from(arguments),
+				// args: Array.from(arguments),
+				args,
 				timestamp: Date.now()
 			})
 		}
@@ -37,7 +82,8 @@ export function uff<T extends AnyFunction>(
 			const context = null
 			// @ts-ignore
 			// eslint-disable-next-line
-			const functionOutput = func.apply(context ?? this, arguments)
+			// const functionOutput = func.apply(context ?? this, arguments)
+			const functionOutput = func.apply(context ?? this, args)
 			if (id) {
 				saveOutputForFunction(id, functionOutput)
 			}

@@ -17,9 +17,13 @@ import {
 	objectExpression,
 	V8IntrinsicIdentifier,
 	ObjectProperty,
-	VariableDeclarator
+	VariableDeclarator,
+	MemberExpression,
+	isMemberExpression,
+	isNumericLiteral,
+	isStringLiteral,
+	Identifier
 } from '@babel/types'
-import { parse } from '@babel/parser'
 import generate from '@babel/generator'
 
 import { getCoreExports } from './imports'
@@ -37,11 +41,36 @@ import { _babelInterop } from './util'
 import { parseCode } from './parser'
 import { createHumanLog } from '../core/errors'
 
+export function getCalleeAndAccessorKey(node: MemberExpression | Identifier) {
+	if (!isMemberExpression(node)) {
+		return {
+			callee: node,
+			accessorKey: undefined
+		}
+	}
+
+	// @ts-expect-error
+	const callee: MemberExpression | Identifier = node.object
+
+	let accessorKey = node.property
+
+	if (!node.computed) {
+		if (isIdentifier(node.property)) {
+			accessorKey = stringLiteral(node.property.name)
+		}
+		if (isNumericLiteral(node.property) || isStringLiteral(node.property)) {
+			accessorKey = stringLiteral(String(node.property.value))
+		}
+	}
+
+	return { callee, accessorKey }
+}
+
 export function shouldBeWrappedUff(path: NodePath) {
 	if (
 		isCallExpression(path.parent) &&
 		isIdentifier(path.parent.callee) &&
-		['uff'].includes(path.parent.callee.name)
+		['uff', 'ufc'].includes(path.parent.callee.name)
 	) {
 		return false
 	}
@@ -97,10 +126,6 @@ export function flytrapTransformUff(
 	const ignoredImports = config?.packageIgnores
 		? findIgnoredImports(code, config.packageIgnores)
 		: undefined
-
-	// What gets transformed and captured is defined in the config.
-	// const shouldTransformFunctions = config?.captureDataFrom === "calls" ? false : true;
-	// const shouldTransformCalls = config?.captureDataFrom === 'functions' ? false : true;
 
 	try {
 		_babelInterop(babelTraverse)(ast, {
@@ -188,30 +213,40 @@ export function flytrapTransformUff(
 						return
 					}
 
-					const functionCallName = extractFunctionCallName(path.node)
+					const fullFunctionCallName = _babelInterop(generate)({
+						...path.node,
+						arguments: []
+					}).code.replaceAll('()', '')
+
+					if (fullFunctionCallName === 'this' || fullFunctionCallName.split('.').at(0) === 'this') {
+						return
+					}
+					const functionCallName = fullFunctionCallName.split('.').at(-1)!
 					const scopes = extractCurrentScope(path)
 					const functionCallId = extractFunctionCallId(path, filePath, functionCallName, scopes)
-					const useFunctionName = isAwaitExpression(path.parent)
-						? 'useFlytrapCallAsync'
-						: 'useFlytrapCall'
+					const useFunctionName = isAwaitExpression(path.parent) ? 'ufc' : 'ufc'
 
-					function transformCallee(callee: V8IntrinsicIdentifier | Expression) {
-						if (callee.type === 'MemberExpression') {
-							return callee.object
-						}
-						return callee
+					// @ts-ignore
+					const { callee, accessorKey } = getCalleeAndAccessorKey(path.node.callee)
+
+					if (!callee) {
+						throw new Error('Callee is undefined. CODE: ' + generate(path.node).code)
 					}
 
 					const newNode = callExpression(identifier(useFunctionName), [
-						// @ts-ignore
-						transformCallee(path.node.callee),
+						callee,
 						objectExpression([
 							objectProperty(identifier('id'), stringLiteral(functionCallId)),
 							// @ts-ignore
 							objectProperty(identifier('args'), arrayExpression(path.node.arguments)),
-							objectProperty(identifier('name'), stringLiteral(functionCallName))
+							objectProperty(
+								identifier('name'),
+								// @ts-expect-error
+								accessorKey ? accessorKey : stringLiteral(functionCallName)
+							)
 						])
 					])
+
 					path.replaceWith(newNode)
 				}
 			})

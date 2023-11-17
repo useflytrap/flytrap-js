@@ -367,7 +367,7 @@ describe('addMissingImports transform', () => {
 		)
 
 		const fixtureWithRequiredImports = `
-		import { capture, useFlytrapCall } from 'useflytrap';
+		import { capture, ufc } from 'useflytrap';
 		`
 		const transformedWithRequired = addMissingFlytrapImports(
 			new MagicString(fixtureWithRequiredImports),
@@ -375,8 +375,8 @@ describe('addMissingImports transform', () => {
 		)
 		expect(toOneLine(transformedWithRequired.toString())).toEqual(
 			toOneLine(`
-			import { useFlytrapCallAsync, useFlytrapFunction, setFlytrapConfig } from 'useflytrap';
-			import { capture, useFlytrapCall } from 'useflytrap';
+			import { uff, setFlytrapConfig } from 'useflytrap';
+			import { capture, ufc } from 'useflytrap';
 			`)
 		)
 	})

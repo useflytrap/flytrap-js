@@ -114,11 +114,23 @@ const targets: Record<string, Target> = {
 			publicApiKey: 'pk_...',
 			projectId: 'test-project',
 			transformOptions: {
-				disableTransformation: ['function-declaration', 'call-expression']
+				disableTransformation: ['function-declaration']
 			}
 		}
 	}
-
+	/* prettier: {
+		repo: 'prettier/prettier#83b9f62',
+		sourcePaths: ['src'],
+		excludePaths: ['tests'],
+		runCommands: ['npm install', `npm install ${FLYTRAP_SOURCE_ROOT}`, 'npm test'],
+		config: {
+			publicApiKey: 'pk_...',
+			projectId: 'test-project',
+			transformOptions: {
+				disableTransformation: ['function-declaration']
+			}
+		}
+	} */
 	// @todo:
 	// vue
 	// react
@@ -133,28 +145,6 @@ const targets: Record<string, Target> = {
 	// mocha
 	// redis
 	// mysql
-
-	/* prettier: {
-		repo: 'prettier/prettier#83b9f62',
-		sourcePaths: ['src'],
-		excludePaths: ['tests'],
-		runCommands: [
-			'npm install',
-			// @todo: make not hardcoded
-			"npm install /Users/rasmus/Desktop/DEV/Web/flytrap-libs",
-			'npm test'
-		],
-		config: {
-			publicApiKey: 'pk_...',
-			projectId: 'test-project',
-			transformOptions: {
-				disableTransformation: [
-					'function-declaration',
-					'call-expression'
-				]
-			}
-		}
-	} */
 }
 
 async function transformRepositoryUsingFlytrap(targetName: string, target: Target) {
@@ -181,6 +171,7 @@ async function transformRepositoryUsingFlytrap(targetName: string, target: Targe
 			const transformedCode = await unpluginOptions.transform(
 				code.toString(),
 				filePath,
+				// @ts-expect-error: we extended types with `config`
 				target.config
 			)
 			// @ts-expect-error
