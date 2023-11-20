@@ -1,7 +1,15 @@
+import { Err, Ok, Result } from 'ts-results'
 import { getLoadedConfig } from './config'
 import { FLYTRAP_REPLACE_VALUES, FLYTRAP_UNSERIALIZABLE_VALUE } from './constants'
 import { log } from './logging'
-import { FlytrapMode, SourceType } from './types'
+import {
+	CaptureAmountLimit,
+	CaptureAmountLimitType,
+	CapturedCall,
+	CapturedFunction,
+	FlytrapMode,
+	SourceType
+} from './types'
 
 /**
  * Get the caller source file name and line number
@@ -241,3 +249,107 @@ export function err<T>(error: T) {
 }
 
 export const extname = (filePath: string) => '.' + filePath.split('.').at(-1)
+
+export function parseFileCount(input: CaptureAmountLimit) {
+	// Regular expression to match a number at the start of the string
+	const regex = /^\d+\s*files$/
+
+	// Extract the number using the regex
+	const match = input.trim().match(regex)
+
+	// Throw an error if no number is found
+	if (!match) {
+		return Err(`No number found in string "${input}". Valid format is "4 files".`)
+	}
+
+	// Parse the number
+	const fileCount = parseInt(match[0])
+
+	return Ok({
+		type: 'files',
+		fileLimit: fileCount
+	} satisfies CaptureAmountLimitType)
+}
+
+export function parseByteStringToBytes(byteString: CaptureAmountLimit) {
+	const units = new Map<string, number>([
+		['b', 1],
+		['kb', 1000],
+		['mb', 1000 ** 2]
+	])
+
+	const regex = /^(\d+(?:\.\d+)?)\s*(b|kb|mb|gb|tb)$/i
+	const match = byteString.match(regex)
+
+	if (!match) {
+		return Err(`Invalid byte string format "${byteString}". Expected value like "4mb", "128kb".`)
+	}
+
+	const value = parseFloat(match[1])
+	const unit = match[2].toLowerCase()
+
+	const factor = units.get(unit)
+	if (!factor) {
+		return Err(`Invalid unit "${unit}". Accepted units are "b", "kb" and "mb".`)
+	}
+
+	return Ok({
+		type: 'size',
+		sizeLimit: value * factor
+	} satisfies CaptureAmountLimitType)
+}
+
+export function parseCaptureAmountLimit(captureAmountLimit: CaptureAmountLimit) {
+	const parsingResult = Result.any(
+		parseByteStringToBytes(captureAmountLimit),
+		parseFileCount(captureAmountLimit)
+	)
+
+	if (parsingResult.ok) {
+		// Check that fileCount > 0 & size > 0
+		if (parsingResult.val.type === 'files' && parsingResult.val.fileLimit === 0) {
+			return Err(
+				`Invalid capture amount limit "${captureAmountLimit}". Number of files to capture must be greater than 0.`
+			)
+		}
+
+		if (parsingResult.val.type === 'size' && parsingResult.val.sizeLimit < 128) {
+			return Err(
+				`Invalid capture amount limit "${captureAmountLimit}". The minimum size to capture is 128 bytes.`
+			)
+		}
+	}
+
+	return parsingResult.mapErr(
+		() =>
+			`Invalid capture amount limit "${captureAmountLimit}". Valid values are file-based capture limits (eg. '3 files') or file-size based capture limits (eg. '2mb')`
+	)
+}
+
+export function sortCapturesByTimestamp(captures: (CapturedFunction | CapturedCall)[]) {
+	return captures.sort((a, b) => {
+		// Find the maximum timestamp in the invocations of a
+		const maxTimestampA = Math.max(...a.invocations.map((invoc) => invoc.timestamp))
+		// Find the maximum timestamp in the invocations of b
+		const maxTimestampB = Math.max(...b.invocations.map((invoc) => invoc.timestamp))
+		// Sort based on the maximum timestamps
+		return maxTimestampA - maxTimestampB
+	})
+}
+
+export function parseFilepathFromFunctionId(id: string) {
+	// Find the index of "-_" or "-call-_"
+	const callIndex = id.indexOf('-call-_')
+	const dashIndex = id.indexOf('-_')
+
+	// Determine the end index for the file path
+	const endIndex = callIndex !== -1 ? callIndex : dashIndex
+
+	// If neither pattern is found, return an error
+	if (endIndex === -1) {
+		return Err(`Invalid function ID "${id}".`)
+	}
+
+	// Extract and return the file path
+	return Ok(id.substring(0, endIndex))
+}

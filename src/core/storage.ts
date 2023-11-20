@@ -8,7 +8,16 @@ import type {
 } from './types'
 import { getApiBase, getLoadedConfig } from './config'
 import { getUserId } from '../index'
-import { empty, formatBytes, get, post, tryCatchSync } from './util'
+import {
+	empty,
+	formatBytes,
+	get,
+	parseCaptureAmountLimit,
+	parseFilepathFromFunctionId,
+	post,
+	sortCapturesByTimestamp,
+	tryCatchSync
+} from './util'
 import SuperJSON from 'superjson'
 import { FLYTRAP_UNSERIALIZABLE_VALUE, NO_SOURCE } from './constants'
 import { encrypt } from './encryption'
@@ -19,6 +28,7 @@ import {
 	decryptCapture,
 	extractArgs,
 	extractOutputs,
+	getCaptureSize,
 	parse,
 	processCaptures,
 	removeCircularDependencies,
@@ -26,7 +36,7 @@ import {
 	superJsonRegisterCustom
 } from './stringify'
 import { shouldIgnoreCapture } from './captureIgnores'
-import { getPersistence } from './persistence/isomorphic'
+import { filePersistence, getPersistence } from './persistence/isomorphic'
 import { createHumanLog } from './errors'
 
 const loadedCaptures = new Map<string, CaptureDecryptedAndRevived | undefined>()
@@ -142,14 +152,13 @@ export const liveFlytrapStorage: FlytrapStorage = {
 		return decryptedCapture
 	},
 	async saveCapture(functions, calls, error?) {
-		const { publicApiKey, projectId, captureIgnores, mode } = (await getLoadedConfig()) ?? {}
+		const { publicApiKey, projectId, captureIgnores, mode, captureAmountLimit } =
+			(await getLoadedConfig()) ?? {}
 
 		// We want troubleshooting mode to work even without
 		// proper `publicApiKey` and `projectId` setup.
 
 		if (mode === 'troubleshoot') {
-			// @todo: log out the helpful errors
-
 			const lastErroredFunction = findWithLatestErrorInvocation(functions)
 			const lastErroredCall = findWithLatestErrorInvocation(calls)
 
@@ -201,6 +210,82 @@ export const liveFlytrapStorage: FlytrapStorage = {
 				functions[i].invocations[j].output = removeCircularDependencies(
 					functions[i].invocations[j].output
 				)
+			}
+		}
+
+		// Handle capture amount limits
+		if (captureAmountLimit) {
+			const parsedCaptureAmountLimit = parseCaptureAmountLimit(captureAmountLimit)
+			if (parsedCaptureAmountLimit.err) {
+				// @todo: human-friendly error
+				console.error(parsedCaptureAmountLimit.val)
+			} else {
+				functions = sortCapturesByTimestamp(functions)
+				calls = sortCapturesByTimestamp(calls)
+
+				const combinedFunctionsAndCalls = [...functions, ...calls]
+				const sortedCombined = sortCapturesByTimestamp(combinedFunctionsAndCalls)
+
+				if (parsedCaptureAmountLimit.val.type === 'files') {
+					const fileNamesSet = new Set<string>()
+
+					for (let i = 0; i < sortedCombined.length; i++) {
+						const currentFunctionOrCall = sortedCombined.at(-(i + 1))
+						if (!currentFunctionOrCall) {
+							return
+						}
+
+						const filepath = parseFilepathFromFunctionId(currentFunctionOrCall.id).unwrap()
+						fileNamesSet.add(filepath)
+						if (fileNamesSet.size >= parsedCaptureAmountLimit.val.fileLimit) {
+							break
+						}
+					}
+
+					// Use the filepaths of N latest to filter calls and functions
+					calls = calls.filter((call) => {
+						const parsedFilepath = parseFilepathFromFunctionId(call.id).unwrap()
+						if (fileNamesSet.has(parsedFilepath)) {
+							return true
+						}
+						return false
+					})
+
+					functions = functions.filter((func) => {
+						const parsedFilepath = parseFilepathFromFunctionId(func.id).unwrap()
+						if (fileNamesSet.has(parsedFilepath)) {
+							return true
+						}
+						return false
+					})
+				} else {
+					const duplicateCalls: typeof calls = []
+					const duplicateFunctions: typeof functions = []
+
+					let sizeCounter = 0
+
+					for (let i = 0; i < Math.max(calls.length, functions.length); i++) {
+						if (sizeCounter >= parsedCaptureAmountLimit.val.sizeLimit) {
+							break
+						}
+
+						const callEntry = calls.at(-(i + 1))
+						const functionEntry = functions.at(-(i + 1))
+
+						if (callEntry) {
+							duplicateCalls.push(callEntry)
+							sizeCounter += getCaptureSize(callEntry)
+						}
+
+						if (functionEntry) {
+							duplicateFunctions.push(functionEntry)
+							sizeCounter += getCaptureSize(functionEntry)
+						}
+					}
+
+					calls = duplicateCalls
+					functions = duplicateFunctions
+				}
 			}
 		}
 

@@ -332,3 +332,8 @@ export function processCaptures(captures: (CapturedCall | CapturedFunction)[]) {
 	}
 	return captures
 }
+
+export function getCaptureSize(capture: CapturedCall | CapturedFunction) {
+	superJsonRegisterCustom(SuperJSON)
+	return JSON.stringify(SuperJSON.serialize(capture)).length
+}

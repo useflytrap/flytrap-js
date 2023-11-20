@@ -1,5 +1,4 @@
-import { getApiBase } from "../src/core/config";
-
+export const getApiBase = () => 'https://www.useflytrap.com';
 // Capturing
 export const NEXTJS_API_PORT = 3000;
 export const NEXTJS_PORT = 3001;

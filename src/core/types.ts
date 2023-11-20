@@ -5,6 +5,28 @@ export type FlytrapSecretKey = `sk_${string}`
 
 export type FlytrapMode = 'capture' | 'replay' | 'troubleshoot'
 
+export type CaptureAmountLimit =
+	// size based
+	| `${number} b`
+	| `${number}b`
+	| `${number} kb`
+	| `${number}kb`
+	| `${number} mb`
+	| `${number}mb`
+	// file based
+	| `${number} files`
+	| `${number}files`
+
+export type CaptureAmountLimitType =
+	| {
+			type: 'size'
+			sizeLimit: number
+	  }
+	| {
+			type: 'files'
+			fileLimit: number
+	  }
+
 export type LogGroup =
 	| 'storage'
 	| 'function-execution'
@@ -120,6 +142,10 @@ export type FlytrapConfig = {
 		 */
 		importFormat?: 'esm' | 'commonjs'
 	}
+	/**
+	 * Use this to limit the size of your captures or limit the amount of files that context gets sent from.
+	 */
+	captureAmountLimit?: CaptureAmountLimit
 }
 
 export type ErrorType = {

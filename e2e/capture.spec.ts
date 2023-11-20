@@ -1,8 +1,7 @@
 import { test, expect } from '@playwright/test'
-import { NEXTJS_API_PORT, NEXTJS_PORT, NUXT_PORT, SVELTE_PORT, fetchCaptures, getBaseUrl, getLatestCapture, waitMs } from './util'
+import { NEXTJS_API_PORT, NEXTJS_PORT, NUXT_PORT, SVELTE_PORT, fetchCaptures, getBaseUrl, getLatestCapture, waitMs, getApiBase } from './util'
 import { join } from 'path'
 import { existsSync, rmSync } from 'fs'
-import { getApiBase } from '../src/core/config'
 
 test.afterAll(() => {
   // Delete cache directories
