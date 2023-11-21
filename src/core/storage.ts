@@ -38,6 +38,7 @@ import {
 import { shouldIgnoreCapture } from './captureIgnores'
 import { filePersistence, getPersistence } from './persistence/isomorphic'
 import { createHumanLog } from './errors'
+import { getLimitedCaptures } from './captureLimits'
 
 const loadedCaptures = new Map<string, CaptureDecryptedAndRevived | undefined>()
 
@@ -215,77 +216,13 @@ export const liveFlytrapStorage: FlytrapStorage = {
 
 		// Handle capture amount limits
 		if (captureAmountLimit) {
-			const parsedCaptureAmountLimit = parseCaptureAmountLimit(captureAmountLimit)
-			if (parsedCaptureAmountLimit.err) {
-				// @todo: human-friendly error
-				console.error(parsedCaptureAmountLimit.val)
+			const limitedCapturesResult = getLimitedCaptures(calls, functions, captureAmountLimit)
+
+			if (limitedCapturesResult.err) {
+				console.error(limitedCapturesResult.val)
 			} else {
-				functions = sortCapturesByTimestamp(functions)
-				calls = sortCapturesByTimestamp(calls)
-
-				const combinedFunctionsAndCalls = [...functions, ...calls]
-				const sortedCombined = sortCapturesByTimestamp(combinedFunctionsAndCalls)
-
-				if (parsedCaptureAmountLimit.val.type === 'files') {
-					const fileNamesSet = new Set<string>()
-
-					for (let i = 0; i < sortedCombined.length; i++) {
-						const currentFunctionOrCall = sortedCombined.at(-(i + 1))
-						if (!currentFunctionOrCall) {
-							return
-						}
-
-						const filepath = parseFilepathFromFunctionId(currentFunctionOrCall.id).unwrap()
-						fileNamesSet.add(filepath)
-						if (fileNamesSet.size >= parsedCaptureAmountLimit.val.fileLimit) {
-							break
-						}
-					}
-
-					// Use the filepaths of N latest to filter calls and functions
-					calls = calls.filter((call) => {
-						const parsedFilepath = parseFilepathFromFunctionId(call.id).unwrap()
-						if (fileNamesSet.has(parsedFilepath)) {
-							return true
-						}
-						return false
-					})
-
-					functions = functions.filter((func) => {
-						const parsedFilepath = parseFilepathFromFunctionId(func.id).unwrap()
-						if (fileNamesSet.has(parsedFilepath)) {
-							return true
-						}
-						return false
-					})
-				} else {
-					const duplicateCalls: typeof calls = []
-					const duplicateFunctions: typeof functions = []
-
-					let sizeCounter = 0
-
-					for (let i = 0; i < Math.max(calls.length, functions.length); i++) {
-						if (sizeCounter >= parsedCaptureAmountLimit.val.sizeLimit) {
-							break
-						}
-
-						const callEntry = calls.at(-(i + 1))
-						const functionEntry = functions.at(-(i + 1))
-
-						if (callEntry) {
-							duplicateCalls.push(callEntry)
-							sizeCounter += getCaptureSize(callEntry)
-						}
-
-						if (functionEntry) {
-							duplicateFunctions.push(functionEntry)
-							sizeCounter += getCaptureSize(functionEntry)
-						}
-					}
-
-					calls = duplicateCalls
-					functions = duplicateFunctions
-				}
+				calls = limitedCapturesResult.val.calls
+				functions = limitedCapturesResult.val.functions
 			}
 		}
 
