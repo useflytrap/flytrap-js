@@ -6,8 +6,7 @@ import {
 } from '../src/transform/artifacts/artifacts'
 import babelTraverse from '@babel/traverse'
 import { parse } from '@babel/parser'
-import { Identifier } from '@babel/types'
-import { flytrapTransformArtifacts } from '../src/transform/index'
+import { flytrapTransformUff } from '../src/transform/index'
 import { config } from 'dotenv'
 import { getParseConfig } from '../src/transform/config'
 import { _babelInterop } from '../src/transform/util'
@@ -150,25 +149,6 @@ describe('extractCurrentScope', () => {
 	})
 })
 
-it.skip('getWrappingFunctionId', () => {
-	const ast = parse(
-		`
-		function foo() {
-			bar()
-		}
-		`,
-		getParseConfig()
-	)
-	_babelInterop(babelTraverse)(ast, {
-		CallExpression(path) {
-			if ((path.node.callee as Identifier).name === 'bar') {
-				/* const wrappingId = getWrappingFunctionIdNew(path, '/file.js')
-				expect(wrappingId).toEqual('/file.js-_foo') */
-			}
-		}
-	})
-})
-
 const pageCodeFixture = `
 function Home() {
 	useState()
@@ -182,7 +162,7 @@ it('generates values same as transform', () => {
 	if (error) {
 		throw new Error(error.toString())
 	}
-	const transformedCode = flytrapTransformArtifacts(pageCodeFixture, '/file.js')
+	const transformedCode = flytrapTransformUff(pageCodeFixture, '/file.js')
 
 	const functionIds = extractedMarkings.map((e) => e.functionOrCallId).filter(Boolean)
 	for (let i = 0; i < functionIds.length; i++) {

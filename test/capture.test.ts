@@ -1,6 +1,6 @@
 import {
-	useFlytrapFunction,
-	useFlytrapCall,
+	uff,
+	ufc,
 	clearCapturedFunctions,
 	clearCapturedCalls,
 	getCapturedCalls,
@@ -15,13 +15,10 @@ describe('useFlytrapFunction capture', () => {
 			hello: () => 'world'
 		}
 
-		const wrappedFuction = useFlytrapFunction(
-			function () {
-				// @ts-expect-error
-				return (this as any)?.hello?.()
-			},
-			{ id: '/file.js-_wrappedFunction' }
-		)
+		const wrappedFuction = uff(function () {
+			// @ts-expect-error
+			return (this as any)?.hello?.()
+		}, '/file.js-_wrappedFunction')
 
 		expect(wrappedFuction.bind(thisObj)()).toEqual('world')
 	})
@@ -34,7 +31,7 @@ function clearFlytrapStorage() {
 	clearCapturedCalls()
 }
 
-describe('useFlytrapCall capture', () => {
+describe('ufc capture', () => {
 	beforeEach(() => {
 		// tell vitest we use mocked time
 		vi.useFakeTimers()
@@ -53,7 +50,7 @@ describe('useFlytrapCall capture', () => {
 		// Basic
 		const worldString = 'world'
 
-		useFlytrapCall(console, {
+		ufc(console, {
 			id: '/file.js-console.log',
 			args: ['hello', worldString],
 			name: 'log'
@@ -78,13 +75,11 @@ describe('useFlytrapCall capture', () => {
 	it('forwards values', () => {
 		const fixture = {
 			hello: {
-				world: useFlytrapFunction(() => 2, {
-					id: 'someid'
-				})
+				world: uff(() => 2, 'someid')
 			}
 		}
 
-		const returnVal = useFlytrapCall(fixture.hello, {
+		const returnVal = ufc(fixture.hello, {
 			id: '/file.js-hello.world',
 			args: [],
 			name: 'world'
@@ -99,25 +94,18 @@ describe('useFlytrapCall capture', () => {
 
 		let caughtExecutingFunctionId: string | undefined = undefined
 
-		const GET = useFlytrapFunction(
-			function GET() {
-				const users = [1, 2, 3, 4, 5]
-				const foundUser = useFlytrapCall(users, {
-					id: '/file.js-call-_find',
-					args: [
-						useFlytrapFunction((u) => u === 13, {
-							id: '/file.js-_anonymous'
-						})
-					],
-					name: 'find'
-				})
-				if (!foundUser) {
-					// `capture` here
-					caughtExecutingFunctionId = getExecutingFunction()?.id
-				}
-			},
-			{ id: '/file.js-_GET' }
-		)
+		const GET = uff(function GET() {
+			const users = [1, 2, 3, 4, 5]
+			const foundUser = ufc(users, {
+				id: '/file.js-call-_find',
+				args: [uff((u: number) => u === 13, '/file.js-_anonymous')],
+				name: 'find'
+			})
+			if (!foundUser) {
+				// `capture` here
+				caughtExecutingFunctionId = getExecutingFunction()?.id
+			}
+		}, '/file.js-_GET')
 		GET()
 
 		expect(caughtExecutingFunctionId).toEqual(`/file.js-_GET`)
@@ -136,7 +124,7 @@ describe('storage', () => {
 			return args
 		}
 		for (let i = 0; i < 20000; i++) {
-			useFlytrapCall(mockFunction, {
+			ufc(mockFunction, {
 				args: [{ foo: 'foo', bar: 'bar', baz: 'baz' }],
 				id: 'mockFunction',
 				name: 'mockFunction'

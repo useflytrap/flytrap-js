@@ -7,29 +7,8 @@ import {
 	CaptureAmountLimitType,
 	CapturedCall,
 	CapturedFunction,
-	FlytrapMode,
-	SourceType
+	FlytrapMode
 } from './types'
-
-/**
- * Get the caller source file name and line number
- * @returns
- */
-export function extractCallerSource(): SourceType | undefined {
-	const stack = new Error().stack
-	if (!stack) return undefined
-
-	const lines = stack.split('\n')
-	if (lines.length < 4) return undefined
-	const sourceLine = lines[3]
-	const parts = sourceLine.split('/')
-	const fileNameAndSourceLine = parts[parts.length - 1]
-	const [filePath, lineNumber] = fileNameAndSourceLine.split(':')
-	return {
-		filePath,
-		lineNumber: parseInt(lineNumber)
-	}
-}
 
 export type RequestResponse<DataType, ErrorType> =
 	| {

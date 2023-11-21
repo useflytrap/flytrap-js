@@ -3,7 +3,7 @@ import { UnpluginOptions, createUnplugin } from 'unplugin'
 import { parseURL, parseQuery } from 'ufo'
 import MagicString from 'magic-string'
 import { addFlytrapInit, addMissingFlytrapImports } from './transform/imports'
-import { flytrapTransformArtifacts, flytrapTransformUff } from './transform/index'
+import { flytrapTransformUff } from './transform/index'
 import { packageDirectorySync } from 'pkg-dir'
 import { loadConfig } from './transform/config'
 import { setFlytrapConfig } from './core/config'
@@ -138,7 +138,7 @@ export const unpluginOptions: UnpluginOptions = {
 				scriptEndIndex &&
 				['.svelte', '.vue'].includes(getFileExtension(id))
 			) {
-				const transformedScriptTagContents = flytrapTransformArtifacts(
+				const transformedScriptTagContents = flytrapTransformUff(
 					ss.toString(),
 					normalizeFilepath(pkgDirPath, id),
 					config
@@ -158,7 +158,6 @@ export const unpluginOptions: UnpluginOptions = {
 
 			transformedFiles.add(id)
 			return flytrapTransformUff(ss.toString(), normalizeFilepath(pkgDirPath, id), config)
-			// return flytrapTransformArtifacts(ss.toString(), normalizeFilepath(pkgDirPath, id), config)
 		} catch (e) {
 			if (process.env.NODE_ENV === 'test') {
 				throw e
@@ -259,10 +258,11 @@ export const unpluginOptions: UnpluginOptions = {
 			)
 
 			if (artifactsUpsertError !== null) {
-				console.error(
+				log.error(
+					'error',
 					`Oops! Something went wrong while pushing artifacts to the Flytrap API. Error:`
 				)
-				console.error(artifactsUpsertError)
+				log.error('error', artifactsUpsertError)
 				return
 			}
 		}

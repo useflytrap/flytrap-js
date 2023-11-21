@@ -1,4 +1,4 @@
-import { flytrapTransformArtifacts } from '../src/transform/index'
+import { flytrapTransformUff } from '../src/transform/index'
 import { describe, expect, it } from 'vitest'
 
 describe('useFlytrapFunction', () => {
@@ -9,7 +9,7 @@ describe('useFlytrapFunction', () => {
 		}
 		`
 		const jsxFixtureTarget = `
-		export const HelloWorld = useFlytrapFunction(function HelloWorld({ children }: any) {
+		export const HelloWorld = uff(function HelloWorld({ children }: any) {
 			return <h1>{children}</h1>
 		}, { id: '/file.js-_HelloWorld' });
 		`
@@ -24,7 +24,7 @@ describe('useFlytrapFunction', () => {
 		`)
 		).toEqual(
 			toOneLine(`
-		useFlytrapFunction(() => {}, { id: '/file.js-_anonymous' })
+		uff(() => {}, { id: '/file.js-_anonymous' })
 		`)
 		)
 
@@ -34,7 +34,7 @@ describe('useFlytrapFunction', () => {
 		`)
 		).toEqual(
 			toOneLine(`
-		useFlytrapFunction(async () => {}, { id: '/file.js-_anonymous' })
+		uff(async () => {}, { id: '/file.js-_anonymous' })
 		`)
 		)
 
@@ -44,7 +44,7 @@ describe('useFlytrapFunction', () => {
 		`)
 		).toEqual(
 			toOneLine(`
-		const hello = useFlytrapFunction(() => {}, { id: '/file.js-_hello' })
+		const hello = uff(() => {}, { id: '/file.js-_hello' })
 		`)
 		)
 	})
@@ -56,7 +56,7 @@ describe('useFlytrapFunction', () => {
 		`)
 		).toEqual(
 			toOneLine(`
-		const hello = useFlytrapFunction(function hello() {}, { id: '/file.js-_hello' });
+		const hello = uff(function hello() {}, { id: '/file.js-_hello' });
 		`)
 		)
 
@@ -66,7 +66,7 @@ describe('useFlytrapFunction', () => {
 		`)
 		).toEqual(
 			toOneLine(`
-		const hello = useFlytrapFunction(async function hello() {}, { id: '/file.js-_hello' });
+		const hello = uff(async function hello() {}, { id: '/file.js-_hello' });
 		`)
 		)
 	})
@@ -78,7 +78,7 @@ describe('useFlytrapFunction', () => {
 		`)
 		).toEqual(
 			toOneLine(`
-		const hello = useFlytrapFunction(function () {}, { id: '/file.js-_hello' })
+		const hello = uff(function () {}, { id: '/file.js-_hello' })
 		`)
 		)
 
@@ -88,7 +88,7 @@ describe('useFlytrapFunction', () => {
 		`)
 		).toEqual(
 			toOneLine(`
-		const hello = useFlytrapFunction(async function() {}, { id: '/file.js-_hello' })
+		const hello = uff(async function() {}, { id: '/file.js-_hello' })
 		`)
 		)
 	})
@@ -104,8 +104,8 @@ describe('useFlytrapFunction', () => {
 		).toEqual(
 			toOneLine(`
 		const x = {
-			hello: useFlytrapFunction(() => {}, { id: '/file.js-_hello' }),
-			world: useFlytrapFunction(() => {}, { id: '/file.js-_world' })
+			hello: uff(() => {}, { id: '/file.js-_hello' }),
+			world: uff(() => {}, { id: '/file.js-_world' })
 		}
 		`)
 		)
@@ -115,17 +115,17 @@ describe('useFlytrapFunction', () => {
 it('transforms default exports', () => {
 	expect(transform(`export default function getAllConfigs() {}`)).toEqual(
 		toOneLine(`
-		export default useFlytrapFunction(function getAllConfigs() {}, { id: '/file.js-_getAllConfigs' });
+		export default uff(function getAllConfigs() {}, { id: '/file.js-_getAllConfigs' });
 		`)
 	)
 })
 
-describe('useFlytrapCall(Async) transform', () => {
+describe('uff(Async) transform', () => {
 	it('transforms (a)sync functions', () => {
 		// sync calls
 		expect(transform('const a = listUsers()')).toEqual(
 			toOneLine(
-				`const a = useFlytrapCall(listUsers, { id: '/file.js-call-_listUsers', args: [], name: 'listUsers' })`
+				`const a = uff(listUsers, { id: '/file.js-call-_listUsers', args: [], name: 'listUsers' })`
 			)
 		)
 		// async calls
@@ -147,7 +147,7 @@ describe('useFlytrapCall(Async) transform', () => {
 			toOneLine(`
 			import NextAuth from "next-auth";
 			import { authOptions } from "@/server/auth";
-			export default useFlytrapCall(NextAuth, { id: '/file.js-call-_NextAuth', args: [authOptions], name: 'NextAuth' });
+			export default uff(NextAuth, { id: '/file.js-call-_NextAuth', args: [authOptions], name: 'NextAuth' });
 			`)
 		)
 	})
@@ -155,7 +155,7 @@ describe('useFlytrapCall(Async) transform', () => {
 	it('transforms arguments', () => {
 		expect(transform('const a = listUsers(1, 2);')).toStrictEqual(
 			toOneLine(
-				`const a = useFlytrapCall(listUsers, { id: '/file.js-call-_listUsers', args: [1, 2], name: 'listUsers' });`
+				`const a = uff(listUsers, { id: '/file.js-call-_listUsers', args: [1, 2], name: 'listUsers' });`
 			)
 		)
 		expect(transform('const a = await listUsers(1, 2);')).toStrictEqual(
@@ -168,7 +168,7 @@ describe('useFlytrapCall(Async) transform', () => {
 	it('transforms namespaced function calls', () => {
 		expect(transform(`supabase.from('Capture')`)).toStrictEqual(
 			toOneLine(`
-			useFlytrapCall(supabase, {
+			uff(supabase, {
 				id: '/file.js-call-_from',
 				args: ['Capture'],
 				name: 'from'
@@ -178,7 +178,7 @@ describe('useFlytrapCall(Async) transform', () => {
 
 		expect(transform(`const { data, error } = await supabase.from('Capture').select('*')`)).toEqual(
 			toOneLine(`
-				const { data, error } = await useFlytrapCallAsync(useFlytrapCall(supabase, {
+				const { data, error } = await useFlytrapCallAsync(uff(supabase, {
 					id: '/file.js-call-_from',
 					args: ['Capture'],
 					name: 'from'
@@ -195,7 +195,7 @@ describe('useFlytrapCall(Async) transform', () => {
 		const fixture = `const a = listUsers({ fetch: (endpoint) => {} })`
 		expect(transform(fixture).split('\n').join('')).toStrictEqual(
 			toOneLine(
-				`const a = useFlytrapCall(listUsers, { id: '/file.js-call-_listUsers', args: [{ fetch: useFlytrapFunction(endpoint => {}, { id: '/file.js-_fetch' }) }], name: 'listUsers' })`
+				`const a = uff(listUsers, { id: '/file.js-call-_listUsers', args: [{ fetch: uff(endpoint => {}, { id: '/file.js-_fetch' }) }], name: 'listUsers' })`
 			)
 		)
 	})
@@ -206,6 +206,6 @@ export function toOneLine(code: string) {
 }
 
 export function transform(code: string) {
-	const { code: transformedCode } = flytrapTransformArtifacts(code, '/file.js')
+	const { code: transformedCode } = flytrapTransformUff(code, '/file.js')
 	return toOneLine(transformedCode)
 }

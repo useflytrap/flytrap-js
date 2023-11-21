@@ -4,7 +4,7 @@ describe('useFlytrapFunction replaying', () => {
 	it.todo('passes in captured inputs')
 })
 
-describe('useFlytrapCall(Async) replaying', () => {
+describe('uff(Async) replaying', () => {
 	it.todo('passes in captured inputs')
 	it.todo('returns captured outputs')
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
-import { useFlytrapCall, useFlytrapCallAsync, useFlytrapFunction } from '../../../src/index'
+import { uff, ufc } from '../../../src/index'
 
 describe('Zod', () => {
 	it('works with chained schemas', () => {

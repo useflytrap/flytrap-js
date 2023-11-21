@@ -1,8 +1,4 @@
-export type ScriptTagMeta = {
-	start: number
-	end: number
-	content: string
-}
+import { ScriptTagMeta } from '../core/types'
 
 export function parseScriptTags(code: string): ScriptTagMeta[] {
 	const scriptTagRegexp = /<script\b[^>]*>([\s\S]*?)<\/script\s*>/gm

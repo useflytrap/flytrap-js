@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { describe, expect, it } from 'vitest'
-import { useFlytrapCall, useFlytrapCallAsync, useFlytrapFunction } from '../../../src/index'
+import { uff, ufc } from '../../../src/index'
 
 describe('Supabase', () => {
 	it('works with Supabase', async () => {

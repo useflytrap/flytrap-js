@@ -5,6 +5,7 @@ import { FlytrapConfig } from '../core/types'
 import * as flytrapExports from '../index'
 import { parseCode } from './parser'
 import { extname } from '../core/util'
+import { log } from '../core/logging'
 
 export function getRequiredExportsForCapture(): string[] {
 	return ['uff', 'ufc', 'setFlytrapConfig']
@@ -18,7 +19,7 @@ export function findStartingIndex(s: MagicString, fileNamePath?: string) {
 	const { error, data: ast } = parseCode(s.toString(), fileNamePath)
 
 	if (error !== null) {
-		console.error(error.toString())
+		log.error('error', error.toString())
 		throw new Error(error.toString())
 	}
 

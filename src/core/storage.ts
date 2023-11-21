@@ -173,12 +173,13 @@ export const liveFlytrapStorage: FlytrapStorage = {
 				}
 			})
 
-			console.error(troubleshootingErrorLog.toString())
+			log.error('error', troubleshootingErrorLog.toString())
 			return
 		}
 
 		if (!publicApiKey || !projectId || empty(publicApiKey, projectId)) {
-			console.error(
+			log.error(
+				'error',
 				createHumanLog({
 					events: ['capture_failed'],
 					explanations: ['replay_missing_config_values'],
@@ -219,7 +220,7 @@ export const liveFlytrapStorage: FlytrapStorage = {
 			const limitedCapturesResult = getLimitedCaptures(calls, functions, captureAmountLimit)
 
 			if (limitedCapturesResult.err) {
-				console.error(limitedCapturesResult.val)
+				log.error('error', limitedCapturesResult.val)
 			} else {
 				calls = limitedCapturesResult.val.calls
 				functions = limitedCapturesResult.val.functions
@@ -268,8 +269,9 @@ export const liveFlytrapStorage: FlytrapStorage = {
 				explanations: ['stringify_capture_failed'],
 				solutions: ['stringify_capture_failed_solution']
 			})
-			console.error(errorLog.toString())
-			console.error(stringifyError)
+			log.error('error', errorLog.toString())
+			// @ts-expect-error
+			log.error('error', stringifyError)
 			return
 		}
 
@@ -290,8 +292,8 @@ export const liveFlytrapStorage: FlytrapStorage = {
 				explanations: ['api_capture_error_response'],
 				solutions: ['try_again_contact_us']
 			})
-			console.error(errorLog.toString())
-			console.error(captureError)
+			log.error('error', errorLog.toString())
+			log.error('error', captureError)
 		} else {
 			log.info(
 				'storage',

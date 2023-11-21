@@ -129,19 +129,6 @@ export function extractCurrentScope(
 	return scopes.reverse()
 }
 
-export function getWrappingFunctionId(
-	path: NodePath<Node>,
-	functionIdMap: Map<NodePath<Node>, string>
-): string | undefined {
-	let currentPath = path
-	while (currentPath.parentPath) {
-		currentPath = currentPath.parentPath
-		if (functionIdMap.get(currentPath)) {
-			return functionIdMap.get(currentPath)
-		}
-	}
-}
-
 export function addArtifactMarkings(code: string, filePath: string, config?: FlytrapConfig) {
 	code = code.replaceAll('\t', '    ')
 	const functionOrCallIdsAndLocations: ArtifactMarking[] = []

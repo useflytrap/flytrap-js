@@ -1,4 +1,4 @@
-import { ParserOptions } from '@babel/parser'
+import type { ParserOptions } from '@babel/parser'
 
 export type FlytrapPublicKey = `pk_${string}`
 export type FlytrapSecretKey = `sk_${string}`
@@ -28,6 +28,7 @@ export type CaptureAmountLimitType =
 	  }
 
 export type LogGroup =
+	| 'error'
 	| 'storage'
 	| 'function-execution'
 	| 'call-execution'
@@ -319,3 +320,9 @@ export interface ParseErrorSpecification<ErrorDetails = unknown> extends Error {
 }
 
 export type AnyFunction = (...args: any[]) => any
+
+export type ScriptTagMeta = {
+	start: number
+	end: number
+	content: string
+}

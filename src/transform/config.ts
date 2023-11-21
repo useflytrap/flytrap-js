@@ -2,6 +2,7 @@ import { ParserOptions } from '@babel/parser'
 import { FlytrapConfig } from '../core/types'
 import { loadConfig as c12LoadConfig } from 'c12'
 import { createHumanLog } from '../core/errors'
+import { log } from '../core/logging'
 
 export async function loadConfig(): Promise<FlytrapConfig | undefined> {
 	const loadedConfig = await c12LoadConfig<FlytrapConfig>({ name: 'flytrap' })
@@ -13,7 +14,7 @@ export async function loadConfig(): Promise<FlytrapConfig | undefined> {
 			solutions: ['define_flytrap_config']
 		})
 
-		console.error('🐛 [FLYTRAP]' + errorLog.toString())
+		log.error('error', errorLog.toString())
 		process.exit(1)
 	}
 

@@ -1,7 +1,7 @@
 import assert from "assert";
-import { useFlytrapCall } from "useflytrap";
+import { ufc } from "useflytrap";
 
-const logOutput = useFlytrapCall(console, {
+const logOutput = ufc(console, {
 	args: ['hello', 'world'],
 	id: 'console-log',
 	name: 'log'
