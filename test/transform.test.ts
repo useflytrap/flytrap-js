@@ -20,7 +20,7 @@ export function HelloWorld({ children }: any) {
 const jsxFixtureTarget = `
 export const HelloWorld = uff(function HelloWorld({ children }: any) {
 	return <h1>{children}</h1>
-}, { id: '/file.js-_HelloWorld' });
+}, '/file.js-_HelloWorld');
 `
 
 describe('useFlytrapFunction transform', () => {
@@ -30,32 +30,32 @@ describe('useFlytrapFunction transform', () => {
 
 	it('transforms arrow function expressions', () => {
 		expect(transform('() => {}')).toStrictEqual(
-			toOneLine(toOneLine(`uff(() => {}, { id: '/file.js-_anonymous' })`))
+			toOneLine(toOneLine(`uff(() => {}, '/file.js-_anonymous')`))
 		)
 		expect(transform('async () => {}')).toStrictEqual(
-			toOneLine(`uff(async () => {}, { id: '/file.js-_anonymous' })`)
+			toOneLine(`uff(async () => {}, '/file.js-_anonymous')`)
 		)
 
 		expect(transform(`const hello = () => {}`)).toStrictEqual(
-			toOneLine(`const hello = uff(() => {}, { id: '/file.js-_hello' })`)
+			toOneLine(`const hello = uff(() => {}, '/file.js-_hello')`)
 		)
 	})
 
 	it('transforms function declarations', async () => {
 		expect(transform('function hello() {}')).toStrictEqual(
-			toOneLine(`const hello = uff(function hello() {}, { id: '/file.js-_hello' });`)
+			toOneLine(`const hello = uff(function hello() {}, '/file.js-_hello');`)
 		)
 		expect(transform('async function hello() {}')).toStrictEqual(
-			toOneLine(`const hello = uff(async function hello() {}, { id: '/file.js-_hello' });`)
+			toOneLine(`const hello = uff(async function hello() {}, '/file.js-_hello');`)
 		)
 	})
 
 	it('transforms function expressions', async () => {
 		expect(transform('const hello = function() {}')).toStrictEqual(
-			toOneLine(`const hello = uff(function() {}, { id: '/file.js-_hello' })`)
+			toOneLine(`const hello = uff(function() {}, '/file.js-_hello')`)
 		)
 		expect(transform('const hello = async function() {}')).toStrictEqual(
-			toOneLine(`const hello = uff(async function() {}, { id: '/file.js-_hello' })`)
+			toOneLine(`const hello = uff(async function() {}, '/file.js-_hello')`)
 		)
 	})
 
@@ -69,16 +69,14 @@ describe('useFlytrapFunction transform', () => {
 
 		expect(transform(objExprCode)).toStrictEqual(
 			toOneLine(`const x = {
-			hello: uff(() => {}, { id: '/file.js-_hello' }),
-			world: uff(() => {}, { id: '/file.js-_world' })
+			hello: uff(() => {}, '/file.js-_hello'),
+			world: uff(() => {}, '/file.js-_world')
 		}`)
 		)
 		expect(transform(deepObjExprCode)).toStrictEqual(
-			toOneLine(`const x = { hello: { world: uff(() => {}, { id: '/file.js-_world' }) } }`)
+			toOneLine(`const x = { hello: { world: uff(() => {}, '/file.js-_world') } }`)
 		)
-		expect(transform(arrayCode)).toStrictEqual(
-			toOneLine(`[uff(() => {}, { id: '/file.js-_anonymous' })]`)
-		)
+		expect(transform(arrayCode)).toStrictEqual(toOneLine(`[uff(() => {}, '/file.js-_anonymous')]`))
 	})
 
 	it('generates function IDs based on location in the AST', () => {
@@ -87,7 +85,7 @@ describe('useFlytrapFunction transform', () => {
 				`
 			const helloWorld = uff(function helloWorld() {
 	
-			}, { id: '/file.js-_helloWorld' });
+			}, '/file.js-_helloWorld');
 			`
 			)
 		)
@@ -107,12 +105,12 @@ describe('useFlytrapFunction transform', () => {
 			{
 				const helloWorld = uff(function helloWorld() {
 	
-				}, { id: '/file.js-_helloWorld' });
+				}, '/file.js-_helloWorld');
 			}
 			{
 				const helloWorld = uff(function helloWorld() {
 	
-				}, { id: '/file.js-_helloWorld2' });
+				}, '/file.js-_helloWorld2');
 			}
 			`
 			)
@@ -128,13 +126,9 @@ describe('useFlytrapFunction transform', () => {
 
 		expect(transform(someFixture)).toStrictEqual(
 			toOneLine(`
-			uff(() => {}, {
-				id: '/file.js-_anonymous'
-			})
+			uff(() => {}, '/file.js-_anonymous');
 
-			uff(() => {}, {
-				id: '/file.js-_anonymous2'
-			});
+			uff(() => {}, '/file.js-_anonymous2');
 			`)
 		)
 	})
@@ -190,8 +184,8 @@ it.skip('wraps functions with scopes', () => {
 	expect(transform(scopeFixtureWithArrowFunction)).toStrictEqual(
 		toOneLine(
 			`const SomeComponent = uff(() => {
-				const { data } = uff(useSession, { id: '/file.js-call-_useSession', args: [], name: 'useSession' })
-			}, { id: '/file.js-_SomeComponent' })`
+				const { data } = ufc(useSession, { id: '/file.js-call-_useSession', args: [], name: 'useSession' })
+			}, '/file.js-_SomeComponent')`
 		)
 	)
 
@@ -218,9 +212,7 @@ it('transforms default exports', () => {
 	`)
 	).toStrictEqual(
 		toOneLine(`
-	export default uff(function getAllConfigs() {}, {
-		id: '/file.js-_getAllConfigs'
-	});
+	export default uff(function getAllConfigs() {}, '/file.js-_getAllConfigs');
 	`)
 	)
 
@@ -231,9 +223,7 @@ it('transforms default exports', () => {
 	`)
 	).toStrictEqual(
 		toOneLine(`
-	export default uff(function() {}, {
-		id: '/file.js-_anonymous'
-	});
+	export default uff(function() {}, '/file.js-_anonymous');
 	`)
 	)
 
@@ -382,12 +372,12 @@ describe('uff(Async) transform', () => {
 	it('transforms sync functions', () => {
 		expect(transform('const a = listUsers()')).toStrictEqual(
 			toOneLine(
-				`const a = uff(listUsers, { id: '/file.js-call-_listUsers', args: [], name: 'listUsers' })`
+				`const a = ufc(listUsers, { id: '/file.js-call-_listUsers', args: [], name: 'listUsers' })`
 			)
 		)
 		expect(transform('const a = await listUsers()')).toStrictEqual(
 			toOneLine(
-				`const a = await useFlytrapCallAsync(listUsers, { id: '/file.js-call-_listUsers', args: [], name: 'listUsers' })`
+				`const a = await ufc(listUsers, { id: '/file.js-call-_listUsers', args: [], name: 'listUsers' })`
 			)
 		)
 
@@ -398,8 +388,8 @@ describe('uff(Async) transform', () => {
 		).toStrictEqual(
 			toOneLine(
 				`
-			uff(console, { id: '/file.js-call-_log', args: [''], name: 'log' })
-			uff(console, { id: '/file.js-call-_log2', args: ['hello world'], name: 'log' })
+			ufc(console, { id: '/file.js-call-_log', args: [''], name: 'log' })
+			ufc(console, { id: '/file.js-call-_log2', args: ['hello world'], name: 'log' })
 			`
 			)
 		)
@@ -416,7 +406,7 @@ describe('uff(Async) transform', () => {
 			toOneLine(`
 			import NextAuth from "next-auth";
 			import { authOptions } from "@/server/auth";
-			export default uff(NextAuth, { id: '/file.js-call-_NextAuth', args: [authOptions], name: 'NextAuth' });
+			export default ufc(NextAuth, { id: '/file.js-call-_NextAuth', args: [authOptions], name: 'NextAuth' });
 			`)
 		)
 	})
@@ -424,12 +414,12 @@ describe('uff(Async) transform', () => {
 	it('transforms arguments', () => {
 		expect(transform('const a = listUsers(1, 2);')).toStrictEqual(
 			toOneLine(
-				`const a = uff(listUsers, { id: '/file.js-call-_listUsers', args: [1, 2], name: 'listUsers' });`
+				`const a = ufc(listUsers, { id: '/file.js-call-_listUsers', args: [1, 2], name: 'listUsers' });`
 			)
 		)
 		expect(transform('const a = await listUsers(1, 2);')).toStrictEqual(
 			toOneLine(
-				`const a = await useFlytrapCallAsync(listUsers, { id: '/file.js-call-_listUsers', args: [1, 2], name: 'listUsers' });`
+				`const a = await ufc(listUsers, { id: '/file.js-call-_listUsers', args: [1, 2], name: 'listUsers' });`
 			)
 		)
 	})
@@ -438,7 +428,7 @@ describe('uff(Async) transform', () => {
 		expect(transform(`supabase.from('Capture')`)).toStrictEqual(
 			toOneLine(
 				`
-				uff(supabase, {
+				ufc(supabase, {
 					id: '/file.js-call-_from',
 					args: ['Capture'],
 					name: 'from'
@@ -451,7 +441,7 @@ describe('uff(Async) transform', () => {
 			transform(`const { data, error } = await supabase.from('Capture').select('*')`)
 		).toStrictEqual(
 			toOneLine(`
-				const { data, error } = await useFlytrapCallAsync(uff(supabase, {
+				const { data, error } = await ufc(ufc(supabase, {
 					id: '/file.js-call-_from',
 					args: ['Capture'],
 					name: 'from'
@@ -469,7 +459,7 @@ describe('uff(Async) transform', () => {
 
 		expect(transform(fixture).split('\n').join('')).toStrictEqual(
 			toOneLine(
-				`const a = uff(listUsers, { id: '/file.js-call-_listUsers', args: [{ fetch: uff(endpoint => {}, { id: '/file.js-_fetch' }) }], name: 'listUsers' })`
+				`const a = ufc(listUsers, { id: '/file.js-call-_listUsers', args: [{ fetch: uff(endpoint => {}, '/file.js-_fetch') }], name: 'listUsers' })`
 			)
 		)
 	})
@@ -477,7 +467,7 @@ describe('uff(Async) transform', () => {
 	it('generates unique IDs for function calls based on AST', () => {
 		expect(transform(`listUsers()`)).toStrictEqual(
 			toOneLine(`
-			uff(listUsers, { id: '/file.js-call-_listUsers', args:[], name:'listUsers' })
+			ufc(listUsers, { id: '/file.js-call-_listUsers', args:[], name:'listUsers' })
 			`)
 		)
 		expect(
@@ -487,8 +477,8 @@ describe('uff(Async) transform', () => {
 		`)
 		).toStrictEqual(
 			toOneLine(`
-			uff(listUsers, {id: '/file.js-call-_listUsers',args:[],name:'listUsers' })
-			uff(listUsers, {id: '/file.js-call-_listUsers2',args:[],name:'listUsers' })
+			ufc(listUsers, {id: '/file.js-call-_listUsers',args:[],name:'listUsers' })
+			ufc(listUsers, {id: '/file.js-call-_listUsers2',args:[],name:'listUsers' })
 		`)
 		)
 
@@ -504,31 +494,29 @@ describe('uff(Async) transform', () => {
 			`)
 		).toStrictEqual(
 			toOneLine(`
-			uff(listUsers, {
+			ufc(listUsers, {
 				id: '/file.js-call-_listUsers',
 				args: [],
 				name: 'listUsers'
 		})
-		uff(listUsers, {
+		ufc(listUsers, {
 				id: '/file.js-call-_listUsers2',
 				args: [],
 				name: 'listUsers'
 		})
 
 		const helloWorld = uff(function helloWorld() {
-					uff(listUsers, {
+					ufc(listUsers, {
 						id: '/file.js-call-_helloWorldListUsers',
 						args: [],
 						name: 'listUsers'
 					})
-					uff(listUsers, {
+					ufc(listUsers, {
 						id: '/file.js-call-_helloWorldListUsers2',
 						args: [],
 						name: 'listUsers'
 					})
-				}, {
-				id: '/file.js-_helloWorld'
-		});
+				}, '/file.js-_helloWorld');
 		`)
 		)
 	})
@@ -537,14 +525,14 @@ describe('uff(Async) transform', () => {
 		const fixture = `
 		const helloWorld = uff(function helloWorld() {
 			console.log('hello world')
-		}, { id: '/file.js-_helloWorld' })
+		}, '/file.js-_helloWorld')
 		`
 
 		expect(transform(fixture)).toStrictEqual(
 			toOneLine(`
 		const helloWorld = uff(function helloWorld() {
-			uff(console, { id: '/file.js-call-_helloWorldLog', args: ['hello world'], name: 'log' })
-		}, { id: '/file.js-_helloWorld' })
+			ufc(console, { id: '/file.js-call-_helloWorldLog', args: ['hello world'], name: 'log' })
+		}, '/file.js-_helloWorld')
 		`)
 		)
 	})
@@ -608,9 +596,7 @@ it('transforms .vue files', async () => {
 			${getFlytrapRequiredImports()}
 
 			const foo = uff(function foo() {
-			}, {
-				id: '/app.vue-_foo'
-			});
+			}, '/app.vue-_foo');
       </script>
 
       <template>

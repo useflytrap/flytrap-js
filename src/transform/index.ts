@@ -70,7 +70,7 @@ export function shouldBeWrappedUff(path: NodePath) {
 	if (
 		isCallExpression(path.parent) &&
 		isIdentifier(path.parent.callee) &&
-		['uff', 'ufc'].includes(path.parent.callee.name)
+		['uff'].includes(path.parent.callee.name)
 	) {
 		return false
 	}
