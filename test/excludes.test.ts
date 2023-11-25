@@ -6,7 +6,7 @@ import {
 	excludeDirectoriesIncludeFilePath,
 	shouldIgnoreFunctionName
 } from '../src/transform/excludes'
-import { CapturePayload } from '../src/exports'
+import { CapturePayload } from '../src/core/types'
 import { shouldIgnoreCapture } from '../src/core/captureIgnores'
 import { getParseConfig } from '../src/transform/config'
 import { _babelInterop } from '../src/transform/util'

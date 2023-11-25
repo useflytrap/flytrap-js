@@ -3,10 +3,12 @@ import { getApiBase } from '../../core/config'
 import { log } from '../../core/logging'
 import { batchedArtifactsUpload } from './batchedArtifactsUpload'
 import { Artifact } from '../../core/types'
+import { newRequest } from '../../core/requestUtils'
 
 const getUploadedArtifacts = async (projectId: string, secretApiKey: string) => {
-	const { data, error } = await get<{ checksum: string; filePath: string }[]>(
+	return await newRequest<{ checksum: string; filePath: string }[]>(
 		`${getApiBase()}/api/v1/artifacts/${projectId}`,
+		'GET',
 		undefined,
 		{
 			headers: new Headers({
@@ -15,11 +17,6 @@ const getUploadedArtifacts = async (projectId: string, secretApiKey: string) => 
 			})
 		}
 	)
-	if (error || data === null) {
-		return err(error ?? `API returned no data.`)
-	}
-
-	return ok(data)
 }
 
 const getArtifactsToUpload = (
@@ -40,28 +37,13 @@ export async function upsertArtifacts(
 	secretApiKey: string,
 	artifacts: Artifact[]
 ) {
-	const { data: uploadedArtifacts, error } = await getUploadedArtifacts(projectId, secretApiKey)
-	if (error !== null) {
-		return err(error)
-	}
-
-	const artifactsToUpload = getArtifactsToUpload(uploadedArtifacts, artifacts)
-
-	// Upload artifacts
-	const { data: uploadedBatches, error: uploadError } = await tryCatch(
-		batchedArtifactsUpload(artifactsToUpload, secretApiKey, projectId)
-	)
-	if (uploadError) {
-		return err(uploadError as string)
-	}
-	log.info(
-		'storage',
-		`Pushed ${
-			artifactsToUpload.length
-		} artifacts in ${uploadedBatches?.length} batches to the Flytrap API. Payload Size: ${formatBytes(
-			JSON.stringify(artifactsToUpload).length
-		)}`
+	const artifactsToUpload = (await getUploadedArtifacts(projectId, secretApiKey)).map(
+		(uploadedArtifactsResult) => getArtifactsToUpload(uploadedArtifactsResult, artifacts)
 	)
 
-	return ok(uploadedBatches)
+	if (artifactsToUpload.err) {
+		return artifactsToUpload
+	}
+
+	return await batchedArtifactsUpload(artifactsToUpload.val, secretApiKey, projectId)
 }

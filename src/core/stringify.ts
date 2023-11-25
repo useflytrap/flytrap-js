@@ -1,184 +1,14 @@
-import SuperJSON from 'superjson'
 import {
-	FLYTRAP_CIRCULAR,
-	FLYTRAP_CLASS,
-	FLYTRAP_DOM_EVENT,
-	FLYTRAP_FUNCTION,
-	FLYTRAP_HEADERS,
-	FLYTRAP_REQUEST,
-	FLYTRAP_RESPONSE
-} from './constants'
-import {
-	CaptureDecryptedAndRevived,
 	CaptureInvocation,
 	CaptureInvocationWithLinks,
 	CapturedCall,
-	CapturedFunction,
-	DatabaseCapture
+	CapturedFunction
 } from './types'
+import { parse, serialize } from 'superjson'
+import { Err, Ok } from 'ts-results'
+import { FLYTRAP_UNSERIALIZABLE_VALUE } from './constants'
+import { createHumanLog } from './errors'
 import { deepEqual } from 'fast-equals'
-import { decrypt } from './encryption'
-
-export function superJsonRegisterCustom(superJsonInstance: typeof SuperJSON) {
-	// Fetch API classes
-	superJsonInstance.registerCustom<any, string>(
-		{
-			isApplicable: (v): v is Headers => v instanceof Headers,
-			serialize: () => FLYTRAP_HEADERS,
-			deserialize: () => FLYTRAP_HEADERS
-		},
-		'Headers'
-	)
-	superJsonInstance.registerCustom<any, string>(
-		{
-			isApplicable: (v): v is Response => v instanceof Response,
-			serialize: () => FLYTRAP_RESPONSE,
-			deserialize: () => FLYTRAP_RESPONSE
-		},
-		'Response'
-	)
-	superJsonInstance.registerCustom<any, string>(
-		{
-			isApplicable: (v): v is Request => v instanceof Request,
-			serialize: () => FLYTRAP_REQUEST,
-			deserialize: () => FLYTRAP_REQUEST
-		},
-		'Request'
-	)
-
-	// Functions
-	superJsonInstance.registerCustom<any, string>(
-		{
-			isApplicable: (v): v is Function => typeof v === 'function',
-			serialize: () => FLYTRAP_FUNCTION,
-			deserialize: () => FLYTRAP_FUNCTION
-		},
-		'Functions'
-	)
-
-	// DOM Events
-	superJsonInstance.registerCustom<any, string>(
-		{
-			isApplicable: (v): v is Event => {
-				return typeof window !== 'undefined' ? v instanceof window.Event : false
-			},
-			serialize: () => FLYTRAP_DOM_EVENT,
-			deserialize: () => FLYTRAP_DOM_EVENT
-		},
-		'DOM Events'
-	)
-
-	// Unsupported classes
-	superJsonInstance.registerCustom<any, string>(
-		{
-			isApplicable: (v): v is any => {
-				const SUPPORTED_CLASSES = [
-					Headers,
-					Request,
-					Response,
-					Array,
-					Date,
-					RegExp,
-					Set,
-					Map,
-					Error,
-					URL,
-					...(typeof window !== 'undefined' ? [window.Event] : [])
-				]
-
-				const isSupportedClass = SUPPORTED_CLASSES.some(
-					(classInstance) => v instanceof classInstance
-				)
-				return isClassInstance(v) && !isSupportedClass
-			},
-			serialize: () => FLYTRAP_CLASS,
-			deserialize: () => FLYTRAP_CLASS
-		},
-		'Classes'
-	)
-}
-
-export function isClassInstance<T>(obj: T): boolean {
-	return (
-		obj !== null &&
-		typeof obj === 'object' &&
-		!(obj instanceof Array) &&
-		obj.constructor &&
-		obj.constructor !== Object
-	)
-}
-
-/**
- * Stringifies an object, and removes all cyclical dependencies. When parsing, cyclical values become `null`.
- * @param obj object to stringify
- * @returns stringified object with cyclical dependencies removed
- */
-export function stringify(obj: any): string {
-	superJsonRegisterCustom(SuperJSON)
-
-	/* if (obj[Symbol.iterator] && obj instanceof Array !== true) {
-		return FLYTRAP_UNSERIALIZABLE_VALUE
-	} */
-
-	const serialized = SuperJSON.serialize(obj)
-	if (serialized.meta?.referentialEqualities) {
-		delete serialized.meta.referentialEqualities
-	}
-
-	function ignoreCircularReferences() {
-		const seen = new WeakSet()
-		return (key: any, value: any) => {
-			if (key.startsWith('_')) return // Don't compare React's internal props.
-			if (typeof value === 'object' && value !== null) {
-				if (seen.has(value)) return FLYTRAP_CIRCULAR
-				// if (seen.has(value)) return null
-				seen.add(value)
-			}
-			return value
-		}
-	}
-
-	return JSON.stringify(serialized, ignoreCircularReferences())
-}
-
-export function parse<T = unknown>(stringified: string): T {
-	superJsonRegisterCustom(SuperJSON)
-	return SuperJSON.parse<T>(stringified)
-}
-
-export function removeCircularDependencies<T>(obj: T, seenObjects = new Set()): T {
-	// Null or primitive type
-	if (obj === null || typeof obj !== 'object') {
-		return obj
-	}
-
-	// Check if this object has been seen before
-	if (seenObjects.has(obj)) {
-		// It's a circular reference
-		// @ts-expect-error
-		return FLYTRAP_CIRCULAR
-	}
-
-	// Keep track of this object so we don't process it again
-	seenObjects.add(obj)
-
-	// Clone object if it's an object or an array
-	const newObj = Array.isArray(obj) ? [] : {}
-
-	// Recursively inspect each property of the object
-	for (const key in obj) {
-		if (Object.prototype.hasOwnProperty.call(obj, key)) {
-			const cleanedValue = removeCircularDependencies(obj[key], seenObjects)
-
-			if (cleanedValue !== null) {
-				// If it's non-circular dependency, add it to the result object
-				;(newObj as T)[key] = cleanedValue
-			}
-		}
-	}
-
-	return newObj as T
-}
 
 function _extract(captures: (CapturedCall | CapturedFunction)[], key: 'args' | 'output' = 'args') {
 	const values = captures.reduce(
@@ -261,53 +91,6 @@ export function addLinksToCaptures(
 	return linkedCaptures
 }
 
-export async function decryptCapture(
-	capture: DatabaseCapture,
-	privateKey: string
-): Promise<CaptureDecryptedAndRevived> {
-	// Decrypting `args` and `outputs`
-	const decryptedArgs: any[][] = parse(await decrypt(privateKey, capture.args))
-	const decryptedOutputs: any[] = parse(await decrypt(privateKey, capture.outputs))
-
-	const revivedCalls: CapturedCall[] = []
-	const revivedFunctions: CapturedFunction[] = []
-
-	// Revive calls
-	for (let i = 0; i < capture.calls.length; i++) {
-		const revivedInvocations = reviveLinks(capture.calls[i].invocations, {
-			args: decryptedArgs,
-			outputs: decryptedOutputs
-		})
-		revivedCalls.push({
-			id: capture.calls[i].id,
-			invocations: revivedInvocations
-		})
-	}
-
-	// Revive functions
-	for (let i = 0; i < capture.functions.length; i++) {
-		const revivedInvocations = reviveLinks(capture.functions[i].invocations, {
-			args: decryptedArgs,
-			outputs: decryptedOutputs
-		})
-		revivedFunctions.push({
-			id: capture.functions[i].id,
-			invocations: revivedInvocations
-		})
-	}
-
-	const decryptedCaptureNew: CaptureDecryptedAndRevived = {
-		projectId: capture.projectId,
-		functionName: capture.functionName,
-		calls: revivedCalls,
-		functions: revivedFunctions,
-		...(capture.error && {
-			error: parse(await decrypt(privateKey, capture.error))
-		})
-	}
-	return decryptedCaptureNew
-}
-
 export function reviveLinks(
 	invocations: CaptureInvocationWithLinks[],
 	{ args, outputs }: { args: any[][]; outputs: any[] }
@@ -325,15 +108,105 @@ export function reviveLinks(
 	return invocations as unknown as CaptureInvocation[]
 }
 
-export function processCaptures(captures: (CapturedCall | CapturedFunction)[]) {
-	superJsonRegisterCustom(SuperJSON)
-	for (let i = 0; i < captures.length; i++) {
-		captures[i] = SuperJSON.deserialize(SuperJSON.serialize(captures[i]))
-	}
-	return captures
+export function getCaptureSize(capture: CapturedCall | CapturedFunction) {
+	return safeStringify(capture).map((stringifiedCapture) => stringifiedCapture.length)
 }
 
-export function getCaptureSize(capture: CapturedCall | CapturedFunction) {
-	superJsonRegisterCustom(SuperJSON)
-	return JSON.stringify(SuperJSON.serialize(capture)).length
+function removeCirculars(obj: any, parentObjects: Set<any> = new Set()): any {
+	if (obj !== null && typeof obj === 'object') {
+		if (parentObjects.has(obj)) {
+			return FLYTRAP_UNSERIALIZABLE_VALUE
+		}
+		parentObjects.add(obj)
+
+		for (const key of Object.keys(obj)) {
+			obj[key] = removeCirculars(obj[key], new Set(parentObjects))
+		}
+	}
+	return obj
+}
+
+const objectProtoNames = /* @__PURE__ */ Object.getOwnPropertyNames(Object.prototype)
+	.sort()
+	.join('\0')
+
+function isPlainObject(thing: any) {
+	const proto = Object.getPrototypeOf(thing)
+
+	return (
+		proto === Object.prototype ||
+		proto === null ||
+		Object.getOwnPropertyNames(proto).sort().join('\0') === objectProtoNames
+	)
+}
+
+function isAllowedObject(obj: any): boolean {
+	return (
+		obj instanceof Date ||
+		obj instanceof Map ||
+		obj instanceof Set ||
+		obj instanceof RegExp ||
+		obj instanceof URL ||
+		obj instanceof Error
+	)
+}
+
+function isPrimitive(value: any): boolean {
+	return value !== Object(value)
+}
+
+function removeNonPojos(obj: any): any {
+	if (isPrimitive(obj) || isAllowedObject(obj)) {
+		return obj // Allow all primitives and allowed object types.
+	} else if (Array.isArray(obj)) {
+		return obj.map(removeNonPojos)
+	} else if (typeof obj === 'object') {
+		// Check if the object is a POJO.
+		if (isPlainObject(obj)) {
+			const result: any = {}
+			for (const key in obj) {
+				result[key] = removeNonPojos(obj[key])
+			}
+			return result
+		} else {
+			return FLYTRAP_UNSERIALIZABLE_VALUE
+		}
+	} else {
+		return FLYTRAP_UNSERIALIZABLE_VALUE
+	}
+}
+
+export function removeCircularsAndNonPojos<T>(object: T): T {
+	return removeNonPojos(removeCirculars(object))
+}
+
+export function safeStringify<T>(object: T) {
+	try {
+		const serializedObject = serialize(removeNonPojos(removeCirculars(object)))
+		return Ok(JSON.stringify(serializedObject))
+	} catch (e) {
+		return Err(
+			createHumanLog({
+				explanations: ['stringify_object_failed'],
+				params: {
+					stringifyError: String(e)
+				}
+			})
+		)
+	}
+}
+
+export function safeParse<T>(input: string) {
+	try {
+		return Ok(parse(input) as T)
+	} catch (e) {
+		return Err(
+			createHumanLog({
+				explanations: ['parsing_object_failed'],
+				params: {
+					parsingError: String(e)
+				}
+			})
+		)
+	}
 }

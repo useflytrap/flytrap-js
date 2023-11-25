@@ -16,7 +16,7 @@ import { getRequiredExportsForCapture } from '../imports'
 import { getParseConfig } from '../config'
 import { _babelInterop } from '../util'
 import { parseCode } from '../parser'
-import { err, ok } from '../../core/util'
+import { Ok } from 'ts-results'
 
 function getLineNumber(node: Node) {
 	// @ts-ignore
@@ -132,14 +132,10 @@ export function extractCurrentScope(
 export function addArtifactMarkings(code: string, filePath: string, config?: FlytrapConfig) {
 	code = code.replaceAll('\t', '    ')
 	const functionOrCallIdsAndLocations: ArtifactMarking[] = []
-	const { error, data: ast } = parseCode(
-		code,
-		filePath,
-		getParseConfig(config?.babel?.parserOptions)
-	)
+	const parseCodeResult = parseCode(code, filePath, getParseConfig(config?.babel?.parserOptions))
 
-	if (error) {
-		return err(error)
+	if (parseCodeResult.err) {
+		return parseCodeResult
 	}
 
 	const extractParamsLocation = (params: (Identifier | RestElement | Pattern)[]) => {
@@ -159,7 +155,7 @@ export function addArtifactMarkings(code: string, filePath: string, config?: Fly
 		return [startIndex, endIndex]
 	}
 
-	_babelInterop(babelTraverse)(ast, {
+	_babelInterop(babelTraverse)(parseCodeResult.val, {
 		ArrowFunctionExpression(path) {
 			const functionName = extractFunctionName(path.parent as VariableDeclarator | ObjectProperty)
 			const scopes = extractCurrentScope(path)
@@ -251,5 +247,5 @@ export function addArtifactMarkings(code: string, filePath: string, config?: Fly
 		}
 	})
 
-	return ok(functionOrCallIdsAndLocations)
+	return Ok(functionOrCallIdsAndLocations)
 }

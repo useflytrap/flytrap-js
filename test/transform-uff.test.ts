@@ -172,7 +172,7 @@ it('callee and accessorKey are correct', () => {
 	for (let i = 0; i < accessorKeyFixtures.length; i++) {
 		const fixture = accessorKeyFixtures[i].fixture
 		// @ts-expect-error
-		const node = parseCode(fixture).data?.program?.body?.[0]?.expression
+		const node = parseCode(fixture).unwrap().data?.program?.body?.[0]?.expression
 		if (node === undefined) {
 			throw new Error(`Could not parse fixture "${fixture}"`)
 		}

@@ -76,11 +76,23 @@ export function getLimitedCaptures(
 		const functionEntry = functions.at(-(i + 1))
 		if (callEntry) {
 			duplicateCalls.push(callEntry)
-			sizeCounter += getCaptureSize(callEntry)
+
+			const captureSize = getCaptureSize(callEntry)
+			if (captureSize.err) {
+				return captureSize
+			}
+
+			sizeCounter += captureSize.val
 		}
 		if (functionEntry) {
 			duplicateFunctions.push(functionEntry)
-			sizeCounter += getCaptureSize(functionEntry)
+
+			const captureSize = getCaptureSize(functionEntry)
+			if (captureSize.err) {
+				return captureSize
+			}
+
+			sizeCounter += captureSize.val
 		}
 	}
 

@@ -1,6 +1,7 @@
+import { Result } from 'ts-results'
 import { getApiBase } from '../../core/config'
-import { post } from '../../core/util'
-import { Artifact } from '../../exports'
+import { Artifact } from '../../core/types'
+import { newRequest } from '../../core/requestUtils'
 
 const MAX_BYTES_PER_BATCH = 3_000_000 // 3MB
 
@@ -13,9 +14,10 @@ export async function batchedArtifactsUpload(
 	let currentBatch: Artifact[] = []
 	let currentBatchSize = 0
 
-	// a rough approximation
+	// A rough approximation
 	const artifactSizeInBytes = (artifact: Artifact) => JSON.stringify(artifact).length
 
+	// Batching artifacts by size
 	for (const artifact of artifacts) {
 		const artifactSize = artifactSizeInBytes(artifact)
 
@@ -39,34 +41,25 @@ export async function batchedArtifactsUpload(
 		currentBatchSize += artifactSize
 	}
 
-	// Handle any remaining strings in the current batch
-	if (currentBatch.length > 0) {
-		batches.push(currentBatch)
-	}
-
-	// upload artifacat batches
-	const uploadedArtifactBatches = await Promise.all(
-		batches.map(async (batch) => {
-			const { data, error } = await post<string[]>(
-				`${getApiBase()}/api/v1/artifacts/${projectId}`,
-				JSON.stringify({
-					projectId,
-					artifacts: batch
-				}),
-				{
-					headers: new Headers({
-						Authorization: `Bearer ${secretApiKey}`,
-						'Content-Type': 'application/json'
-					})
-				}
-			)
-
-			if (error || !data) {
-				throw error
-			}
-			return data
-		})
+	const uploadBatchesRequests = await Promise.all(
+		batches.map(
+			async (batch) =>
+				await newRequest<string[]>(
+					`${getApiBase()}/api/v1/artifacts/${projectId}`,
+					'POST',
+					JSON.stringify({
+						projectId,
+						artifacts: batch
+					}),
+					{
+						headers: new Headers({
+							Authorization: `Bearer ${secretApiKey}`,
+							'Content-Type': 'application/json'
+						})
+					}
+				)
+		)
 	)
 
-	return uploadedArtifactBatches
+	return Result.all(...uploadBatchesRequests)
 }

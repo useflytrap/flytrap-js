@@ -36,7 +36,6 @@ export type LogGroup =
 	| 'identify'
 	| 'capture'
 	| 'transform'
-	| 'cache'
 
 export type CaptureIgnore = string | RegExp | ((payload: CapturePayload) => boolean)
 
@@ -47,6 +46,19 @@ export type FlytrapConfig = {
 	secretApiKey?: string
 	captureId?: string
 	mode?: FlytrapMode
+	/**
+	 * Enable logging for different parts of the Flytrap SDK. By default only errors are logged.
+	 *
+	 * - "capture": logs when something is captured
+	 * - "error": logs when something goes wrong
+	 * - "storage": logs when a capture is saved or fetched from the Flytrap API
+	 * - "function-execution": logs when a function executes. Useful for debugging.
+	 * - "call-execution": logs when a function call executes. Useful for debugging.
+	 * - "identify": logs when a user is being identified
+	 * - "transform": logs details regarding to the transformation of code at build time
+	 *
+	 * @default ["error"]
+	 */
 	logging?: LogGroup[]
 	babel?: {
 		parserOptions?: ParserOptions

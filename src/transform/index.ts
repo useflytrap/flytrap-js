@@ -116,12 +116,14 @@ export function flytrapTransformUff(
 	filePath: string,
 	config?: Partial<FlytrapConfig>
 ) {
-	const { error, data: ast } = parseCode(code, filePath, config?.babel?.parserOptions)
+	const parseResult = parseCode(code, filePath, config?.babel?.parserOptions)
 
-	if (error !== null) {
-		log.error('error', error.toString())
-		throw new Error(error.toString())
+	if (parseResult.err) {
+		log.error('error', parseResult.val.toString())
+		throw new Error(parseResult.val.toString())
 	}
+
+	const ast = parseResult.val
 
 	const ignoredImports = config?.packageIgnores
 		? findIgnoredImports(code, config.packageIgnores)
@@ -255,7 +257,7 @@ export function flytrapTransformUff(
 		const errorLog = createHumanLog({
 			events: ['transform_file_failed'],
 			explanations: ['traverse_failed'],
-			solutions: ['parsing_error_open_issue'],
+			solutions: ['open_issue'],
 			params: {
 				fileNamePath: filePath,
 				traverseError: String(e)

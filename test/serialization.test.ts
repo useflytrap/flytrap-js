@@ -1,6 +1,6 @@
 import { describe, expect, it, test } from 'vitest'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
-import { parse, stringify } from '../src/core/stringify'
+import { safeParse, safeStringify } from '../src/core/stringify'
 GlobalRegistrator.register()
 
 export interface ErrorWithBatchIndex {
@@ -162,13 +162,15 @@ for (const [describeName, testObject] of Object.entries(serializationTestFixture
 		for (const [testName, testFixtures] of Object.entries(testObject)) {
 			test(testName, async () => {
 				for (let i = 0; i < testFixtures.length; i++) {
-					const parsed = parse(stringify(testFixtures[i].value))
+					const parsed = safeParse(safeStringify(testFixtures[i].value).unwrap()).unwrap()
 					if (parsed instanceof Response) {
 						isMatchingResponse(parsed, testFixtures[i].value)
 					} else if (parsed instanceof Request) {
 						isMatchingRequest(parsed, testFixtures[i].value)
 					} else {
-						expect(parse(stringify(testFixtures[i].value))).toEqual(testFixtures[i].value)
+						expect(safeParse(safeStringify(testFixtures[i].value).unwrap()).unwrap()).toEqual(
+							testFixtures[i].value
+						)
 					}
 				}
 			})

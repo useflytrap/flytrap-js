@@ -158,13 +158,13 @@ function Home() {
 `
 
 it('generates values same as transform', () => {
-	const { data: extractedMarkings, error } = addArtifactMarkings(pageCodeFixture, '/file.js')
-	if (error) {
-		throw new Error(error.toString())
+	const artifactMarkingsResult = addArtifactMarkings(pageCodeFixture, '/file.js')
+	if (artifactMarkingsResult.err) {
+		throw new Error(artifactMarkingsResult.val.toString())
 	}
 	const transformedCode = flytrapTransformUff(pageCodeFixture, '/file.js')
 
-	const functionIds = extractedMarkings.map((e) => e.functionOrCallId).filter(Boolean)
+	const functionIds = artifactMarkingsResult.val.map((e) => e.functionOrCallId).filter(Boolean)
 	for (let i = 0; i < functionIds.length; i++) {
 		expect(transformedCode.code).toContain(functionIds[i] as string)
 	}
@@ -179,11 +179,13 @@ type ArtifactMarkingsTest = {
 }
 
 function codeToArtifactMarkingsTest(fixture: string): ArtifactMarkingsTest {
-	const { error, data: markings } = addArtifactMarkings(fixture, '/file.js')
+	const artifactMarkingsResult = addArtifactMarkings(fixture, '/file.js')
 
-	if (error) {
-		throw new Error(error.toString())
+	if (artifactMarkingsResult.err) {
+		throw new Error(artifactMarkingsResult.val.toString())
 	}
+
+	const markings = artifactMarkingsResult.val
 
 	const functionMarking = markings.find((m) => m.type === 'function')
 	const callMarking = markings.find((m) => m.type === 'call')
@@ -332,10 +334,11 @@ describe.skip('artifact markings new @todo add back', () => {
 })
 
 it('artifacts markings complete', () => {
-	const { data: markings, error } = addArtifactMarkings(largeFixture, '/file.js')
-	if (error) {
-		throw new Error(error.toString())
+	const artifactMarkingsResult = addArtifactMarkings(largeFixture, '/file.js')
+	if (artifactMarkingsResult.err) {
+		throw new Error(artifactMarkingsResult.val.toString())
 	}
+	const markings = artifactMarkingsResult.val
 
 	// @todo: finish this test
 	expect(markings).toContainEqual({

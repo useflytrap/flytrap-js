@@ -1,11 +1,14 @@
 import { serializeError } from 'serialize-error'
-import { AnyFunction, CapturedCall, CapturedFunction, FlytrapCallOptions } from './core/types'
-import { TryCatchResponse, tryCatch as utilTryCatch } from './core/util'
-import { getFlytrapStorage, getLoadedCapture, loadAndPersist } from './core/storage'
+import {
+	AnyFunction,
+	CaptureInvocation,
+	CapturedCall,
+	CapturedFunction,
+	FlytrapCallOptions
+} from './core/types'
+import { TryCatchResponse } from './core/util'
 import { log } from './core/logging'
-import { getLoadedConfig } from './core/config'
-import { CaptureInvocation } from './exports'
-import { createHumanLog } from './core/errors'
+import { saveCapture } from './core/newStorage'
 
 let _executingFunctions: CapturedFunction[] = []
 const _executionCursor = 1
@@ -28,7 +31,6 @@ export const clearCapturedCalls = () => {
 }
 
 // Function & call wrappers
-
 export type UfcReturnType<T, O extends FlytrapCallOptions> = T extends AnyFunction
 	? ReturnType<T>
 	: T extends object
@@ -99,17 +101,20 @@ export function uff<T extends AnyFunction>(func: T, id: string | null = null): T
 			if (id) {
 				saveErrorForFunction(id, error)
 				log.info('capture', `Captured error in async function with ID "${id}".`, { error })
-				getFlytrapStorage()
-					.saveCapture(_executingFunctions, _functionCalls, error as Error)
+
+				saveCapture(_executingFunctions, _functionCalls, error)
+					.then((saveResult) => {
+						// Show user facing error here
+						if (saveResult?.err) {
+							const humanErrorLog = saveResult.val
+							// @ts-expect-error
+							humanErrorLog.addEvents(['capture_failed'])
+							// @ts-expect-error
+							humanErrorLog.addSolutions(['try_again_contact_us'])
+							log.error('error', humanErrorLog.toString())
+						}
+					})
 					.catch((saveError) => {
-						log.error(
-							'error',
-							createHumanLog({
-								events: ['capture_failed'],
-								explanations: ['api_capture_error_response'],
-								solutions: ['try_again_contact_us']
-							}).toString()
-						)
 						log.error('error', saveError)
 					})
 			}
@@ -119,32 +124,8 @@ export function uff<T extends AnyFunction>(func: T, id: string | null = null): T
 	} as T
 }
 
-export async function loadCapture() {
-	const { privateKey, secretApiKey, captureId } = (await getLoadedConfig()) ?? {}
-	if (!captureId || !secretApiKey || !privateKey) {
-		log.error(
-			'storage',
-			`Failed to load capture, because captureId, secretApiKey or privateKey is undefined.`
-		)
-		return
-	}
-	const success = await loadAndPersist(captureId, secretApiKey, privateKey)
-
-	if (success) {
-		log.info('storage', 'Replay data loaded!')
-	} else {
-		log.error('storage', `Could not load replay data for capture ID "${captureId}"`)
-	}
-}
-
-export async function capture<T extends Error>({
-	error,
-	message
-}: {
-	error: T
-	message?: string
-}): Promise<void> {
-	log.info('capture', `Manually captured error.`, { error, ...(message && { message }) })
+export async function capture(error: any): Promise<void> {
+	log.info('capture', `Manually captured error.`, { error })
 	/**
 	 * We're manually capturing an error. Let's send the current
 	 * executing function along with its data to the Flytrap API.
@@ -155,18 +136,14 @@ export async function capture<T extends Error>({
 	}
 
 	// Let's save it
-	const { error: saveError } = await utilTryCatch(
-		getFlytrapStorage().saveCapture(_executingFunctions, _functionCalls, error)
-	)
-	if (saveError) {
-		const errorLog = createHumanLog({
-			events: ['capture_failed'],
-			explanations: ['generic_unexpected_error'],
-			solutions: ['try_again_contact_us']
-		})
-		log.error('error', errorLog.toString())
+	const saveResult = await saveCapture(_executingFunctions, _functionCalls, error)
+	if (saveResult.err) {
+		const errorLog = saveResult.val
 		// @ts-expect-error
-		log.error('error', saveError)
+		errorLog.addEvents(['capture_failed'])
+		// @ts-expect-error
+		errorLog.addSolutions(['try_again_contact_us'])
+		log.error('error', errorLog.toString())
 	}
 }
 
@@ -278,7 +255,7 @@ export async function tryCapture<DType = unknown, EType = any>(
 	try {
 		return { data: await fn, error: null }
 	} catch (error) {
-		await capture({ error: error as Error })
+		await capture(error)
 		return { data: null, error: error as EType }
 	}
 }
@@ -288,24 +265,24 @@ export function tryCaptureSync<DType = unknown, EType = any>(
 	try {
 		return { data: fn(), error: null }
 	} catch (error) {
-		capture({ error: error as Error })
+		capture(error)
 		return { data: null, error: error as EType }
 	}
 }
 
 export async function invariantAsync(condition: any, message?: string) {
 	if (condition) return
-	await capture({ error: new Error('Invariant failed'), message: message ?? 'Invariant failed.' })
+	await capture(new Error(`Invariant failed.${message ? ` ${message}` : ''}`))
 	throw new Error(`Invariant failed${message ? `: ${message}` : ''}`)
 }
 export function invariant(condition: any, message?: string): asserts condition {
 	if (condition) return
-	capture({ error: new Error('Invariant failed'), message: message ?? 'Invariant failed.' })
+	capture(new Error(`Invariant failed.${message ? ` ${message}` : ''}`))
 	throw new Error(`Invariant failed${message ? `: ${message}` : ''}`)
 }
 
 // Export
 export * from './core/config'
 export * from './core/types'
-export * from './core/encryption'
+export * from './core/newEncryption'
 export * from './core/stringify'

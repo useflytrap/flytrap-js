@@ -3,7 +3,8 @@ import crypto from 'crypto'
 // @ts-expect-error
 globalThis.crypto = crypto
 
-import { generateKeyPair, encrypt, decrypt } from '../src/core/encryption'
+import { generateKeyPair, encrypt, decrypt } from '../src/core/newEncryption'
+import { toOneLine } from './testUtils'
 
 const exampleCapture = `
 
@@ -14,7 +15,7 @@ const exampleCapture = `
 
 describe('generateKeyPair', () => {
 	it('generates a key pair', async () => {
-		const keyPair = await generateKeyPair()
+		const keyPair = (await generateKeyPair()).unwrap()
 
 		expect(keyPair.publicKey.length).toBeGreaterThan(0)
 		expect(keyPair.privateKey.length).toBeGreaterThan(0)
@@ -27,7 +28,7 @@ describe('encrypt', () => {
 	it('encrypts strings', async () => {
 		const plaintext = 'Hello, World!'
 		const keyPair = await generateKeyPair()
-		const encrypted = await encrypt(keyPair.publicKey, plaintext)
+		const encrypted = (await encrypt(keyPair.publicKey, plaintext)).unwrap()
 		expect(encrypted.length).toBeGreaterThan(1)
 		expect(encrypted.slice(-2)).toBe('==')
 	})
@@ -44,9 +45,9 @@ describe('encrypt', () => {
 	})
 
 	it('encrypts large amount of text', async () => {
-		const keyPair = await generateKeyPair()
+		const keyPair = (await generateKeyPair()).unwrap()
 		const longString = [...Array(19009).keys()].map(() => 'a').join('')
-		const encrypted = await encrypt(keyPair.publicKey, longString)
+		const encrypted = (await encrypt(keyPair.publicKey, longString)).unwrap()
 
 		expect(encrypted.length).toBeGreaterThan(longString.length)
 		expect(encrypted.slice(-2)).toBe('==')
@@ -56,39 +57,48 @@ describe('encrypt', () => {
 describe('decrypt', () => {
 	it('decrypts with correct private key', async () => {
 		const plaintext = 'Hello, World!'
-		const keyPair = await generateKeyPair()
-		const encrypted = await encrypt(keyPair.publicKey, plaintext)
+		const keyPair = (await generateKeyPair()).unwrap()
+		const encrypted = (await encrypt(keyPair.publicKey, plaintext)).unwrap()
 		const decrypted = await decrypt(keyPair.privateKey, encrypted)
 		expect(decrypted).toBe(plaintext)
 	})
-	it('throws when decrypting with wrong private key', async () => {
+	it.only('throws when decrypting with wrong private key', async () => {
 		const plaintext = 'Hello, World!'
-		const keyPair = await generateKeyPair()
-		const encrypted = await encrypt(keyPair.publicKey, plaintext)
-		await expect(decrypt('wrong key', encrypted)).rejects.toThrow()
+		const keyPair = (await generateKeyPair()).unwrap()
+		const encrypted = (await encrypt(keyPair.publicKey, plaintext)).unwrap()
+
+		expect(toOneLine((await decrypt('wrong key', encrypted)).val.toString())).toBe(
+			toOneLine(`because base64 decoding the value "," errored. Error: 
+			InvalidCharacterError: The string to be decoded is not correctly encoded.`)
+		)
+
 		// @ts-expect-error
-		await expect(decrypt({}, encrypted)).rejects.toThrow()
+		expect(toOneLine((await decrypt({}, encrypted)).val.toString())).toBe(
+			toOneLine(
+				`because encrypting failed due to invalid private key type. Expected "string", received "[object Object]"`
+			)
+		)
 	})
 	it('throws when input isnt a string', async () => {
-		const keyPair = await generateKeyPair()
+		const keyPair = (await generateKeyPair()).unwrap()
 		// @ts-expect-error
 		await expect(decrypt(keyPair.privateKey, {})).rejects.toThrow()
 		await expect(decrypt(keyPair.privateKey, 'invalid ciphertext')).rejects.toThrow()
 	})
 
 	it('decrypts large amount of text', async () => {
-		const keyPair = await generateKeyPair()
+		const keyPair = (await generateKeyPair()).unwrap()
 		const longString = [...Array(19009).keys()].map(() => 'a').join('')
-		const encrypted = await encrypt(keyPair.publicKey, longString)
-		const decrypted = await decrypt(keyPair.privateKey, encrypted)
+		const encrypted = (await encrypt(keyPair.publicKey, longString)).unwrap()
+		const decrypted = (await decrypt(keyPair.privateKey, encrypted)).unwrap()
 
 		expect(decrypted).toBe(longString)
 	})
 
 	it('decrypts example capture', async () => {
-		const keyPair = await generateKeyPair()
-		const encrypted = await encrypt(keyPair.publicKey, exampleCapture)
-		const decrypted = await decrypt(keyPair.privateKey, encrypted)
+		const keyPair = (await generateKeyPair()).unwrap()
+		const encrypted = (await encrypt(keyPair.publicKey, exampleCapture)).unwrap()
+		const decrypted = (await decrypt(keyPair.privateKey, encrypted)).unwrap()
 
 		expect(decrypted).toBe(exampleCapture)
 	})

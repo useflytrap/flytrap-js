@@ -14,8 +14,9 @@ import { excludeDirectoriesIncludeFilePath } from './transform/excludes'
 import { containsScriptTags, parseScriptTags } from './transform/parseScriptTags'
 import { calculateSHA256Checksum, getFileExtension } from './transform/util'
 import { upsertArtifacts } from './transform/artifacts/cache'
-import { Artifact, FlytrapConfig, encrypt } from './exports'
+import { Artifact, FlytrapConfig } from './core/types'
 import { createHumanLog } from './core/errors'
+import { encrypt } from './core/newEncryption'
 
 const transformedFiles = new Set<string>([])
 
@@ -71,7 +72,7 @@ export const unpluginOptions: UnpluginOptions = {
 			return
 		}
 
-		// Logging config
+		// Loading config
 		if (!config) {
 			const loadedConfig = await loadConfig()
 			config = loadedConfig
@@ -231,17 +232,33 @@ export const unpluginOptions: UnpluginOptions = {
 							config.publicApiKey,
 							code.substring(scriptStartIndex, scriptEndIndex)
 						)
+
+						if (encryptedSource.err) {
+							const humanLog = encryptedSource.val
+							humanLog.addEvents(['sending_artifacts_failed'])
+							log.error('error', humanLog.toString())
+							return
+						}
+
 						artifacts.push({
 							checksum,
-							encryptedSource,
+							encryptedSource: encryptedSource.val,
 							filePath: normalizeFilepath(pkgDirPath, transformedFilePath)
 						})
 					} else {
 						const checksum = calculateSHA256Checksum(code)
 						const encryptedSource = await encrypt(config.publicApiKey, code)
+
+						if (encryptedSource.err) {
+							const humanLog = encryptedSource.val
+							humanLog.addEvents(['sending_artifacts_failed'])
+							log.error('error', humanLog.toString())
+							return
+						}
+
 						artifacts.push({
 							checksum,
-							encryptedSource,
+							encryptedSource: encryptedSource.val,
 							filePath: normalizeFilepath(pkgDirPath, transformedFilePath)
 						})
 					}
@@ -251,19 +268,23 @@ export const unpluginOptions: UnpluginOptions = {
 			}
 
 			// Upload new artifacts
-			const { error: artifactsUpsertError } = await upsertArtifacts(
+			const upsertArtifactsResult = await upsertArtifacts(
 				config.projectId,
 				config.secretApiKey,
 				artifacts
 			)
 
-			if (artifactsUpsertError !== null) {
-				log.error(
-					'error',
-					`Oops! Something went wrong while pushing artifacts to the Flytrap API. Error:`
+			if (upsertArtifactsResult.err) {
+				// Show error
+				const humanLog = upsertArtifactsResult.val
+				humanLog.addEvents(['sending_artifacts_failed'])
+				humanLog.addSolutions(['join_discord'])
+				log.error('error', humanLog.toString())
+			} else {
+				log.info(
+					'storage',
+					`Pushed ${upsertArtifactsResult.val.length} artifacts to the Flytrap API.`
 				)
-				log.error('error', artifactsUpsertError)
-				return
 			}
 		}
 	}

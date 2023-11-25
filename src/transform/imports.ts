@@ -16,12 +16,14 @@ export function getCoreExports(): string[] {
 }
 
 export function findStartingIndex(s: MagicString, fileNamePath?: string) {
-	const { error, data: ast } = parseCode(s.toString(), fileNamePath)
+	const parseResult = parseCode(s.toString(), fileNamePath)
 
-	if (error !== null) {
-		log.error('error', error.toString())
-		throw new Error(error.toString())
+	if (parseResult.err) {
+		log.error('error', parseResult.val.toString())
+		throw new Error(parseResult.val.toString())
 	}
+
+	const ast = parseResult.val
 
 	if (ast.program.interpreter && ast.program.interpreter.end) {
 		return ast.program.interpreter.end

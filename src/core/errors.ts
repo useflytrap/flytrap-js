@@ -15,12 +15,13 @@ export const createHumanLog = createHumanLogs({
 			template: 'Transforming file "{fileNamePath}" failed',
 			params: { fileNamePath: '' }
 		},
+		sending_artifacts_failed: 'Sending artifacts to the Flytrap API failed',
 		// Troubleshooting mode
 		troubleshooting_error_captured: 'An error was captured while in troubleshooting mode.'
 	},
 	explanations: {
 		database_unresponsive: 'because we could not connect to our database.',
-		replay_missing_config_values:
+		missing_config_values:
 			'because your Flytrap configuration is missing one or more values. Required values are `publicApiKey` and `projectId`.',
 		invalid_config: 'because your config file is invalid.',
 		config_not_found: 'because we could not find a configuration file.',
@@ -53,8 +54,80 @@ export const createHumanLog = createHumanLogs({
 			}
 		},
 
-		// Parsing / traversing errors
-		parsing_error_explanation: {
+		// Request fail explanations
+		request_failed: {
+			template: 'because a {method} request to "{endpoint}" failed. Error: \n\n{error}\n',
+			params: {
+				method: '',
+				endpoint: '',
+				error: ''
+			}
+		},
+
+		// Encryption & decryption
+		encrypt_failed_invalid_plaintext_type: {
+			template:
+				'because encrypting failed due to invalid plaintext type. Expected "string", received "{plaintext}".',
+			params: {
+				plaintext: ''
+			}
+		},
+		encrypt_failed_invalid_key_type: {
+			template:
+				'because encrypting failed due to invalid public key type. Expected "string", received "{publicKey}"',
+			params: {
+				publicKey: ''
+			}
+		},
+		decrypt_failed_invalid_ciphertext_type: {
+			template:
+				'because encrypting failed due to invalid ciphertext type. Expected "string", received "{ciphertext}".',
+			params: {
+				ciphertext: ''
+			}
+		},
+		decrypt_failed_invalid_key_type: {
+			template:
+				'because encrypting failed due to invalid private key type. Expected "string", received "{privateKey}"',
+			params: {
+				privateKey: ''
+			}
+		},
+		decode_base64_failed: {
+			template:
+				'because base64 decoding the value "{inputValue}" errored. Error: \n\n{decodeError}\n',
+			params: {
+				inputValue: '',
+				decodeError: ''
+			}
+		},
+		encode_base64_failed: {
+			template:
+				'because base64 encoding the value "{inputValue}" errored. Error: \n\n{encodeError}\n',
+			params: {
+				inputValue: '',
+				encodeError: ''
+			}
+		},
+
+		// Object stringifying
+		stringify_object_failed: {
+			template:
+				'because stringifying an object failed during the process. Error: \n\n{stringifyError}\n',
+			params: {
+				stringifyError: ''
+			}
+		},
+		// Object parsing
+		parsing_object_failed: {
+			template: 'because parsing an object failed during the process. Error: \n\n{parsingError}\n',
+			params: {
+				parsingError: ''
+			}
+		},
+
+		// Code parsing / traversing errors
+		parsing_code_explanation: {
 			template: 'View the error below: \n\n{parsingError}\n',
 			params: {
 				parsingError: ''
@@ -111,8 +184,8 @@ export const createHumanLog = createHumanLogs({
 					href: 'https://discord.gg/tQaADUfdeP'
 				},
 				{
-					text: 'contact our support engineer',
-					href: 'mailto:rasmus@useflytrap.com'
+					text: 'Contact our support engineer',
+					href: 'rasmus@useflytrap.com'
 				}
 			]
 		},
@@ -138,10 +211,6 @@ export const createHumanLog = createHumanLogs({
 				{
 					text: 'Contact our support engineer',
 					href: 'rasmus@useflytrap.com'
-				},
-				{
-					text: 'Join our Discord',
-					href: 'https://discord.gg/tQaADUfdeP'
 				}
 			]
 		},
@@ -166,18 +235,18 @@ export const createHumanLog = createHumanLogs({
 				}
 			]
 		},
-		troubleshooting_join_discord: {
+		join_discord: {
 			template: 'Our Discord server is the fastest way to get help with your problem.',
 			params: {},
 			actions: [
 				{
 					text: 'Join our Discord',
-					href: 'https://github.com/useflytrap/flytrap-js/issues/new?assignees=skoshx&labels=bug&projects=&template=---bug-report.yml'
+					href: 'https://discord.gg/tQaADUfdeP'
 				}
 			]
 		},
 		// Parsing / Traversing error solutions
-		parsing_error_open_issue: {
+		open_issue: {
 			template:
 				"If you think this error shouldn't be happening, open an issue on GitHub and provide the code that caused this error.",
 			params: {},

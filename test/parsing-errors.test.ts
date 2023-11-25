@@ -73,14 +73,15 @@ describe('gives human-friendly errors when parsing invalid code', () => {
 	for (const [suiteName, parseErrorTests] of Object.entries(parsingErrorFixtures)) {
 		it(suiteName, () => {
 			for (let i = 0; i < parseErrorTests.length; i++) {
-				const { error, data } = parseCode(parseErrorTests[i].fixture, '/file.js')
-				expect(data).toBe(null)
+				const parseResult = parseCode(parseErrorTests[i].fixture, '/file.js')
+
+				expect(parseResult.err).toBe(true)
 
 				parseErrorTests[i].requiredErrorMessageParts.forEach((messagePart) => {
-					if (error === null) {
+					if (parseResult.err === false) {
 						throw new Error('Parsing succeeded.')
 					}
-					const errorString = error.toString()
+					const errorString = parseResult.val.toString()
 
 					if (!errorString.includes(messagePart)) {
 						console.error('Parse response: ')

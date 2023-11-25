@@ -44,7 +44,7 @@ export default [
 		],
 	},
 	// Build browser / edge version
-	{
+	/* {
 		input: ["src/index.ts"],
 		plugins: [
 			alias({
@@ -79,7 +79,7 @@ export default [
 				sourcemap: true,
 			},
 		],
-	},
+	}, */
 	{
 		input: ["src/index.ts"],
 		plugins: [dts()],
