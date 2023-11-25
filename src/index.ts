@@ -11,7 +11,7 @@ import { log } from './core/logging'
 import { saveCapture } from './core/newStorage'
 
 let _executingFunctions: CapturedFunction[] = []
-const _executionCursor = 1
+let _executionCursor = 1
 let _functionCalls: CapturedCall[] = []
 let _userId: string | undefined = undefined
 
@@ -85,12 +85,14 @@ export function uff<T extends AnyFunction>(func: T, id: string | null = null): T
 				timestamp: Date.now()
 			})
 		}
+		_executionCursor--
 		try {
 			const context = null
 			const functionOutput = func.apply(context ?? this, args)
 			if (id) {
 				saveOutputForFunction(id, functionOutput)
 			}
+			_executionCursor++
 			return functionOutput
 		} catch (error) {
 			/**
