@@ -79,7 +79,7 @@ export default [
 				sourcemap: true,
 			},
 		],
-	}, */
+	},
 	{
 		input: ["src/index.ts"],
 		plugins: [dts()],
@@ -91,7 +91,7 @@ export default [
 				exports: "named",
 			},
 		],
-	},
+	}, */
 	// Build transform plugin
 	{
 		input: ["src/transform.ts"],

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { NEXTJS_API_PORT, NEXTJS_PORT, NUXT_PORT, SVELTE_PORT, fetchCaptures, getBaseUrl, getLatestCapture, waitMs, getApiBase } from './util'
+import { NEXTJS_API_PORT, NEXTJS_PORT, NUXT_PORT, SVELTE_PORT, fetchCaptures, getBaseUrl, getLatestCapture, waitMs, getApiBase, getNextConsoleLogs } from './util'
 import { join } from 'path'
 import { existsSync, rmSync } from 'fs'
 
@@ -70,9 +70,8 @@ test('should capture front-end bug in nextjs example', async ({ page }) => {
   await page.click('text=Submit')
 
   // Wait for some console.log
-  const consolePromise = await page.waitForEvent('console');
-  const consoleLogsArgs = await consolePromise.args()
-  expect(await consoleLogsArgs[0]?.jsonValue()).toContain(`[🐛 post] ${getApiBase()}/api/v1/captures`)
+  const consoleLogs = await getNextConsoleLogs(page)
+  expect(consoleLogs).toContain(`[POST] ${getApiBase()}/api/v1/captures`)
 
   await waitMs(3_000);
 

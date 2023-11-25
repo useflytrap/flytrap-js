@@ -9,6 +9,6 @@ export default defineFlytrapConfig({
 	secretApiKey: 'sk_TnBe2CSBNPGE-9jDtiQDvaoef8LOJ17T_xpIvKxVcBJuskGX',
 	mode: (process?.env?.FLYTRAP_MODE as FlytrapMode) ?? 'capture',
 	captureId: process?.env?.FLYTRAP_CAPTURE_ID ?? undefined,
-	logging: ['api-calls', 'capture', 'storage'],
+	logging: ['error', 'api-calls', 'capture', 'storage'],
 	excludeDirectories: ['.nuxt']
 })

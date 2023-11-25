@@ -11,6 +11,6 @@ export default defineFlytrapConfig({
 	captureId: process?.env?.FLYTRAP_CAPTURE_ID ?? undefined,
 	// ignore Svelte generated files
 	excludeDirectories: ['./.svelte-kit'],
-	logging: ['api-calls', 'capture', 'storage'],
+	logging: ['error', 'api-calls', 'capture', 'storage'],
 	browser: true
 })

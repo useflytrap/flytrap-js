@@ -1,3 +1,5 @@
+import { Page } from "@playwright/test";
+
 export const getApiBase = () => 'https://www.useflytrap.com';
 // Capturing
 export const NEXTJS_API_PORT = 3000;
@@ -24,4 +26,18 @@ export async function fetchCaptures(secretApiKey: string): Promise<any[]> {
 
 export function getLatestCapture(captures: any[], testStartTime: Date): any | undefined {
 	return captures.find((capture) => new Date(capture.createdAt).getTime() > testStartTime.getTime());
+}
+
+export async function getNextConsoleLogs(page: Page) {
+	const consolePromise = await page.waitForEvent('console');
+  const consoleLogsArgs = await consolePromise.args()
+	// consoleLogsArgs.length;
+
+	const consoleLogJsonValues = await Promise.all(
+		consoleLogsArgs.map(async (c) => await c.jsonValue())
+	)
+
+	return consoleLogJsonValues.join('\n');
+
+  // expect(await consoleLogsArgs[0]?.jsonValue()).toContain(`[🐛 post] ${getApiBase()}/api/v1/captures`)
 }

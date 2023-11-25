@@ -1,7 +1,6 @@
 import { Err, Ok, Result } from 'ts-results'
 import { getLoadedConfig } from './config'
 import { FLYTRAP_REPLACE_VALUES, FLYTRAP_UNSERIALIZABLE_VALUE } from './constants'
-import { log } from './logging'
 import {
 	CaptureAmountLimit,
 	CaptureAmountLimitType,
@@ -9,84 +8,6 @@ import {
 	CapturedFunction,
 	FlytrapMode
 } from './types'
-
-export type RequestResponse<DataType, ErrorType> =
-	| {
-			data: DataType
-			error: null
-	  }
-	| {
-			data: null
-			error: ErrorType
-	  }
-
-export async function request<DataType = unknown, ErrorType = string>(
-	endpoint: string,
-	method: 'post' | 'get' | 'put' | 'delete',
-	body?: BodyInit,
-	options: RequestInit = {}
-): Promise<RequestResponse<DataType, ErrorType>> {
-	log.info(
-		'api-calls',
-		`[🐛 ${method}] ${endpoint} - ${
-			body ? `Size: ${formatBytes(JSON.stringify(body).length)}` : ''
-		}.`,
-		{ payload: body }
-	)
-	try {
-		const data = await fetch(endpoint, {
-			...options,
-			method,
-			headers: {
-				accept: 'application/json',
-				'content-type': 'application/json'
-			},
-			...(options.headers && { headers: options.headers }),
-			body
-		})
-		if (data.status >= 400 && data.status < 600) throw await data.text()
-		return { data: await data.json(), error: null }
-	} catch (error) {
-		return { data: null, error: error as ErrorType }
-	}
-}
-
-export async function post<DataType = unknown, ErrorType = string>(
-	endpoint: string,
-	body: BodyInit,
-	options: RequestInit = {}
-) {
-	return request<DataType, ErrorType>(endpoint, 'post', body, options)
-}
-
-export async function del<DataType = unknown, ErrorType = string>(
-	endpoint: string,
-	body: BodyInit,
-	options: RequestInit = {}
-) {
-	return request<DataType, ErrorType>(endpoint, 'delete', body, options)
-}
-
-export async function put<DataType = unknown, ErrorType = string>(
-	endpoint: string,
-	body: BodyInit,
-	options: RequestInit = {}
-) {
-	return request<DataType, ErrorType>(endpoint, 'put', body, options)
-}
-
-export async function get<DataType = unknown, ErrorType = string>(
-	endpoint: string,
-	body?: URLSearchParams,
-	options: RequestInit = {}
-) {
-	return request<DataType, ErrorType>(
-		`${endpoint}${body ? `?${body.toString()}` : ''}`,
-		'get',
-		undefined,
-		options
-	)
-}
 
 export function empty<T>(...args: T[]): boolean {
 	return args.some((item) => item === undefined || item === null || item === '')

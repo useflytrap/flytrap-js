@@ -8,7 +8,7 @@ import { getLimitedCaptures } from './captureLimits'
 import { shouldIgnoreCapture } from './captureIgnores'
 import { formatBytes } from './util'
 import { getUserId } from '../index'
-import { removeCircularsAndNonPojos, safeStringify } from './stringify'
+import { removeCircularsAndNonPojos, removeUnserializableValues, safeStringify } from './stringify'
 import { decryptCapture, encryptCapture } from './newEncryption'
 import { newRequest } from './requestUtils'
 
@@ -92,6 +92,10 @@ export async function saveCapture(
 			})
 		)
 	}
+
+	// Remove unserializable values
+	calls = removeUnserializableValues(calls)
+	functions = removeUnserializableValues(functions)
 
 	// Remove circulars and non-pojos
 	calls = removeCircularsAndNonPojos(calls)

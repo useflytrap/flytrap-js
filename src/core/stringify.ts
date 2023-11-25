@@ -4,7 +4,7 @@ import {
 	CapturedCall,
 	CapturedFunction
 } from './types'
-import { parse, serialize } from 'superjson'
+import { parse, serialize, stringify } from 'superjson'
 import { Err, Ok } from 'ts-results'
 import { FLYTRAP_UNSERIALIZABLE_VALUE } from './constants'
 import { createHumanLog } from './errors'
@@ -178,6 +178,41 @@ function removeNonPojos(obj: any): any {
 
 export function removeCircularsAndNonPojos<T>(object: T): T {
 	return removeNonPojos(removeCirculars(object))
+}
+
+function isSuperJsonSerializable(input: any) {
+	try {
+		stringify(input)
+		return true
+	} catch (e) {
+		return false
+	}
+}
+
+export function removeUnserializableValues(captures: (CapturedCall | CapturedFunction)[]) {
+	for (let i = 0; i < captures.length; i++) {
+		for (let j = 0; j < captures[i].invocations.length; j++) {
+			// Args
+			if (!isSuperJsonSerializable(captures[i].invocations[j].args)) {
+				captures[i].invocations[j].args = captures[i].invocations[j].args.map(
+					() => FLYTRAP_UNSERIALIZABLE_VALUE
+				)
+			}
+			// Output
+			if (!isSuperJsonSerializable(captures[i].invocations[j].output)) {
+				captures[i].invocations[j].output = FLYTRAP_UNSERIALIZABLE_VALUE
+			}
+			// Error
+			if (!isSuperJsonSerializable(captures[i].invocations[j].error)) {
+				captures[i].invocations[j].error = {
+					name: FLYTRAP_UNSERIALIZABLE_VALUE,
+					message: FLYTRAP_UNSERIALIZABLE_VALUE,
+					stack: FLYTRAP_UNSERIALIZABLE_VALUE
+				}
+			}
+		}
+	}
+	return captures
 }
 
 export function safeStringify<T>(object: T) {

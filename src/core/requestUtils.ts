@@ -11,9 +11,7 @@ export async function newRequest<DataType = unknown>(
 ) {
 	log.info(
 		'api-calls',
-		`[🐛 ${method}] ${endpoint} - ${
-			body ? `Size: ${formatBytes(JSON.stringify(body).length)}` : ''
-		}.`,
+		`[${method}] ${endpoint} - ${body ? `Size: ${formatBytes(JSON.stringify(body).length)}` : ''}.`,
 		{ payload: body }
 	)
 	try {
