@@ -11,6 +11,7 @@ import { getUserId } from '../index'
 import { removeCircularsAndNonPojos, removeUnserializableValues, safeStringify } from './stringify'
 import { decryptCapture, encryptCapture } from './encryption'
 import { request } from './requestUtils'
+import { copy } from 'copy-anything'
 
 function findWithLatestErrorInvocation<T extends CapturedCall | CapturedFunction>(
 	capturedFunctions: T[]
@@ -92,6 +93,10 @@ export async function saveCapture(
 			})
 		)
 	}
+
+	// Copy calls & functions
+	calls = copy(calls)
+	functions = copy(functions)
 
 	// Remove unserializable values
 	calls = removeUnserializableValues(calls)
