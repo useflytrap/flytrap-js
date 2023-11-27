@@ -14,7 +14,6 @@ import {
 	isCallExpression,
 	isIdentifier,
 	objectExpression,
-	V8IntrinsicIdentifier,
 	ObjectProperty,
 	VariableDeclarator,
 	MemberExpression,

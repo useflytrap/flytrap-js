@@ -1,6 +1,4 @@
-import { err, formatBytes, get, ok, tryCatch } from '../../core/util'
 import { getApiBase } from '../../core/config'
-import { log } from '../../core/logging'
 import { batchedArtifactsUpload } from './batchedArtifactsUpload'
 import { Artifact } from '../../core/types'
 import { newRequest } from '../../core/requestUtils'

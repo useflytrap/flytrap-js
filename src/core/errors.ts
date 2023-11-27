@@ -37,6 +37,12 @@ export const createHumanLog = createHumanLogs({
 			'because stringifying the capture failed. This usually happens due to complex classes like `Proxy`.',
 		encrypt_capture_failed: 'because encrypting the capture payload failed.',
 
+		// Replay errors
+		missing_replay_config_values:
+			'because your Flytrap configuration is missing one or more values. Required values for replaying are `captureId`, `secretApiKey` & `privateKey`. Please set them to enable replaying.',
+		replay_data_not_loaded:
+			'because replay data has not yet been loaded. Please wait a while and re-run the code.',
+
 		// Generic errors
 		generic_unexpected_error: 'because of an unexpected error.',
 
@@ -194,7 +200,7 @@ export const createHumanLog = createHumanLogs({
 			params: {},
 			actions: [
 				{
-					text: 'Learn more on the Flytrap configuration docs',
+					text: 'Learn more',
 					href: 'https://docs.useflytrap.com/config/introduction'
 				}
 			]

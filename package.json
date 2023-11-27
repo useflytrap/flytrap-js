@@ -20,6 +20,11 @@
 			"import": "./browser/index.mjs",
 			"require": "./browser/index.cjs",
 			"types": "./browser/index.d.ts"
+		},
+		"./replay": {
+			"import": "./replay/index.mjs",
+			"require": "./replay/index.cjs",
+			"types": "./replay/index.d.ts"
 		}
 	},
 	"main": "./dist/index.cjs",

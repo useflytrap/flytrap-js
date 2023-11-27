@@ -27,7 +27,7 @@ describe('generateKeyPair', () => {
 describe('encrypt', () => {
 	it('encrypts strings', async () => {
 		const plaintext = 'Hello, World!'
-		const keyPair = await generateKeyPair()
+		const keyPair = (await generateKeyPair()).unwrap()
 		const encrypted = (await encrypt(keyPair.publicKey, plaintext)).unwrap()
 		expect(encrypted.length).toBeGreaterThan(1)
 		expect(encrypted.slice(-2)).toBe('==')

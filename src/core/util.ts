@@ -4,6 +4,7 @@ import { FLYTRAP_REPLACE_VALUES, FLYTRAP_UNSERIALIZABLE_VALUE } from './constant
 import {
 	CaptureAmountLimit,
 	CaptureAmountLimitType,
+	CaptureDecryptedAndRevived,
 	CapturedCall,
 	CapturedFunction,
 	FlytrapMode
@@ -252,4 +253,17 @@ export function parseFilepathFromFunctionId(id: string) {
 
 	// Extract and return the file path
 	return Ok(id.substring(0, endIndex))
+}
+
+export function findLastInvocationById(
+	functionOrCallId: string,
+	capture: CaptureDecryptedAndRevived
+) {
+	const matchingFunction = capture.functions.find((f) => f.id === functionOrCallId)
+	const matchingCall = capture.calls.find((c) => c.id === functionOrCallId)
+	if (matchingFunction) {
+		return matchingFunction.invocations.sort((a, b) => a.timestamp - b.timestamp).at(-1)
+	} else if (matchingCall) {
+		return matchingCall.invocations.sort((a, b) => a.timestamp - b.timestamp).at(-1)
+	}
 }

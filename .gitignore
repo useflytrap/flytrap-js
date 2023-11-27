@@ -14,3 +14,7 @@ transform/*
 # Browser
 browser/*
 !browser/package.json
+
+# Replay
+replay/*
+!replay/package.json

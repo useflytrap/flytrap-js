@@ -6,9 +6,15 @@ import {
 	CapturedFunction,
 	FlytrapCallOptions
 } from './core/types'
-import { TryCatchResponse } from './core/util'
+import {
+	TryCatchResponse,
+	fillUnserializableFlytrapValues,
+	findLastInvocationById,
+	getMode
+} from './core/util'
 import { log } from './core/logging'
 import { saveCapture } from './core/newStorage'
+import { getCapture } from './core/noop'
 
 let _executingFunctions: CapturedFunction[] = []
 let _executionCursor = 1
@@ -62,6 +68,29 @@ export function ufc<T, O extends FlytrapCallOptions>(
 			}
 		}
 
+		if (getMode() === 'replay') {
+			const currentLoadedCaptureResult = getCapture()
+			if (currentLoadedCaptureResult.err) {
+				log.error('error', currentLoadedCaptureResult.val.toString())
+				return execFunctionCall(functionOrNamespace, opts.name, opts.args)
+			}
+
+			// @ts-expect-error: because of NO-OP
+			const lastInvocation = findLastInvocationById(opts.id, currentLoadedCaptureResult.val)
+
+			if (!lastInvocation) {
+				return execFunctionCall(functionOrNamespace, opts.name, opts.args)
+			}
+
+			const replayArgs = lastInvocation.args
+			const replayOutput = lastInvocation.output
+
+			// Merge replay & real args
+			const mergedArgs = fillUnserializableFlytrapValues(replayArgs, opts.args)
+			const realOutput = execFunctionCall(functionOrNamespace, opts.name, mergedArgs)
+			return fillUnserializableFlytrapValues(replayOutput, realOutput)
+		}
+
 		const output = execFunctionCall(functionOrNamespace, opts.name, opts.args)
 		saveOutputForFunctionCall(opts.id, output)
 		return output
@@ -86,6 +115,30 @@ export function uff<T extends AnyFunction>(func: T, id: string | null = null): T
 			})
 		}
 		_executionCursor--
+
+		if (getMode() === 'replay' && id) {
+			const currentLoadedCaptureResult = getCapture()
+			if (currentLoadedCaptureResult.err) {
+				// if (currentLoadedCaptureResult)
+				log.error('error', currentLoadedCaptureResult.val.toString())
+				const context = null
+				return func.apply(context ?? this, args)
+			}
+
+			// @ts-expect-error: because of NO-OP
+			const replayArgs = findLastInvocationById(id, currentLoadedCaptureResult.val)
+
+			if (!replayArgs) {
+				const context = null
+				return func.apply(context ?? this, args)
+			}
+
+			// Merge replay args & real args
+			const mergedArgs = fillUnserializableFlytrapValues(replayArgs, args)
+			// @ts-expect-error for some reason `this as any` still gives error
+			return func.apply(context ?? this, mergedArgs)
+		}
+
 		try {
 			const context = null
 			const functionOutput = func.apply(context ?? this, args)
