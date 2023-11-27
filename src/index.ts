@@ -121,28 +121,24 @@ export function uff<T extends AnyFunction>(func: T, id: string | null = null): T
 			if (currentLoadedCaptureResult.err) {
 				// if (currentLoadedCaptureResult)
 				log.error('error', currentLoadedCaptureResult.val.toString())
-				const context = null
-				return func.apply(context ?? this, args)
+				return func.apply(this, args)
 			}
 
 			// @ts-expect-error: because of NO-OP
 			const lastInvocation = findLastInvocationById(id, currentLoadedCaptureResult.val)
 
 			if (!lastInvocation) {
-				const context = null
-				return func.apply(context ?? this, args)
+				return func.apply(this, args)
 			}
 
 			// Merge replay args & real args
 			const replayArgs = lastInvocation.args
 			const mergedArgs = fillUnserializableFlytrapValues(replayArgs, args)
-			// @ts-expect-error for some reason `this as any` still gives error
-			return func.apply(context ?? this, mergedArgs)
+			return func.apply(this, mergedArgs)
 		}
 
 		try {
-			const context = null
-			const functionOutput = func.apply(context ?? this, args)
+			const functionOutput = func.apply(this, args)
 			if (id) {
 				saveOutputForFunction(id, functionOutput)
 			}
