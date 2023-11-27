@@ -135,6 +135,8 @@ export type FlytrapConfig = {
 	/**
 	 * Use Flytrap in environments with access to only browser APIs, eg. Cloudflare
 	 * Workers & Pages and Deno Deploy.
+	 *
+	 * @deprecated Starting from v0.8 the Flytrap SDK only uses browser & edge-friendly APIs, meaning that the `browser` option is no longer needed.
 	 */
 	browser?: true
 	transformOptions?: {

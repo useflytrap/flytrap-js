@@ -25,8 +25,10 @@ export async function request<DataType = unknown>(
 			...(options.headers && { headers: options.headers }),
 			body
 		})
-		if (data.status >= 400 && data.status < 600) throw await data.text()
-		return Ok(data.json() as DataType)
+		if (data.status >= 400 && data.status < 600) {
+			throw await data.text()
+		}
+		return Ok((await data.json()) as DataType)
 	} catch (error) {
 		return Err(
 			createHumanLog({

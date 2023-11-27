@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { REPLAY_NEXTJS_PORT, getBaseUrl, waitMs } from "./util";
 
-test('should replay front-end bug in nextjs example', async ({ page }) => {
+test.only('should replay front-end bug in nextjs example', async ({ page }) => {
 	// const capturesBefore = await fetchCaptures('sk_Y8dYLe5VoNJfDI_CPEqF8AqMTEwWAvTwBi7Ml-pN9bzWsgsP');
 	// Start from the index page (the baseURL is set via the webServer in the playwright.config.ts)
   await page.goto(getBaseUrl(REPLAY_NEXTJS_PORT));

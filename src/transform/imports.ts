@@ -67,14 +67,14 @@ export function addMissingFlytrapImports(
 			s.appendLeft(
 				startingIndex,
 				`\n\nconst { ${importsToBeAdded.join(', ')} } = require('${FLYTRAP_PACKAGE_NAME}${
-					config?.browser === true ? '/browser' : ''
+					config?.mode === 'replay' ? '/replay' : ''
 				}');\n\n`
 			)
 		} else {
 			s.appendLeft(
 				startingIndex,
 				`\n\nimport { ${importsToBeAdded.join(', ')} } from '${FLYTRAP_PACKAGE_NAME}${
-					config?.browser === true ? '/browser' : ''
+					config?.mode === 'replay' ? '/replay' : ''
 				}';\n\n`
 			)
 		}
