@@ -80,21 +80,21 @@ export const createHumanLog = createHumanLogs({
 		},
 		encrypt_failed_invalid_key_type: {
 			template:
-				'because encrypting failed due to invalid public key type. Expected "string", received "{publicKey}"',
+				'because encrypting failed due to invalid public key type. Expected "string", received "{publicKey}".',
 			params: {
 				publicKey: ''
 			}
 		},
 		decrypt_failed_invalid_ciphertext_type: {
 			template:
-				'because encrypting failed due to invalid ciphertext type. Expected "string", received "{ciphertext}".',
+				'because decrypting failed due to invalid ciphertext type. Expected "string", received "{ciphertext}".',
 			params: {
 				ciphertext: ''
 			}
 		},
 		decrypt_failed_invalid_key_type: {
 			template:
-				'because encrypting failed due to invalid private key type. Expected "string", received "{privateKey}"',
+				'because decrypting failed due to invalid private key type. Expected "string", received "{privateKey}".',
 			params: {
 				privateKey: ''
 			}

@@ -33,15 +33,27 @@ describe('encrypt', () => {
 		expect(encrypted.slice(-2)).toBe('==')
 	})
 	it('throws for anything other than a string', async () => {
-		const keyPair = await generateKeyPair()
+		const keyPair = (await generateKeyPair()).unwrap()
 		// @ts-expect-error
-		await expect(encrypt(keyPair.publicKey, {})).rejects.toThrow()
+		expect(toOneLine((await encrypt(keyPair.publicKey)).val.toString())).toBe(
+			toOneLine(
+				`because encrypting failed due to invalid plaintext type. Expected "string", received ",".`
+			)
+		)
 	})
 
 	it('throws for invalid public key', async () => {
 		// @ts-expect-error
-		await expect(encrypt({}, 'Hello, World!')).rejects.toThrow()
-		await expect(encrypt('invalid public key', 'Hello, World!')).rejects.toThrow()
+		expect(toOneLine((await encrypt({}, 'Hello, World!')).val.toString())).toBe(
+			toOneLine(
+				`because encrypting failed due to invalid public key type. Expected "string", received "[object Object]".`
+			)
+		)
+		expect(toOneLine((await encrypt('invalid public key', 'Hello, World!')).val.toString())).toBe(
+			toOneLine(
+				`because base64 decoding the value "," errored. Error: InvalidCharacterError: The string to be decoded is not correctly encoded.`
+			)
+		)
 	})
 
 	it('encrypts large amount of text', async () => {
@@ -59,10 +71,10 @@ describe('decrypt', () => {
 		const plaintext = 'Hello, World!'
 		const keyPair = (await generateKeyPair()).unwrap()
 		const encrypted = (await encrypt(keyPair.publicKey, plaintext)).unwrap()
-		const decrypted = await decrypt(keyPair.privateKey, encrypted)
+		const decrypted = await (await decrypt(keyPair.privateKey, encrypted)).unwrap()
 		expect(decrypted).toBe(plaintext)
 	})
-	it.only('throws when decrypting with wrong private key', async () => {
+	it('Returns Err result when decrypting with wrong private key', async () => {
 		const plaintext = 'Hello, World!'
 		const keyPair = (await generateKeyPair()).unwrap()
 		const encrypted = (await encrypt(keyPair.publicKey, plaintext)).unwrap()
@@ -75,15 +87,27 @@ describe('decrypt', () => {
 		// @ts-expect-error
 		expect(toOneLine((await decrypt({}, encrypted)).val.toString())).toBe(
 			toOneLine(
-				`because encrypting failed due to invalid private key type. Expected "string", received "[object Object]"`
+				`because decrypting failed due to invalid private key type. Expected "string", received "[object Object]".`
 			)
 		)
 	})
-	it('throws when input isnt a string', async () => {
+	it('Returns Err result when input isnt a string', async () => {
 		const keyPair = (await generateKeyPair()).unwrap()
+
 		// @ts-expect-error
-		await expect(decrypt(keyPair.privateKey, {})).rejects.toThrow()
-		await expect(decrypt(keyPair.privateKey, 'invalid ciphertext')).rejects.toThrow()
+		expect(toOneLine((await decrypt(keyPair.privateKey, {})).val.toString())).toBe(
+			toOneLine(
+				`because decrypting failed due to invalid ciphertext type. Expected "string", received "[object Object]".`
+			)
+		)
+
+		expect(
+			toOneLine((await decrypt(keyPair.privateKey, 'invalid ciphertext')).val.toString())
+		).toBe(
+			toOneLine(
+				`because base64 decoding the value "invalid ciphertext" errored. Error: InvalidCharacterError: The string to be decoded is not correctly encoded.`
+			)
+		)
 	})
 
 	it('decrypts large amount of text', async () => {

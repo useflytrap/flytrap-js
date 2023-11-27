@@ -116,7 +116,7 @@ describe('functions', () => {
 	}
 })
 
-it.only('callee and accessorKey are correct', () => {
+it('callee and accessorKey are correct', () => {
 	const accessorKeyFixtures = [
 		/* {
 			fixture: 'parseFloat',

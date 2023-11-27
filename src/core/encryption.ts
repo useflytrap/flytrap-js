@@ -164,8 +164,11 @@ export async function encrypt(publicKeyString: string, plaintext: string) {
 	for (let i = 0; i < data.length; i += MAX_CHUNK_SIZE) {
 		const chunk = data.subarray(i, i + MAX_CHUNK_SIZE)
 		const encryptedChunk = await encryptChunk(publicKey, chunk)
-		const base64Chunk = encodeBase64(encryptedChunk)
-		chunks.push(base64Chunk)
+		const base64ChunkResult = encodeBase64(encryptedChunk)
+		if (base64ChunkResult.err) {
+			return base64ChunkResult
+		}
+		chunks.push(base64ChunkResult.val)
 	}
 
 	return Ok(chunks.join(CHUNK_SEPARATOR))

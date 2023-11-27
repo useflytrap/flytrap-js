@@ -29,12 +29,14 @@ it('removes cyclical dependencies', () => {
 
 	const stringifiedWithoutCircular = safeStringify(a).unwrap()
 
-	expect(stringifiedWithoutCircular).toEqual('{"json":{"b":2,"c":{"d":{"e":null}}},"meta":{}}')
+	expect(stringifiedWithoutCircular).toEqual(
+		'{"json":{"b":2,"c":{"d":{"e":"FLYTRAP_UNSERIALIZABLE_VALUE"}}}}'
+	)
 	expect(SuperJSON.parse(stringifiedWithoutCircular)).toEqual({
 		b: 2,
 		c: {
 			d: {
-				e: null
+				e: FLYTRAP_UNSERIALIZABLE_VALUE
 			}
 		}
 	})
@@ -222,7 +224,7 @@ it('processCaptures', () => {
 	]) */
 })
 
-describe.only('new stringify', () => {
+describe('new stringify', () => {
 	// Circulars
 	const a = {
 		b: '23',
