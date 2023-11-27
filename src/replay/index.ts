@@ -3,7 +3,7 @@ import { Err, Ok } from 'ts-results'
 import { getLoadedConfig } from '../core/config'
 import { CaptureDecryptedAndRevived } from '../core/types'
 import { createHumanLog } from '../core/errors'
-import { fetchCapture } from '../core/newStorage'
+import { fetchCapture } from '../core/storage'
 import { log } from '../core/logging'
 import { safeParse, safeStringify } from '../core/stringify'
 

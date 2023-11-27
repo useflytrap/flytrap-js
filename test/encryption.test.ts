@@ -3,7 +3,7 @@ import crypto from 'crypto'
 // @ts-expect-error
 globalThis.crypto = crypto
 
-import { generateKeyPair, encrypt, decrypt } from '../src/core/newEncryption'
+import { generateKeyPair, encrypt, decrypt } from '../src/core/encryption'
 import { toOneLine } from './testUtils'
 
 const exampleCapture = `

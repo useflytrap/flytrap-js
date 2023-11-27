@@ -1,7 +1,7 @@
 import { Result } from 'ts-results'
 import { getApiBase } from '../../core/config'
 import { Artifact } from '../../core/types'
-import { newRequest } from '../../core/requestUtils'
+import { request } from '../../core/requestUtils'
 
 const MAX_BYTES_PER_BATCH = 3_000_000 // 3MB
 
@@ -44,7 +44,7 @@ export async function batchedArtifactsUpload(
 	const uploadBatchesRequests = await Promise.all(
 		batches.map(
 			async (batch) =>
-				await newRequest<string[]>(
+				await request<string[]>(
 					`${getApiBase()}/api/v1/artifacts/${projectId}`,
 					'POST',
 					JSON.stringify({

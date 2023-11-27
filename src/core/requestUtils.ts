@@ -3,7 +3,7 @@ import { log } from './logging'
 import { formatBytes } from './util'
 import { createHumanLog } from './errors'
 
-export async function newRequest<DataType = unknown>(
+export async function request<DataType = unknown>(
 	endpoint: string,
 	method: 'POST' | 'GET' | 'PUT' | 'DELETE',
 	body?: BodyInit,

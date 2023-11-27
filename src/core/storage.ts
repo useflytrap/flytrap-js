@@ -9,8 +9,8 @@ import { shouldIgnoreCapture } from './captureIgnores'
 import { formatBytes } from './util'
 import { getUserId } from '../index'
 import { removeCircularsAndNonPojos, removeUnserializableValues, safeStringify } from './stringify'
-import { decryptCapture, encryptCapture } from './newEncryption'
-import { newRequest } from './requestUtils'
+import { decryptCapture, encryptCapture } from './encryption'
+import { request } from './requestUtils'
 
 function findWithLatestErrorInvocation<T extends CapturedCall | CapturedFunction>(
 	capturedFunctions: T[]
@@ -31,7 +31,7 @@ function findWithLatestErrorInvocation<T extends CapturedCall | CapturedFunction
 }
 
 export async function fetchCapture(captureId: string, secretApiKey: string, privateKey: string) {
-	const fetchCaptureResult = await newRequest<DatabaseCapture>(
+	const fetchCaptureResult = await request<DatabaseCapture>(
 		`${getApiBase()}/api/v1/captures/${captureId}`,
 		'GET',
 		undefined,
@@ -140,7 +140,7 @@ export async function saveCapture(
 		return stringifiedPayload
 	}
 
-	const captureRequestResult = await newRequest<{ success: true }>(
+	const captureRequestResult = await request<{ success: true }>(
 		`${getApiBase()}/api/v1/captures`,
 		'POST',
 		stringifiedPayload.val,

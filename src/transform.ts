@@ -16,7 +16,7 @@ import { calculateSHA256Checksum, getFileExtension } from './transform/util'
 import { upsertArtifacts } from './transform/artifacts/cache'
 import { Artifact, FlytrapConfig } from './core/types'
 import { createHumanLog } from './core/errors'
-import { encrypt } from './core/newEncryption'
+import { encrypt } from './core/encryption'
 
 const transformedFiles = new Set<string>([])
 

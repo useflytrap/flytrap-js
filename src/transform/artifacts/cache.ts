@@ -1,10 +1,10 @@
 import { getApiBase } from '../../core/config'
 import { batchedArtifactsUpload } from './batchedArtifactsUpload'
 import { Artifact } from '../../core/types'
-import { newRequest } from '../../core/requestUtils'
+import { request } from '../../core/requestUtils'
 
 const getUploadedArtifacts = async (projectId: string, secretApiKey: string) => {
-	return await newRequest<{ checksum: string; filePath: string }[]>(
+	return await request<{ checksum: string; filePath: string }[]>(
 		`${getApiBase()}/api/v1/artifacts/${projectId}`,
 		'GET',
 		undefined,

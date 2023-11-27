@@ -13,7 +13,7 @@ import {
 	getMode
 } from './core/util'
 import { log } from './core/logging'
-import { saveCapture } from './core/newStorage'
+import { saveCapture } from './core/storage'
 import { getCapture } from './core/noop'
 
 let _executingFunctions: CapturedFunction[] = []
@@ -339,5 +339,5 @@ export function invariant(condition: any, message?: string): asserts condition {
 // Export
 export * from './core/config'
 export * from './core/types'
-export * from './core/newEncryption'
+export * from './core/encryption'
 export * from './core/stringify'
