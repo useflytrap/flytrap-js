@@ -251,21 +251,24 @@ export async function encryptCapture(
 	const linkedCalls = addLinksToCaptures(calls, { args, outputs })
 	const linkedFunctions = addLinksToCaptures(functions, { args, outputs })
 
-	const stringifyResult = Result.all(safeStringify(args), safeStringify(outputs))
+	const serializedError = serializeError(error)
+
+	const stringifyResult = Result.all(
+		safeStringify(args),
+		safeStringify(outputs),
+		error !== undefined ? safeStringify(serializedError) : Ok(undefined)
+	)
 
 	if (stringifyResult.err) {
 		return stringifyResult
 	}
 
-	const stringifiedErrorResult =
-		error === undefined ? Ok(undefined) : safeStringify(serializeError(error))
-
-	const [stringifiedArgs, stringifiedOutputs] = stringifyResult.val
+	const [stringifiedArgs, stringifiedOutputs, stringifiedError] = stringifyResult.val
 
 	const encryptionResult = Result.all(
 		await encrypt(publicKey, stringifiedArgs),
 		await encrypt(publicKey, stringifiedOutputs),
-		stringifiedErrorResult
+		stringifiedError !== undefined ? await encrypt(publicKey, stringifiedError) : Ok(undefined)
 	)
 
 	if (encryptionResult.err) {
@@ -273,8 +276,6 @@ export async function encryptCapture(
 	}
 
 	const [encryptedArgs, encryptedOutputs, encryptedError] = encryptionResult.val
-
-	const serializedError = serializeError(error)
 
 	return Ok({
 		capturedUserId,

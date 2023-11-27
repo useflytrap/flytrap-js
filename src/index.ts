@@ -126,14 +126,15 @@ export function uff<T extends AnyFunction>(func: T, id: string | null = null): T
 			}
 
 			// @ts-expect-error: because of NO-OP
-			const replayArgs = findLastInvocationById(id, currentLoadedCaptureResult.val)
+			const lastInvocation = findLastInvocationById(id, currentLoadedCaptureResult.val)
 
-			if (!replayArgs) {
+			if (!lastInvocation) {
 				const context = null
 				return func.apply(context ?? this, args)
 			}
 
 			// Merge replay args & real args
+			const replayArgs = lastInvocation.args
 			const mergedArgs = fillUnserializableFlytrapValues(replayArgs, args)
 			// @ts-expect-error for some reason `this as any` still gives error
 			return func.apply(context ?? this, mergedArgs)

@@ -76,7 +76,7 @@ const config: PlaywrightTestConfig = {
 			env: {
 				PORT: REPLAY_NEXTJS_PORT.toString(),
         FLYTRAP_MODE: 'replay',
-        FLYTRAP_CAPTURE_ID: 'e75be9f6-ad3a-4c1d-9848-9dc50e74583e'
+        FLYTRAP_CAPTURE_ID: 'bbcffc6b-13dc-4be5-b458-6b6eb1597ba9',
 			},
 			timeout: 120 * 1000,
 			reuseExistingServer: !process.env.CI,
