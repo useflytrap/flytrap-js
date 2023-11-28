@@ -49,7 +49,7 @@ test('should capture back-end bug in nextjs-api example', async ({ page }) => {
   const capturesAfter = await fetchCaptures('sk_3X-otNR_ZxIdw8cVxNbFcDivQF9B5Vw_bGu564jR35GMyVXX');
   const latestCapture = getLatestCapture(capturesAfter, startTime)
   expect(latestCapture.capturedUserId).toEqual('user-51');
-  expect(latestCapture.functionName).toEqual('User not found');
+  expect(latestCapture.functionName).toEqual('/api/user invariant state, user not found.');
   expect(capturesAfter.length).toBeGreaterThan(capturesBefore.length);
 })
 
