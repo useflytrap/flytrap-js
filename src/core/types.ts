@@ -161,6 +161,11 @@ export type FlytrapConfig = {
 	 * Use this to limit the size of your captures or limit the amount of files that context gets sent from.
 	 */
 	captureAmountLimit?: CaptureAmountLimit
+	/**
+	 * Allows you to disable the default hoisting behavior of function declarations that Flytrap enforces. If you disable function declaration hoisting, wrapped function declarations will no longer go to the top of their respective scopes, and you might run into runtime errors. [Learn more](https://docs.useflytrap.com/troubleshoot/runtime-problems#cannot-access-functionname-before-initialization)
+	 * @default false
+	 */
+	disableFunctionDeclarationHoisting?: boolean
 }
 
 export type ErrorType = {

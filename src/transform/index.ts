@@ -20,7 +20,8 @@ import {
 	isMemberExpression,
 	isNumericLiteral,
 	isStringLiteral,
-	Identifier
+	Identifier,
+	ImportDeclaration
 } from '@babel/types'
 import generate from '@babel/generator'
 
@@ -178,6 +179,44 @@ export function flytrapTransformUff(
 						)
 					])
 
+					// Handle function declaration hoisting
+					if (config?.disableFunctionDeclarationHoisting) {
+						path.replaceWith(transformedNode)
+						return
+					}
+
+					const scopePath = path.findParent((parentPath) => {
+						return parentPath.isBlockStatement() || parentPath.isProgram()
+					})
+
+					if (scopePath) {
+						let lastImportPath: NodePath<ImportDeclaration> | undefined = undefined
+						const bodyNode = scopePath.get('body')
+						if (Array.isArray(bodyNode)) {
+							bodyNode.forEach((bodyPath) => {
+								if (bodyPath.isImportDeclaration()) {
+									lastImportPath = bodyPath
+								}
+							})
+						} else if (bodyNode.isImportDeclaration()) {
+							lastImportPath = bodyNode
+						}
+
+						if (lastImportPath) {
+							// Insert after the last import statement
+							lastImportPath.insertAfter(transformedNode)
+						} else {
+							// @ts-expect-error: Otherwise, insert at the top of the current scope
+							scopePath.unshiftContainer('body', transformedNode)
+						}
+
+						// Remove the original function declaration
+						path.remove()
+						return
+					} else {
+						// @todo: add warning
+					}
+					// No hoisting if there is no parent scope
 					path.replaceWith(transformedNode)
 				}
 			}),

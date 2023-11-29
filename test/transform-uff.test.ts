@@ -205,3 +205,160 @@ describe('calls', () => {
 		})
 	}
 })
+
+const functionHoistingFixture: Record<string, TransformFixture[]> = {
+	'hoists top level scope': [
+		{
+			fixture: `
+			console.log(foo());
+			function foo() {}
+			`,
+			expected: `
+			const foo = uff(function foo() {}, '/file.js-_foo');
+			console.log(foo());
+			`
+		}
+	],
+	'hoists inside arrow functions': [
+		{
+			fixture: `
+			() => {
+				console.log(foo());
+				function foo() {}
+			}
+			`,
+			expected: `
+			uff(() => {
+				const foo = uff(function foo() {}, '/file.js-_anonymousFoo');
+				console.log(foo());
+			}, '/file.js-_anonymous')
+			`
+		}
+	],
+	'hoists inside function expressions': [
+		{
+			fixture: `
+			const x = function() {
+				console.log(foo());
+				function foo() {}
+			}
+			`,
+			expected: `
+			const x = uff(function() {
+				const foo = uff(function foo() {}, '/file.js-_anonymousFoo');
+				console.log(foo());
+			}, '/file.js-_x')
+			`
+		}
+	],
+	'hoists inside function declarations': [
+		{
+			fixture: `
+			function bar() {
+				console.log(foo());
+				function foo() {}
+			}
+			`,
+			expected: `
+			const bar = uff(function bar() {
+				const foo = uff(function foo() {}, '/file.js-_barFoo');
+				console.log(foo());
+			}, '/file.js-_bar')
+			`
+		}
+	],
+	'hoists inside block scopes': [
+		{
+			fixture: `
+			{
+				console.log(foo());
+				function foo() {}
+			}
+			`,
+			expected: `
+			{
+				const foo = uff(function foo() {}, '/file.js-_foo');
+				console.log(foo());
+			}`
+		}
+	],
+	'hoisted functions continue being traversed and transformed': [
+		{
+			fixture: `
+			console.log(foo())
+			function foo() {
+				const bar = () => {};
+			}
+			`,
+			expected: `
+			const foo = uff(function foo() {
+				const bar = uff(() => {}, '/file.js-_fooBar')
+			}, '/file.js-_foo')
+			console.log(foo())
+			`
+		}
+	],
+	'code doesnt get hoisted above directives': [
+		{
+			fixture: `
+			'use client';
+			
+			console.log(foo());
+			function foo() {}
+			`,
+			expected: `
+			'use client';
+
+			const foo = uff(function foo() {}, '/file.js-_foo');
+			console.log(foo());`
+		},
+		{
+			fixture: `
+			async function myAction() {
+				'use server'
+
+				console.log(foo());
+				function foo() {}
+			}`,
+			expected: `
+			const myAction = uff(async function myAction() {
+				'use server'
+
+				const foo = uff(function foo() {}, '/file.js-_myActionFoo');
+				console.log(foo());
+			}, '/file.js-_myAction')
+			`
+		}
+	],
+	'code doesnt get hoisted above imports': [
+		{
+			fixture: `
+			import { uff } from 'useflytrap';
+
+			console.log(foo());
+			function foo() {}
+			`,
+			expected: `
+			import { uff } from 'useflytrap';
+			const foo = uff(function foo() {}, '/file.js-_foo');
+			console.log(foo());
+			`
+		}
+	]
+}
+
+describe('function declaration hoisting', () => {
+	for (const [suiteName, suiteFixtures] of Object.entries(functionHoistingFixture)) {
+		it(suiteName, () => {
+			for (let i = 0; i < suiteFixtures.length; i++) {
+				const { code } = flytrapTransformUff(suiteFixtures[i].fixture, '/file.js', {
+					transformOptions: {
+						disableTransformation: ['call-expression']
+					}
+				})
+
+				expect(toOneLine(code)).toBe(toOneLine(suiteFixtures[i].expected))
+			}
+		})
+	}
+})
