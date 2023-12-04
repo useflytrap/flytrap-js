@@ -344,6 +344,34 @@ const functionHoistingFixture: Record<string, TransformFixture[]> = {
 			console.log(foo());
 			`
 		}
+	],
+	'hoists default & named exports': [
+		// default
+		{
+			fixture: `
+			console.log(foo())
+			export default function foo() {}`,
+			expected: `
+			export default uff(function foo() {}, '/file.js-_foo')
+			console.log(foo())`
+		},
+		{
+			fixture: `
+			console.log(foo())
+			export default function() {}`,
+			expected: `
+			export default uff(function() {}, '/file.js-_anonymous')
+			console.log(foo())`
+		},
+		// named
+		{
+			fixture: `
+			console.log(foo())
+			export function foo() {}`,
+			expected: `
+			export const foo = uff(function foo() {}, '/file.js-_foo')
+			console.log(foo())`
+		}
 	]
 }
 

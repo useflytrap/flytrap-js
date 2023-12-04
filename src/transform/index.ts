@@ -21,7 +21,13 @@ import {
 	isNumericLiteral,
 	isStringLiteral,
 	Identifier,
-	ImportDeclaration
+	ImportDeclaration,
+	exportDefaultDeclaration,
+	exportNamedDeclaration,
+	CallExpression,
+	VariableDeclaration,
+	ExportDefaultDeclaration,
+	ExportNamedDeclaration
 } from '@babel/types'
 import generate from '@babel/generator'
 
@@ -161,23 +167,35 @@ export function flytrapTransformUff(
 						// objectExpression([objectProperty(identifier('id'), stringLiteral(functionId))])
 					])
 
-					// Handle default export
-					if (path.parent.type === 'ExportDefaultDeclaration') {
-						path.replaceWith(useFlytrapCallExpressionNode)
-						return
-					}
+					let transformedNode:
+						| CallExpression
+						| VariableDeclaration
+						| ExportNamedDeclaration
+						| ExportDefaultDeclaration
+						| undefined = undefined
 
-					const transformedNode = variableDeclaration('const', [
-						variableDeclarator(
-							// @ts-ignore
-							identifier(path.node.id.name),
-							callExpression(identifier('uff'), [
-								toExpression(path.node),
-								stringLiteral(functionId)
-								// objectExpression([objectProperty(identifier('id'), stringLiteral(functionId))])
+					// Handle default / named export(s)
+					if (path.parent.type === 'ExportDefaultDeclaration') {
+						transformedNode = exportDefaultDeclaration(useFlytrapCallExpressionNode)
+					} else if (path.parent.type === 'ExportNamedDeclaration') {
+						transformedNode = exportNamedDeclaration(
+							variableDeclaration('const', [
+								variableDeclarator(
+									// @ts-ignore
+									identifier(path.node.id.name),
+									useFlytrapCallExpressionNode
+								)
 							])
 						)
-					])
+					} else {
+						transformedNode = variableDeclaration('const', [
+							variableDeclarator(
+								// @ts-ignore
+								identifier(path.node.id.name),
+								useFlytrapCallExpressionNode
+							)
+						])
+					}
 
 					// Handle function declaration hoisting
 					if (config?.disableFunctionDeclarationHoisting) {
@@ -214,7 +232,17 @@ export function flytrapTransformUff(
 						path.remove()
 						return
 					} else {
-						// @todo: add warning
+						const humanLog = createHumanLog({
+							events: ['transform_hoisting_failed'],
+							explanations: ['transform_parent_scope_not_found'],
+							solutions: ['open_issue', 'join_discord'],
+							params: {
+								fileNamePath: filePath,
+								functionName
+							}
+						})
+
+						log.warn('transform', humanLog.toString())
 					}
 					// No hoisting if there is no parent scope
 					path.replaceWith(transformedNode)

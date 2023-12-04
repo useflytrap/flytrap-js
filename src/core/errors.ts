@@ -15,6 +15,13 @@ export const createHumanLog = createHumanLogs({
 			template: 'Transforming file "{fileNamePath}" failed',
 			params: { fileNamePath: '' }
 		},
+		transform_hoisting_failed: {
+			template: `Hoisting function {functionName}() in file "{fileNamePath}" failed`,
+			params: {
+				functionName: '',
+				fileNamePath: ''
+			}
+		},
 		sending_artifacts_failed: 'Sending artifacts to the Flytrap API failed',
 		// Troubleshooting mode
 		troubleshooting_error_captured: 'An error was captured while in troubleshooting mode.'
@@ -28,7 +35,6 @@ export const createHumanLog = createHumanLogs({
 		config_esm_inside_commonjs:
 			'because your configuration file is using ESM, but your package is using CommonJS.',
 		config_no_default_export: 'because you forgot to export your config as a default export.',
-		transform_pkg_not_found: 'because we could not find a package.json.',
 		api_unauthorized:
 			'because your API key is invalid. Please make sure that you are correctly setting your `Authorization` header in the form "Bearer sk_...", and that your API key is correct.',
 		api_capture_error_response: 'because of an unexpected error.',
@@ -36,6 +42,11 @@ export const createHumanLog = createHumanLogs({
 		stringify_capture_failed:
 			'because stringifying the capture failed. This usually happens due to complex classes like `Proxy`.',
 		encrypt_capture_failed: 'because encrypting the capture payload failed.',
+
+		// Transform errors
+		transform_pkg_not_found: 'because we could not find a package.json.',
+		transform_parent_scope_not_found:
+			'because Flytrap could not find a parent scope for your function.',
 
 		// Replay errors
 		missing_replay_config_values:

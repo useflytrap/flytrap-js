@@ -494,6 +494,20 @@ describe('uff(Async) transform', () => {
 			`)
 		).toStrictEqual(
 			toOneLine(`
+		
+			const helloWorld = uff(function helloWorld() {
+				ufc(listUsers, {
+					id: '/file.js-call-_helloWorldListUsers',
+					args: [],
+					name: 'listUsers'
+				})
+				ufc(listUsers, {
+					id: '/file.js-call-_helloWorldListUsers2',
+					args: [],
+					name: 'listUsers'
+				})
+			}, '/file.js-_helloWorld');
+			
 			ufc(listUsers, {
 				id: '/file.js-call-_listUsers',
 				args: [],
@@ -505,18 +519,7 @@ describe('uff(Async) transform', () => {
 				name: 'listUsers'
 		})
 
-		const helloWorld = uff(function helloWorld() {
-					ufc(listUsers, {
-						id: '/file.js-call-_helloWorldListUsers',
-						args: [],
-						name: 'listUsers'
-					})
-					ufc(listUsers, {
-						id: '/file.js-call-_helloWorldListUsers2',
-						args: [],
-						name: 'listUsers'
-					})
-				}, '/file.js-_helloWorld');
+		
 		`)
 		)
 	})
