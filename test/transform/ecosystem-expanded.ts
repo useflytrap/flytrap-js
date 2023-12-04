@@ -7,7 +7,7 @@ import degit from 'degit'
 import { tryCatchSync } from '../../src/core/util'
 import { homedir } from 'os'
 import { FlytrapConfig } from '../../src/core/types'
-import { execaCommand } from 'execa'
+import { execaCommand, execaCommandSync } from 'execa'
 
 const FLYTRAP_SOURCE_ROOT = join(__dirname, '..', '..')
 export const reposPath = join(homedir(), 'flytrap-test', 'ecosystem-repos')
@@ -17,6 +17,18 @@ const getClonedRepoPath = (target: Target) => join(reposPath, target.repo.split(
 const getGeneratedRepoPath = (target: Target) => join(generatedPath, target.repo.split('/').at(-1)!)
 
 export const getRelativePath = (absolutePath: string) => absolutePath.replace(reposPath, '')
+
+function cloneRepository(repoName: string, remoteUrl: string, commitHash?: string) {
+	const clonedRepoPath = join(reposPath, repoName)
+	execaCommandSync(`git clone --depth 1 ${remoteUrl} ${clonedRepoPath}`)
+	// @todo: support for commit hashes
+	/* execaCommandSync(`git fetch --depth 1 origin ${commitHash}`, {
+		cwd: clonedRepoPath,
+	})
+	execaCommandSync(`git checkout ${commitHash}`, {
+		cwd: clonedRepoPath,
+	})*/
+}
 
 async function degitRepo(repoName: string) {
 	const [, name] = repoName.split('/')
@@ -33,8 +45,7 @@ export async function generateFixtures(targets: Record<string, Target>) {
 	for (const [targetName, target] of Object.entries(targets)) {
 		// mkdirSync(join(reposPath, targetName), { recursive: true })
 		mkdirSync(join(generatedPath, targetName), { recursive: true })
-		await degitRepo(target.repo)
-		renameSync(getClonedRepoPath(target), join(reposPath, targetName))
+		cloneRepository(targetName, target.repo)
 	}
 }
 
@@ -42,11 +53,14 @@ export type Target = {
 	repo: string
 	sourcePaths: string[]
 	excludePaths: string[]
-	// commands to run that need to
-	// complete with a zero exit code,
-	// eg. npm run build, npm test
-	runCommands: string[]
+	commands: {
+		command: string
+		expectedOutputs?: string[]
+		reject?: false
+	}[]
 	config: FlytrapConfig
+	// only run the targets with `only` === true
+	only?: true
 }
 
 const targets: Record<string, Target> = {
@@ -54,22 +68,18 @@ const targets: Record<string, Target> = {
 		repo: 'colinhacks/zod',
 		sourcePaths: ['src'],
 		excludePaths: ['src/__tests__', 'src/benchmarks'],
-		runCommands: [
-			"yarn install",
-			// "yarn install /Users/rasmus/Desktop/DEV/Web/flytrap-libs"
-			`yarn add ${FLYTRAP_SOURCE_ROOT}`,
-			"yarn build",
-			"yarn test"
+		commands: [
+			{ command: `yarn install` },
+			{ command: `yarn add ${FLYTRAP_SOURCE_ROOT}` },
+			{ command: `yarn build` },
+			{
+				command: `yarn test`,
+			},
 		],
 		config: {
 			publicApiKey: 'pk_...',
 			projectId: 'test-project',
-			transformOptions: {
-				disableTransformation: [
-					'function-declaration',
-					'call-expression'
-				]
-			}
+			transformOptions: {}
 		}
 	}, */
 
@@ -92,45 +102,99 @@ const targets: Record<string, Target> = {
 		config: {
 			publicApiKey: 'pk_...',
 			projectId: 'test-project',
-			transformOptions: {
-				disableTransformation: [
-					// 'function-declaration',
-					'call-expression'
-				]
-			}
+			transformOptions: {},
+			logging: []
 		}
 	}, */
 	svelte: {
-		repo: 'sveltejs/svelte',
+		// repo: 'sveltejs/svelte',
+		repo: 'git@github.com:sveltejs/svelte.git',
 		sourcePaths: ['packages/svelte/src'],
 		excludePaths: ['packages/svelte/tests'],
-		runCommands: [
-			'pnpm install',
-			`pnpm install ${FLYTRAP_SOURCE_ROOT} -w`,
-			'pnpm build',
-			'pnpm test'
+		commands: [
+			{ command: 'pnpm install' },
+			{ command: `pnpm install ${FLYTRAP_SOURCE_ROOT} -w` },
+			{
+				command: 'pnpm test',
+				//  Tests  2 failed | 3950 passed | 65 skipped
+				expectedOutputs: ['2 failed', '3950 passed']
+			}
 		],
 		config: {
 			publicApiKey: 'pk_...',
 			projectId: 'test-project',
-			transformOptions: {
-				disableTransformation: ['function-declaration']
-			}
+			transformOptions: {},
+			// disable logging
+			logging: []
 		}
-	}
-	/* prettier: {
-		repo: 'prettier/prettier#83b9f62',
+	},
+	prettier: {
+		// only: true,
+		// repo: 'prettier/prettier#56408635eb01002940513e89fa5e8d9c98c9a5af',
+		repo: 'git@github.com:prettier/prettier.git',
 		sourcePaths: ['src'],
 		excludePaths: ['tests'],
-		runCommands: ['npm install', `npm install ${FLYTRAP_SOURCE_ROOT}`, 'npm test'],
+
+		commands: [
+			{ command: `npm install --force` },
+			{ command: `npm install ${FLYTRAP_SOURCE_ROOT} --force` },
+			{ command: `npm run build` },
+			{
+				command: 'npm test',
+				expectedOutputs: ['21166 passed']
+			}
+		],
+
+		// runCommands: ['npm install', `npm install ${FLYTRAP_SOURCE_ROOT}`, 'npm test'],
 		config: {
 			publicApiKey: 'pk_...',
 			projectId: 'test-project',
-			transformOptions: {
-				disableTransformation: ['function-declaration']
-			}
+			transformOptions: {},
+			// disable logging
+			logging: []
 		}
-	} */
+	},
+	vue: {
+		only: true,
+		// repo: 'vuejs/core',
+		repo: 'git@github.com:vuejs/core.git',
+		sourcePaths: ['packages'],
+		excludePaths: [
+			...[
+				'compiler-core',
+				'compiler-dom',
+				'compiler-sfc',
+				'compiler-ssr',
+				'reactivity-transform',
+				'reactivity',
+				'runtime-core',
+				'runtime-dom',
+				'server-renderer',
+				'shared',
+				'vue-compat',
+				'vue'
+			].map((p) => `packages/${p}/__tests__`),
+			'packages/dts-built-test',
+			'packages/dts-test',
+			'packages/runtime-test'
+		],
+		commands: [
+			{ command: `pnpm install` },
+			{ command: `pnpm install -w ${FLYTRAP_SOURCE_ROOT}` },
+			{ command: `pnpm build` },
+			{
+				command: `pnpm test-unit`,
+				expectedOutputs: ['2815 passed']
+			}
+		],
+		config: {
+			publicApiKey: 'pk_...',
+			projectId: 'test-project',
+			transformOptions: {},
+			// disable logging
+			logging: []
+		}
+	}
 	// @todo:
 	// vue
 	// react
@@ -174,8 +238,12 @@ async function transformRepositoryUsingFlytrap(targetName: string, target: Targe
 				// @ts-expect-error: we extended types with `config`
 				target.config
 			)
-			// @ts-expect-error
-			copyToGeneratedFolder(filePath, transformedCode.code)
+
+			if (transformedCode) {
+				copyToGeneratedFolder(filePath, (transformedCode as any).code)
+			} else {
+				copyToGeneratedFolder(filePath, code)
+			}
 		} else {
 			copyToGeneratedFolder(filePath, code)
 		}
@@ -202,18 +270,36 @@ afterAll(() => {
 	// cleanupTargets()
 })
 
-for (const [targetName, targetDefinition] of Object.entries(targets)) {
+const onlyTarget = Object.entries(targets).find(([, target]) => target.only)
+const filteredTargets = onlyTarget ? [onlyTarget] : Object.entries(targets)
+
+for (const [targetName, targetDefinition] of filteredTargets) {
 	describe(`target -> ${targetName}`, () => {
-		// Running commands
-		for (let i = 0; i < targetDefinition.runCommands.length; i++) {
-			const command = targetDefinition.runCommands.at(i)!
+		// Running commands and their assertions
+		for (let i = 0; i < targetDefinition.commands.length; i++) {
+			const commandToRun = targetDefinition.commands[i].command
+			const expectedOutputs = targetDefinition.commands[i].expectedOutputs
 			it(
-				`command "${command}"`,
+				`runs command "${commandToRun}"`,
 				async () => {
-					const { stdout } = await execaCommand(command, {
-						cwd: join(generatedPath, targetName)
+					const { stdout, stderr } = await execaCommand(commandToRun, {
+						cwd: join(generatedPath, targetName),
+						reject: targetDefinition.commands[i].reject ?? true
 					})
-					console.log('Stdout: ', stdout.substring(0, 500))
+
+					const combinedOut = stderr + stdout
+
+					// Make assertions
+					if (expectedOutputs) {
+						for (let j = 0; j < expectedOutputs.length; j++) {
+							try {
+								expect(combinedOut.includes(expectedOutputs[j])).toBe(true)
+							} catch (e) {
+								console.error(`Expected output "${expectedOutputs[j]}" was missing in stdout.`)
+								throw e
+							}
+						}
+					}
 				},
 				{ timeout: 60_000 * 5 }
 			)

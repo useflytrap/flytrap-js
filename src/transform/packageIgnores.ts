@@ -53,7 +53,9 @@ const reservedWords = [
 	// Reserved as Keywords as of ES6
 	'null',
 	'true',
-	'false'
+	'false',
+	// For now, all `require()` get ignored because of NodeJS
+	'require'
 ]
 
 export function findIgnoredImports(code: string, packageIgnores: string[]) {

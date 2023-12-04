@@ -52,7 +52,8 @@ export function ufc<T, O extends FlytrapCallOptions>(
 		saveFunctionCall(opts)
 
 		const execFunctionCall = <T>(fn: T, name: string, args: any[]) => {
-			log.info('call-execution', `Executing function ${name}()`, { args })
+			// Needs to be wrapped with `String` to prevent Symbol's from throwing
+			log.info('call-execution', `Executing function ${String(name)}()`, { args })
 			// @ts-ignore
 			if (fn?.[name]) {
 				if (typeof fn === 'object' && typeof (fn as any)?.[name] === 'function') {
@@ -119,7 +120,6 @@ export function uff<T extends AnyFunction>(func: T, id: string | null = null): T
 		if (getMode() === 'replay' && id) {
 			const currentLoadedCaptureResult = getCapture()
 			if (currentLoadedCaptureResult.err) {
-				// if (currentLoadedCaptureResult)
 				log.error('error', currentLoadedCaptureResult.val.toString())
 				return func.apply(this, args)
 			}
