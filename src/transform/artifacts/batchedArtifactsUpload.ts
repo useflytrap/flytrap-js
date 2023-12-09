@@ -41,6 +41,9 @@ export async function batchedArtifactsUpload(
 		currentBatchSize += artifactSize
 	}
 
+	// Add any left overs in the current batch
+	batches.push(currentBatch)
+
 	const uploadBatchesRequests = await Promise.all(
 		batches.map(
 			async (batch) =>

@@ -86,7 +86,8 @@ export function addMissingFlytrapImports(
 export async function addFlytrapInit(
 	s: MagicString,
 	fileNamePath: string,
-	config: FlytrapConfig | undefined
+	config: FlytrapConfig | undefined,
+	globalBuildId?: string
 ) {
 	if (!config) return s
 
@@ -97,6 +98,11 @@ export async function addFlytrapInit(
 		delete copiedConfig['secretApiKey']
 		delete copiedConfig['privateKey']
 		copiedConfig['mode'] = 'capture'
+	}
+
+	// Set build ID
+	if (globalBuildId) {
+		copiedConfig.buildId = globalBuildId
 	}
 
 	// Append flytrap init

@@ -17,12 +17,32 @@ import { upsertArtifacts } from './transform/artifacts/cache'
 import { Artifact, FlytrapConfig } from './core/types'
 import { createHumanLog } from './core/errors'
 import { encrypt } from './core/encryption'
+import crypto from 'node:crypto'
 
 const transformedFiles = new Set<string>([])
+
+// @ts-ignore: polyfill so that when we're using the shared encryption code
+//						`crypto` is defined in the global context
+globalThis.crypto = crypto
+
+let globalBuildId: string | undefined = undefined
+
+const setBuildId = (buildId: string) => {
+	if (globalBuildId !== undefined) return
+	globalBuildId = buildId
+}
 
 export const unpluginOptions: UnpluginOptions = {
 	name: 'FlytrapTransformPlugin',
 	enforce: 'pre',
+	async buildStart() {
+		const config = await loadConfig()
+		// Generate build ID
+		const buildId =
+			config?.generateBuildId !== undefined ? await config.generateBuildId() : crypto.randomUUID()
+
+		setBuildId(buildId)
+	},
 	transformInclude(id) {
 		const { pathname, search } = parseURL(decodeURIComponent(pathToFileURL(id).href))
 		const { type } = parseQuery(search)
@@ -119,9 +139,7 @@ export const unpluginOptions: UnpluginOptions = {
 		addMissingFlytrapImports(ss, id, config)
 
 		// add Flytrap init
-		if (process.env.NODE_ENV !== 'test') {
-			await addFlytrapInit(ss, id, config)
-		}
+		await addFlytrapInit(ss, id, config, globalBuildId)
 
 		// Find package root
 		const pkgDirPath = packageDirectorySync()
@@ -243,7 +261,8 @@ export const unpluginOptions: UnpluginOptions = {
 						artifacts.push({
 							checksum,
 							encryptedSource: encryptedSource.val,
-							filePath: normalizeFilepath(pkgDirPath, transformedFilePath)
+							filePath: normalizeFilepath(pkgDirPath, transformedFilePath),
+							buildId: globalBuildId
 						})
 					} else {
 						const checksum = calculateSHA256Checksum(code)
@@ -259,10 +278,12 @@ export const unpluginOptions: UnpluginOptions = {
 						artifacts.push({
 							checksum,
 							encryptedSource: encryptedSource.val,
-							filePath: normalizeFilepath(pkgDirPath, transformedFilePath)
+							filePath: normalizeFilepath(pkgDirPath, transformedFilePath),
+							buildId: globalBuildId
 						})
 					}
 				} catch (e) {
+					console.error(e)
 					console.warn(`Extracting artifacts failed for file ${transformedFilePath}`)
 				}
 			}

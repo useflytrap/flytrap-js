@@ -597,9 +597,9 @@ it('transforms .vue files', async () => {
 		toOneLine(`
 			<script setup>
 			${getFlytrapRequiredImports()}
-
 			const foo = uff(function foo() {
 			}, '/app.vue-_foo');
+			setFlytrapConfig({"projectId":"flytrap","publicApiKey":"pk_some_api_key","mode":"capture"})
       </script>
 
       <template>

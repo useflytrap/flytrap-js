@@ -3,11 +3,15 @@ import { batchedArtifactsUpload } from './batchedArtifactsUpload'
 import { Artifact } from '../../core/types'
 import { request } from '../../core/requestUtils'
 
-const getUploadedArtifacts = async (projectId: string, secretApiKey: string) => {
+const getUploadedArtifacts = async (
+	projectId: string,
+	secretApiKey: string,
+	checksums: string[]
+) => {
 	return await request<{ checksum: string; filePath: string }[]>(
-		`${getApiBase()}/api/v1/artifacts/${projectId}`,
-		'GET',
-		undefined,
+		`${getApiBase()}/api/v1/artifacts/list-uploaded/${projectId}`,
+		'POST',
+		JSON.stringify({ checksums, projectId }),
 		{
 			headers: new Headers({
 				Authorization: `Bearer ${secretApiKey}`,
@@ -17,26 +21,18 @@ const getUploadedArtifacts = async (projectId: string, secretApiKey: string) => 
 	)
 }
 
-const getArtifactsToUpload = (
-	uploadedArtifacts: { checksum: string; filePath: string }[],
-	newArtifacts: Artifact[]
-) => {
-	type ArtifactApiReturn = { checksum: string; filePath: string }
-	const createUniqueKey = (artifact: ArtifactApiReturn) =>
-		`${artifact.checksum}-${artifact.filePath}`
-	// just take away items where checksum and filePath match
-	const existingKeys = new Set(uploadedArtifacts.map(createUniqueKey))
-
-	return newArtifacts.filter((artifact) => !existingKeys.has(createUniqueKey(artifact)))
-}
-
 export async function upsertArtifacts(
 	projectId: string,
 	secretApiKey: string,
 	artifacts: Artifact[]
 ) {
-	const artifactsToUpload = (await getUploadedArtifacts(projectId, secretApiKey)).map(
-		(uploadedArtifactsResult) => getArtifactsToUpload(uploadedArtifactsResult, artifacts)
+	const existingChecksums = artifacts.map((a) => a.checksum)
+	const artifactsToUpload = (
+		await getUploadedArtifacts(projectId, secretApiKey, existingChecksums)
+	).map((uploadedArtifactsResult) =>
+		artifacts.filter(
+			(a) => uploadedArtifactsResult.find((ua) => ua.checksum === a.checksum) === undefined
+		)
 	)
 
 	if (artifactsToUpload.err) {

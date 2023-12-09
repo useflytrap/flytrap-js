@@ -166,6 +166,31 @@ export type FlytrapConfig = {
 	 * @default false
 	 */
 	disableFunctionDeclarationHoisting?: boolean
+
+	/**
+	 * A build ID is used to link bug captures to their respective build artifacts and other
+	 * things such as a GitHub commit hash. A build ID can be useful for instance for understanding from which commit
+	 * the bug stemmed.
+	 *
+	 * @example
+	 * ```typescript
+	 * defineFlytrapConfig({
+	 * 	// associating your Vercel builds to a GitHub commit,
+	 * 	// so you can link bugs to commits.
+	 * 	generateBuildId: () => process.env.VERCEL_GIT_COMMIT_SHA
+	 * })
+	 * ```
+	 * [Learn more](https://docs.useflytrap.com/config/introduction)
+	 *
+	 * @returns a build ID for the current build.
+	 */
+	generateBuildId?: () => string | Promise<string>
+
+	/**
+	 * Get's replaced with whatever is returned from `generateBuildId` or a randomly generated UUID. The build ID can be used to link bug captures to for instance a specific GitHub commit.
+	 * @internal
+	 */
+	buildId?: string
 }
 
 export type ErrorType = {
@@ -268,6 +293,7 @@ export type Artifact = {
 	encryptedSource: string
 	checksum: string
 	filePath: string
+	buildId?: string
 }
 
 export type DatabaseArtifact = Artifact & {

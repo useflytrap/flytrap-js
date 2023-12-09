@@ -11,7 +11,7 @@ import { getUserId } from '../index'
 import { removeCircularsAndNonPojos, removeUnserializableValues, safeStringify } from './stringify'
 import { decryptCapture, encryptCapture } from './encryption'
 import { request } from './requestUtils'
-import { copy } from 'copy-anything'
+import { deserialize, serialize, stringify } from 'superjson'
 
 function findWithLatestErrorInvocation<T extends CapturedCall | CapturedFunction>(
 	capturedFunctions: T[]
@@ -94,17 +94,38 @@ export async function saveCapture(
 		)
 	}
 
-	// Copy calls & functions
-	calls = copy(calls)
-	functions = copy(functions)
+	function processCaptures(captures: any[]) {
+		for (let i = 0; i < captures.length; i++) {
+			captures[i] = deserialize(serialize(captures[i]))
+		}
+		return captures
+	}
 
 	// Remove unserializable values
 	calls = removeUnserializableValues(calls)
 	functions = removeUnserializableValues(functions)
+	calls = processCaptures(calls)
+	functions = processCaptures(functions)
 
-	// Remove circulars and non-pojos
-	calls = removeCircularsAndNonPojos(calls)
-	functions = removeCircularsAndNonPojos(functions)
+	// Remove the circular from `calls` and `functions`
+	for (let i = 0; i < calls.length; i++) {
+		for (let j = 0; j < calls[i].invocations.length; j++) {
+			calls[i].invocations[j].args = calls[i].invocations[j].args.map((a) =>
+				removeCircularsAndNonPojos(a)
+			)
+			calls[i].invocations[j].output = removeCircularsAndNonPojos(calls[i].invocations[j].output)
+		}
+	}
+	for (let i = 0; i < functions.length; i++) {
+		for (let j = 0; j < functions[i].invocations.length; j++) {
+			functions[i].invocations[j].args = functions[i].invocations[j].args.map((a) =>
+				removeCircularsAndNonPojos(a)
+			)
+			functions[i].invocations[j].output = removeCircularsAndNonPojos(
+				functions[i].invocations[j].output
+			)
+		}
+	}
 
 	// Handle capture amount limits
 	if (config.captureAmountLimit) {

@@ -60,7 +60,6 @@
 		"@babel/traverse": "^7.23.2",
 		"@babel/types": "^7.23.0",
 		"c12": "^1.4.1",
-		"copy-anything": "^3.0.5",
 		"fast-equals": "^5.0.1",
 		"human-logs": "^0.3.0",
 		"lilconfig": "^2.1.0",
