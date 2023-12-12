@@ -347,6 +347,7 @@ export async function decryptCapture(capture: DatabaseCapture, privateKey: strin
 	}
 
 	return Ok({
+		...capture,
 		projectId: capture.projectId,
 		functionName: capture.functionName,
 		calls: revivedCalls,
