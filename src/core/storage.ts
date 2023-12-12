@@ -139,9 +139,20 @@ export async function saveCapture(
 		}
 	}
 
+	if (!config.buildId) {
+		return Err(
+			createHumanLog({
+				events: ['capture_failed'],
+				explanations: ['build_id_undefined'],
+				solutions: ['configuration_fix']
+			})
+		)
+	}
+
 	const encryptedCaptureResult = await encryptCapture(
 		functions,
 		calls,
+		config.buildId,
 		config.publicApiKey,
 		config.projectId,
 		getUserId(),

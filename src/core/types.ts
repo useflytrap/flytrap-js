@@ -259,7 +259,7 @@ export type DatabaseCapture = {
 	capturedUserId?: string
 	source?: SourceType
 
-	buildId?: string
+	buildId: string
 }
 
 export type CaptureDecrypted = Omit<DatabaseCapture, 'args' | 'outputs'> & {

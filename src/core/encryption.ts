@@ -241,6 +241,7 @@ export async function decrypt(privateKeyString: string, ciphertext: string) {
 export async function encryptCapture(
 	functions: CapturedFunction[],
 	calls: CapturedCall[],
+	buildId: string,
 	publicKey: string,
 	projectId: string,
 	capturedUserId?: string,
@@ -287,6 +288,7 @@ export async function encryptCapture(
 		outputs: encryptedOutputs,
 		calls: linkedCalls,
 		functions: linkedFunctions,
+		buildId,
 		...(encryptedError && {
 			error: encryptedError
 		})

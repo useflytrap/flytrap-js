@@ -157,7 +157,8 @@ describe('captureIgnores', () => {
 		error: 'encrypted',
 		functions: [],
 		calls: [],
-		projectId: 'mock-project-id'
+		projectId: 'mock-project-id',
+		buildId: 'mock-build-id'
 	})
 
 	const mockCapturePayload = createMockCapturePayload({})
