@@ -30,6 +30,7 @@ let globalBuildId: string | undefined = undefined
 
 const setBuildId = (buildId: string) => {
 	if (globalBuildId !== undefined) return
+	log.info('transform', `Setting build ID to "${buildId}"`)
 	globalBuildId = buildId
 }
 
@@ -99,6 +100,12 @@ export const unpluginOptions: UnpluginOptions = {
 			config = loadedConfig
 		}
 		if (config) setFlytrapConfig(config)
+
+		// Check that build ID is set
+		if (globalBuildId === undefined) {
+			log.error('error', `Transform failed because build ID is undefined. Expected string.`)
+			return
+		}
 
 		// Exclude directories
 		if (config && config.excludeDirectories) {

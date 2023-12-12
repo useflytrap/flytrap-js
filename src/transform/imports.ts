@@ -87,7 +87,7 @@ export async function addFlytrapInit(
 	s: MagicString,
 	fileNamePath: string,
 	config: FlytrapConfig | undefined,
-	globalBuildId?: string
+	globalBuildId: string
 ) {
 	if (!config) return s
 
