@@ -18,6 +18,7 @@ import { Artifact, FlytrapConfig } from './core/types'
 import { createHumanLog } from './core/errors'
 import { encrypt } from './core/encryption'
 import crypto from 'node:crypto'
+import { batchedArtifactsUploadByBuildId } from './transform/artifacts/batchedArtifactsUpload'
 
 const transformedFiles = new Set<string>([])
 
@@ -288,11 +289,22 @@ export const unpluginOptions: UnpluginOptions = {
 				}
 			}
 
+			if (globalBuildId === undefined) {
+				const humanLog = createHumanLog({
+					events: ['sending_artifacts_failed'],
+					explanations: ['build_id_undefined'],
+					solutions: ['join_discord']
+				})
+				log.error('error', humanLog.toString())
+				return
+			}
+
 			// Upload new artifacts
-			const upsertArtifactsResult = await upsertArtifacts(
-				config.projectId,
+			const upsertArtifactsResult = await batchedArtifactsUploadByBuildId(
+				artifacts,
 				config.secretApiKey,
-				artifacts
+				config.projectId,
+				globalBuildId
 			)
 
 			if (upsertArtifactsResult.err) {
@@ -304,7 +316,7 @@ export const unpluginOptions: UnpluginOptions = {
 			} else {
 				log.info(
 					'storage',
-					`Pushed ${upsertArtifactsResult.val.length} artifacts to the Flytrap API.`
+					`Pushed ${upsertArtifactsResult.val.at(0)?.length} artifacts to the Flytrap API.`
 				)
 			}
 		}

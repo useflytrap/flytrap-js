@@ -47,6 +47,7 @@ export const createHumanLog = createHumanLogs({
 		transform_pkg_not_found: 'because we could not find a package.json.',
 		transform_parent_scope_not_found:
 			'because Flytrap could not find a parent scope for your function.',
+		build_id_undefined: 'because the ID of your build is `undefined`. String expected.',
 
 		// Replay errors
 		missing_replay_config_values:
