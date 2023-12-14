@@ -579,7 +579,7 @@ it('doesnt transform reserved words', () => {
 })
 
 // @todo: add this test back
-it.skip('transforms .vue files', async () => {
+it('transforms .vue files', async () => {
 	const fixture = `
 	<script setup>
 	function foo() {

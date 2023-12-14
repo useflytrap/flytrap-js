@@ -178,7 +178,7 @@ type ArtifactMarkingsTest = {
 	callDef?: string
 }
 
-function codeToArtifactMarkingsTest(fixture: string): ArtifactMarkingsTest {
+function codeToArtifactMarkingsTest(fixture: string): Omit<ArtifactMarkingsTest, 'fixture'> {
 	const artifactMarkingsResult = addArtifactMarkings(fixture, '/file.js')
 
 	if (artifactMarkingsResult.err) {
@@ -192,7 +192,6 @@ function codeToArtifactMarkingsTest(fixture: string): ArtifactMarkingsTest {
 	const argumentsMarking = markings.find((m) => m.type === 'arguments')
 	const paramsMarking = markings.find((m) => m.type === 'params')
 	return {
-		fixture,
 		...(functionMarking && {
 			functionDef: fixture.substring(functionMarking.startIndex, functionMarking.endIndex)
 		}),
@@ -216,15 +215,25 @@ const artifactMarkingsFixtures: Record<string, ArtifactMarkingsTest[]> = {
 			argumentsDef: '(a)'
 		},
 		{
+			fixture: 'console.log(a, b)',
+			callDef: 'console.log',
+			argumentsDef: '(a, b)'
+		},
+		{
 			fixture: 'console.log()',
 			callDef: 'console.log',
 			argumentsDef: '()'
 		},
 		// random spacing
 		{
-			fixture: 'console.log  (a) ',
+			fixture: 'console.log  (a)',
 			callDef: 'console.log',
 			argumentsDef: '(a)'
+		},
+		{
+			fixture: 'console.log  (a, b)',
+			callDef: 'console.log',
+			argumentsDef: '(a, b)'
 		},
 		{
 			fixture: 'console.log  () ',
@@ -323,11 +332,12 @@ const artifactMarkingsFixtures: Record<string, ArtifactMarkingsTest[]> = {
 	]
 }
 
-describe.skip('artifact markings new @todo add back', () => {
+describe('artifact markings new', () => {
 	for (const [suiteName, artifactTests] of Object.entries(artifactMarkingsFixtures)) {
 		it(suiteName, () => {
 			for (let i = 0; i < artifactTests.length; i++) {
-				expect(codeToArtifactMarkingsTest(artifactTests[i].fixture)).toEqual(artifactTests[i])
+				const { fixture, ...testWithoutFixture } = artifactTests[i]
+				expect(codeToArtifactMarkingsTest(artifactTests[i].fixture)).toEqual(testWithoutFixture)
 			}
 		})
 	}

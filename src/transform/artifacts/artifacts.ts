@@ -130,7 +130,6 @@ export function extractCurrentScope(
 }
 
 export function addArtifactMarkings(code: string, filePath: string, config?: FlytrapConfig) {
-	code = code.replaceAll('\t', '    ')
 	const functionOrCallIdsAndLocations: ArtifactMarking[] = []
 	const parseCodeResult = parseCode(code, filePath, getParseConfig(config?.babel?.parserOptions))
 
