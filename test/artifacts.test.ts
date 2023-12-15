@@ -6,7 +6,7 @@ import {
 } from '../src/transform/artifacts/artifacts'
 import babelTraverse from '@babel/traverse'
 import { parse } from '@babel/parser'
-import { flytrapTransformUff } from '../src/transform/index'
+import { flytrapTransformWithArtifacts } from '../src/transform/index'
 import { config } from 'dotenv'
 import { getParseConfig } from '../src/transform/config'
 import { _babelInterop } from '../src/transform/util'
@@ -155,18 +155,36 @@ function Home() {
 	function submit() {}
 	return null
 }
+
+export const DashboardLayout = ({ children }: any) => {
+	const supabaseClient = useSupabaseClient()
+	const user = useUser()
+
+	useEffect(() => {
+		console.log(user)
+	}, [user])
+
+	function signOut() {
+		console.log("Signed out")
+	}
+
+	return (
+		<h1>{user?.name}</h1>
+	)
+}
 `
 
 it('generates values same as transform', () => {
-	const artifactMarkingsResult = addArtifactMarkings(pageCodeFixture, '/file.js')
-	if (artifactMarkingsResult.err) {
-		throw new Error(artifactMarkingsResult.val.toString())
-	}
-	const transformedCode = flytrapTransformUff(pageCodeFixture, '/file.js')
+	const { code, artifactMarkings } = flytrapTransformWithArtifacts(
+		pageCodeFixture,
+		'/file.js',
+		undefined,
+		true
+	)
+	const functionIds = artifactMarkings.map((a) => a.functionOrCallId)
 
-	const functionIds = artifactMarkingsResult.val.map((e) => e.functionOrCallId).filter(Boolean)
 	for (let i = 0; i < functionIds.length; i++) {
-		expect(transformedCode.code).toContain(functionIds[i] as string)
+		expect(code.code).toContain(functionIds[i] as string)
 	}
 })
 
