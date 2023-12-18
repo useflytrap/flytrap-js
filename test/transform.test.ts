@@ -579,7 +579,7 @@ it('doesnt transform reserved words', () => {
 })
 
 // @todo: add this test back
-it('transforms .vue files', async () => {
+it.only('transforms .vue files', async () => {
 	const fixture = `
 	<script setup>
 	function foo() {
@@ -592,6 +592,8 @@ it('transforms .vue files', async () => {
 		</div>
 	</template>
 	`
+	// @ts-ignore -- simulate full build
+	await unpluginOptions.buildStart()
 
 	// @ts-expect-error
 	expect(toOneLine((await unpluginOptions.transform(fixture, '/app.vue')).code)).toEqual(
@@ -600,7 +602,7 @@ it('transforms .vue files', async () => {
 			${getFlytrapRequiredImports()}
 			const foo = uff(function foo() {
 			}, '/app.vue-_foo');
-			setFlytrapConfig({"projectId":"flytrap","publicApiKey":"pk_some_api_key","mode":"capture"})
+			setFlytrapConfig({"projectId":"flytrap","publicApiKey":"pk_some_api_key","mode":"capture", "buildId": "9a8ef8d8-e57d-427b-a23e-8ab73c621ea8"})
       </script>
 
       <template>

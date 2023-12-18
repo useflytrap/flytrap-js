@@ -45,6 +45,8 @@ for (const [targetName] of Object.entries(targets)) {
 		it(
 			`transforms ${targetName} without error`,
 			async () => {
+				// @ts-ignore -- simulate full build
+				await unpluginOptions.buildStart()
 				for (let i = 0; i < targets[targetName].sourcePaths.length; i++) {
 					for await (const filePath of walk(
 						join(targetPath, targetName, targets[targetName].sourcePaths[i])
