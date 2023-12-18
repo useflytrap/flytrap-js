@@ -90,6 +90,7 @@ export function getCapture() {
 	fetchCapture(captureId, secretApiKey, privateKey).then((captureResult) => {
 		if (captureResult.err) {
 			const errorLog = captureResult.val
+			// @ts-expect-error
 			errorLog.addEvents(['replay_failed'])
 			log.error('error', errorLog.toString())
 			return

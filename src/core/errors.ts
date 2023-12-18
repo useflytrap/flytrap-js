@@ -24,7 +24,10 @@ export const createHumanLog = createHumanLogs({
 		},
 		sending_artifacts_failed: 'Sending artifacts to the Flytrap API failed',
 		// Troubleshooting mode
-		troubleshooting_error_captured: 'An error was captured while in troubleshooting mode.'
+		troubleshooting_error_captured: 'An error was captured while in troubleshooting mode.',
+
+		// Encryption
+		get_crypto_failed: 'Getting the crypto instance failed'
 	},
 	explanations: {
 		database_unresponsive: 'because we could not connect to our database.',
@@ -127,6 +130,14 @@ export const createHumanLog = createHumanLogs({
 				encodeError: ''
 			}
 		},
+		crypto_instance_not_found: {
+			template: 'because we could not get the crypto instance for the "{env}" environment. {error}',
+			params: {
+				env: '',
+				error: ''
+			}
+		},
+		crypto_unsupported_env: 'because your environment is unsupported.',
 
 		// Object stringifying
 		stringify_object_failed: {

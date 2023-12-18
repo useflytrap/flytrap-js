@@ -66,7 +66,53 @@ export function decodeBase64(base64: string) {
 	}
 }
 
+export async function getCrypto() {
+	// For Web Workers and Browsers
+	if (typeof window !== 'undefined' && window.crypto) {
+		return Ok(window.crypto)
+	}
+
+	// For Web Workers where 'self' is defined
+	if (typeof self !== 'undefined' && 'crypto' in self) {
+		return Ok(self.crypto as Crypto)
+	}
+
+	// For Node.js
+	if (typeof globalThis !== 'undefined' && typeof process !== 'undefined') {
+		try {
+			// Dynamically import the 'crypto' module available in Node.js
+			return Ok(await import('crypto'))
+		} catch (e) {
+			return Err(
+				createHumanLog({
+					events: ['get_crypto_failed'],
+					explanations: ['crypto_instance_not_found'],
+					solutions: ['join_discord', 'open_issue'],
+					params: {
+						env: 'node-js',
+						error: `Error: ${String(e)}`
+					}
+				})
+			)
+		}
+	}
+
+	return Err(
+		createHumanLog({
+			events: ['get_crypto_failed'],
+			explanations: ['crypto_unsupported_env'],
+			solutions: ['join_discord', 'open_issue']
+		})
+	)
+}
+
 export async function generateKeyPair() {
+	const cryptoResult = await getCrypto()
+	if (cryptoResult.err) {
+		return cryptoResult
+	}
+
+	const crypto = cryptoResult.val
 	const keyPair = await crypto.subtle.generateKey(
 		{
 			name: 'RSA-OAEP',
@@ -99,6 +145,7 @@ export async function generateKeyPair() {
 }
 
 async function encryptChunk(publicKey: CryptoKey, chunk: Uint8Array): Promise<ArrayBuffer> {
+	const crypto = (await getCrypto()).unwrap()
 	return crypto.subtle.encrypt(
 		{
 			name: 'RSA-OAEP'
@@ -109,6 +156,7 @@ async function encryptChunk(publicKey: CryptoKey, chunk: Uint8Array): Promise<Ar
 }
 
 async function decryptChunk(privateKey: CryptoKey, chunk: ArrayBuffer): Promise<ArrayBuffer> {
+	const crypto = (await getCrypto()).unwrap()
 	return crypto.subtle.decrypt(
 		{
 			name: 'RSA-OAEP'
@@ -147,6 +195,11 @@ export async function encrypt(publicKeyString: string, plaintext: string) {
 		return publicKeyBufferResult
 	}
 
+	const cryptoResult = await getCrypto()
+	if (cryptoResult.err) {
+		return cryptoResult
+	}
+	const crypto = cryptoResult.val
 	const publicKey = await crypto.subtle.importKey(
 		'spki',
 		publicKeyBufferResult.val,
@@ -204,6 +257,12 @@ export async function decrypt(privateKeyString: string, ciphertext: string) {
 		return privateKeyBufferResult
 	}
 
+	const cryptoResult = await getCrypto()
+	if (cryptoResult.err) {
+		return cryptoResult
+	}
+
+	const crypto = cryptoResult.val
 	const privateKey = await crypto.subtle.importKey(
 		'pkcs8',
 		privateKeyBufferResult.val,

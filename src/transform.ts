@@ -13,18 +13,13 @@ import { readFileSync } from 'node:fs'
 import { excludeDirectoriesIncludeFilePath } from './transform/excludes'
 import { containsScriptTags, parseScriptTags } from './transform/parseScriptTags'
 import { calculateSHA256Checksum, getFileExtension } from './transform/util'
-import { upsertArtifacts } from './transform/artifacts/cache'
 import { Artifact, FlytrapConfig } from './core/types'
 import { createHumanLog } from './core/errors'
 import { encrypt } from './core/encryption'
-import crypto from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import { batchedArtifactsUploadByBuildId } from './transform/artifacts/batchedArtifactsUpload'
 
 const transformedFiles = new Set<string>([])
-
-// @ts-ignore: polyfill so that when we're using the shared encryption code
-//						`crypto` is defined in the global context
-globalThis.crypto = crypto
 
 let globalBuildId: string | undefined = undefined
 
@@ -39,9 +34,10 @@ export const unpluginOptions: UnpluginOptions = {
 	enforce: 'pre',
 	async buildStart() {
 		const config = await loadConfig()
+
 		// Generate build ID
 		const buildId =
-			config?.generateBuildId !== undefined ? await config.generateBuildId() : crypto.randomUUID()
+			config?.generateBuildId !== undefined ? await config.generateBuildId() : randomUUID()
 
 		setBuildId(buildId)
 	},
@@ -103,7 +99,10 @@ export const unpluginOptions: UnpluginOptions = {
 
 		// Check that build ID is set
 		if (globalBuildId === undefined) {
-			log.error('error', `Transform failed because build ID is undefined. Expected string.`)
+			log.error(
+				'error',
+				`Transform failed because build ID is undefined. Expected string. Are you returning undefined from your 'generateBuildId' function?`
+			)
 			return
 		}
 
@@ -261,6 +260,7 @@ export const unpluginOptions: UnpluginOptions = {
 
 						if (encryptedSource.err) {
 							const humanLog = encryptedSource.val
+							// @ts-expect-error
 							humanLog.addEvents(['sending_artifacts_failed'])
 							log.error('error', humanLog.toString())
 							return
@@ -278,6 +278,7 @@ export const unpluginOptions: UnpluginOptions = {
 
 						if (encryptedSource.err) {
 							const humanLog = encryptedSource.val
+							// @ts-expect-error
 							humanLog.addEvents(['sending_artifacts_failed'])
 							log.error('error', humanLog.toString())
 							return
