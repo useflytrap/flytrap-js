@@ -107,6 +107,7 @@ const targets: Record<string, Target> = {
 		}
 	}, */
 	svelte: {
+		only: true,
 		// repo: 'sveltejs/svelte',
 		repo: 'git@github.com:sveltejs/svelte.git',
 		sourcePaths: ['packages/svelte/src'],
@@ -125,7 +126,10 @@ const targets: Record<string, Target> = {
 			projectId: 'test-project',
 			transformOptions: {},
 			// disable logging
-			logging: []
+			logging: [],
+			generateBuildId() {
+				return '00000000-0000-0000-0000-000000000000'
+			}
 		}
 	},
 	prettier: {
@@ -155,7 +159,6 @@ const targets: Record<string, Target> = {
 		}
 	},
 	vue: {
-		only: true,
 		// repo: 'vuejs/core',
 		repo: 'git@github.com:vuejs/core.git',
 		sourcePaths: ['packages'],
@@ -192,7 +195,10 @@ const targets: Record<string, Target> = {
 			projectId: 'test-project',
 			transformOptions: {},
 			// disable logging
-			logging: []
+			logging: [],
+			generateBuildId() {
+				return '00000000-0000-0000-0000-000000000000'
+			}
 		}
 	}
 	// @todo:
@@ -212,6 +218,8 @@ const targets: Record<string, Target> = {
 }
 
 async function transformRepositoryUsingFlytrap(targetName: string, target: Target) {
+	// @ts-expect-error: simulate build start
+	await unpluginOptions.buildStart()
 	for await (const filePath of walk(join(reposPath, targetName))) {
 		const copyToGeneratedFolder = (filePath: string, code: string) => {
 			writeFileSync(join(generatedPath, getRelativePath(filePath)), code)

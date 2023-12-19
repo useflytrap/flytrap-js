@@ -5,7 +5,7 @@ import { CaptureDecryptedAndRevived } from '../core/types'
 import { createHumanLog } from '../core/errors'
 import { fetchCapture } from '../core/storage'
 import { log } from '../core/logging'
-import { safeParse, safeStringify } from '../core/stringify'
+import { newSafeParse, newSafeStringify } from '../core/stringify'
 
 function isBrowser(): boolean {
 	try {
@@ -32,7 +32,7 @@ const isomorphicStorage: IsomorphicStorage = {
 			if (savedCaptureString === null) {
 				return undefined
 			}
-			return safeParse<CaptureDecryptedAndRevived>(savedCaptureString).unwrap()
+			return newSafeParse<CaptureDecryptedAndRevived>(savedCaptureString).unwrap()
 		} else {
 			// NodeJS implementation
 			const { readFileSync } = require('fs')
@@ -42,7 +42,7 @@ const isomorphicStorage: IsomorphicStorage = {
 			try {
 				const captureStringified = readFileSync(join(getCacheDir(), `${captureId}.json`), 'utf-8')
 				if (captureStringified === null) return undefined
-				return safeParse<CaptureDecryptedAndRevived>(captureStringified).unwrap()
+				return newSafeParse<CaptureDecryptedAndRevived>(captureStringified).unwrap()
 			} catch (e) {
 				log.error('error', `Replaying error when fetching stored captures: Error: ${String(e)}`)
 				return undefined
@@ -52,7 +52,7 @@ const isomorphicStorage: IsomorphicStorage = {
 	setItem(captureId, capture) {
 		if (isBrowser()) {
 			// Implementation for browser
-			const stringifiedCapture = safeStringify(capture)
+			const stringifiedCapture = newSafeStringify(capture)
 			localStorage.setItem(captureId, stringifiedCapture.unwrap())
 		} else {
 			// NodeJS implementation
@@ -63,7 +63,7 @@ const isomorphicStorage: IsomorphicStorage = {
 			mkdirSync(getCacheDir(), { recursive: true })
 			return writeFileSync(
 				join(getCacheDir(), `${captureId}.json`),
-				safeStringify(capture).unwrap()
+				newSafeStringify(capture).unwrap()
 			)
 		}
 	}

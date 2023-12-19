@@ -5,8 +5,14 @@ import {
 	CapturedFunction,
 	DatabaseCapture
 } from './types'
-import { addLinksToCaptures, extractArgs, extractOutputs, reviveLinks } from './stringify'
-import { safeParse, safeStringify } from './stringify'
+import {
+	addLinksToCaptures,
+	extractArgs,
+	extractOutputs,
+	newSafeParse,
+	newSafeStringify,
+	reviveLinks
+} from './stringify'
 import { serializeError } from 'serialize-error'
 import { NO_SOURCE } from './constants'
 import { createHumanLog } from './errors'
@@ -314,9 +320,9 @@ export async function encryptCapture(
 	const serializedError = serializeError(error)
 
 	const stringifyResult = Result.all(
-		safeStringify(args),
-		safeStringify(outputs),
-		error !== undefined ? safeStringify(serializedError) : Ok(undefined)
+		newSafeStringify(args),
+		newSafeStringify(outputs),
+		error !== undefined ? newSafeStringify(serializedError) : Ok(undefined)
 	)
 
 	if (stringifyResult.err) {
@@ -356,13 +362,13 @@ export async function encryptCapture(
 
 export async function decryptCapture(capture: DatabaseCapture, privateKey: string) {
 	const decryptedAndParsedArgs = (await decrypt(privateKey, capture.args)).andThen(
-		safeParse<any[][]>
+		newSafeParse<any[][]>
 	)
 	const decryptedAndParsedOutputs = (await decrypt(privateKey, capture.outputs)).andThen(
-		safeParse<any[]>
+		newSafeParse<any[]>
 	)
 	const decryptedAndParsedError = capture.error
-		? (await decrypt(privateKey, capture.error)).andThen(safeParse<Error>)
+		? (await decrypt(privateKey, capture.error)).andThen(newSafeParse<Error>)
 		: undefined
 
 	const parseResults = Result.all(decryptedAndParsedArgs, decryptedAndParsedOutputs)

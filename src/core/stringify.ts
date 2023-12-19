@@ -4,7 +4,7 @@ import {
 	CapturedCall,
 	CapturedFunction
 } from './types'
-import { parse, serialize, stringify } from 'superjson'
+import SuperJSON, { parse, serialize, stringify } from 'superjson'
 import { Err, Ok } from 'ts-results'
 import { FLYTRAP_UNSERIALIZABLE_VALUE } from './constants'
 import { createHumanLog } from './errors'
@@ -109,10 +109,10 @@ export function reviveLinks(
 }
 
 export function getCaptureSize(capture: CapturedCall | CapturedFunction) {
-	return safeStringify(capture).map((stringifiedCapture) => stringifiedCapture.length)
+	return newSafeStringify(capture).map((stringifiedCapture) => stringifiedCapture.length)
 }
 
-function removeCirculars(obj: any, parentObjects: Set<any> = new Set()): any {
+export function removeCirculars(obj: any, parentObjects: Set<any> = new Set()): any {
 	if (obj !== null && typeof obj === 'object') {
 		if (parentObjects.has(obj)) {
 			return FLYTRAP_UNSERIALIZABLE_VALUE
@@ -186,6 +186,79 @@ function isSuperJsonSerializable(input: any) {
 		return true
 	} catch (e) {
 		return false
+	}
+}
+
+function isClassInstance<T>(obj: T): boolean {
+	return (
+		obj !== null &&
+		typeof obj === 'object' &&
+		!(obj instanceof Array) &&
+		obj.constructor &&
+		obj.constructor !== Object
+	)
+}
+
+export function superJsonRegisterCustom(superJsonInstance: typeof SuperJSON) {
+	// Functions
+	superJsonInstance.registerCustom<Function | string, string>(
+		{
+			isApplicable: (v): v is Function => typeof v === 'function',
+			serialize: () => FLYTRAP_UNSERIALIZABLE_VALUE,
+			deserialize: () => FLYTRAP_UNSERIALIZABLE_VALUE
+		},
+		'Functions'
+	)
+
+	// Unsupported classes
+	superJsonInstance.registerCustom<any, string>(
+		{
+			isApplicable: (v): v is any => {
+				const SUPPORTED_CLASSES = [Array, Date, RegExp, Set, Map, Error, URL]
+
+				const isSupportedClass = SUPPORTED_CLASSES.some(
+					(classInstance) => v instanceof classInstance
+				)
+				return isClassInstance(v) && !isSupportedClass
+			},
+			serialize: () => FLYTRAP_UNSERIALIZABLE_VALUE,
+			deserialize: () => FLYTRAP_UNSERIALIZABLE_VALUE
+		},
+		'Classes'
+	)
+}
+
+export function newSafeStringify<T>(object: T) {
+	superJsonRegisterCustom(SuperJSON)
+
+	try {
+		return Ok(SuperJSON.stringify(object))
+	} catch (e) {
+		return Err(
+			createHumanLog({
+				explanations: ['stringify_object_failed'],
+				params: {
+					stringifyError: String(e)
+				}
+			})
+		)
+	}
+}
+
+export function newSafeParse<T>(input: string) {
+	superJsonRegisterCustom(SuperJSON)
+
+	try {
+		return Ok(removeCirculars(SuperJSON.parse(input) as T))
+	} catch (e) {
+		return Err(
+			createHumanLog({
+				explanations: ['parsing_object_failed'],
+				params: {
+					parsingError: String(e)
+				}
+			})
+		)
 	}
 }
 
