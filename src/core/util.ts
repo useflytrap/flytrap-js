@@ -1,5 +1,5 @@
 import { Err, Ok, Result } from 'ts-results'
-import { getLoadedConfig } from './config'
+import { getApiBase, getLoadedConfig } from './config'
 import { FLYTRAP_REPLACE_VALUES, FLYTRAP_UNSERIALIZABLE_VALUE } from './constants'
 import {
 	CaptureAmountLimit,
@@ -265,5 +265,19 @@ export function findLastInvocationById(
 		return matchingFunction.invocations.sort((a, b) => a.timestamp - b.timestamp).at(-1)
 	} else if (matchingCall) {
 		return matchingCall.invocations.sort((a, b) => a.timestamp - b.timestamp).at(-1)
+	}
+}
+
+export async function errorTelemetry(message: string) {
+	try {
+		await fetch(`${getApiBase()}/api/telemetry`, {
+			method: 'POST',
+			body: JSON.stringify({
+				m: message,
+				p: getLoadedConfig()?.projectId
+			})
+		})
+	} catch {
+		// nothing
 	}
 }

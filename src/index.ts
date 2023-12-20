@@ -8,6 +8,7 @@ import {
 } from './core/types'
 import {
 	TryCatchResponse,
+	errorTelemetry,
 	fillUnserializableFlytrapValues,
 	findLastInvocationById,
 	getMode
@@ -155,7 +156,7 @@ export function uff<T extends AnyFunction>(func: T, id: string | null = null): T
 				log.info('capture', `Captured error in async function with ID "${id}".`, { error })
 
 				saveCapture(_executingFunctions, _functionCalls, error)
-					.then((saveResult) => {
+					.then(async (saveResult) => {
 						// Show user facing error here
 						if (saveResult?.err) {
 							const humanErrorLog = saveResult.val
@@ -164,10 +165,12 @@ export function uff<T extends AnyFunction>(func: T, id: string | null = null): T
 							// @ts-expect-error
 							humanErrorLog.addSolutions(['try_again_contact_us'])
 							log.error('error', humanErrorLog.toString())
+							await errorTelemetry(humanErrorLog.toString())
 						}
 					})
-					.catch((saveError) => {
+					.catch(async (saveError) => {
 						log.error('error', saveError)
+						await errorTelemetry(String(saveError))
 					})
 			}
 
