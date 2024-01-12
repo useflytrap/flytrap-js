@@ -41,9 +41,9 @@ export const clearCapturedCalls = () => {
 export type UfcReturnType<T, O extends FlytrapCallOptions> = T extends AnyFunction
 	? ReturnType<T>
 	: T extends object
-		? // @ts-expect-error
-			ReturnType<T[O['name']]>
-		: never
+	  ? // @ts-expect-error
+	    ReturnType<T[O['name']]>
+	  : never
 
 export function ufc<T, O extends FlytrapCallOptions>(
 	functionOrNamespace: T,
@@ -94,6 +94,19 @@ export function ufc<T, O extends FlytrapCallOptions>(
 		}
 
 		const output = execFunctionCall(functionOrNamespace, opts.name, opts.args)
+		if (output instanceof Promise) {
+			output.catch((error) => {
+				/**
+				 * Oops! We found a bug, let's send the current
+				 * executing function along with its data to the
+				 * Flytrap API.
+				 */
+				saveErrorForFunctionCall(opts.id, error)
+				log.info('capture', `Captured error in async function call with ID "${opts.id}".`, {
+					error
+				})
+			})
+		}
 		saveOutputForFunctionCall(opts.id, output)
 		return output
 	} catch (error) {
@@ -102,7 +115,7 @@ export function ufc<T, O extends FlytrapCallOptions>(
 		 * executing function along with its data to the
 		 * Flytrap API.
 		 */
-		saveErrorForFunctionCall(opts.id, error as Error)
+		saveErrorForFunctionCall(opts.id, error)
 		log.info('capture', `Captured error in function call with ID "${opts.id}".`, { error })
 		throw error
 	}
@@ -140,6 +153,16 @@ export function uff<T extends AnyFunction>(func: T, id: string | null = null): T
 
 		try {
 			const functionOutput = func.apply(this, args)
+			if (functionOutput instanceof Promise) {
+				functionOutput.catch((error) => {
+					/**
+					 * Oops! We found a bug, let's send the current
+					 * executing function along with its data to the
+					 * Flytrap API.
+					 */
+					sendCaptureToApi(id, error, true)
+				})
+			}
 			if (id) {
 				saveOutputForFunction(id, functionOutput)
 			}
@@ -151,32 +174,38 @@ export function uff<T extends AnyFunction>(func: T, id: string | null = null): T
 			 * executing function along with its data to the
 			 * Flytrap API.
 			 */
-			if (id) {
-				saveErrorForFunction(id, error)
-				log.info('capture', `Captured error in async function with ID "${id}".`, { error })
-
-				saveCapture(_executingFunctions, _functionCalls, error)
-					.then(async (saveResult) => {
-						// Show user facing error here
-						if (saveResult?.err) {
-							const humanErrorLog = saveResult.val
-							// @ts-expect-error
-							humanErrorLog.addEvents(['capture_failed'])
-							// @ts-expect-error
-							humanErrorLog.addSolutions(['try_again_contact_us'])
-							log.error('error', humanErrorLog.toString())
-							await errorTelemetry(humanErrorLog.toString())
-						}
-					})
-					.catch(async (saveError) => {
-						log.error('error', saveError)
-						await errorTelemetry(String(saveError))
-					})
-			}
+			sendCaptureToApi(id, error)
 
 			throw error
 		}
 	} as T
+}
+
+export function sendCaptureToApi(id: string | null, error: unknown, async = false) {
+	if (id) {
+		saveErrorForFunction(id, error)
+		log.info('capture', `Captured error in ${async ? 'async' : 'sync'} function with ID "${id}".`, {
+			error
+		})
+
+		saveCapture(_executingFunctions, _functionCalls, error)
+			.then(async (saveResult) => {
+				// Show user facing error here
+				if (saveResult?.err) {
+					const humanErrorLog = saveResult.val
+					// @ts-expect-error
+					humanErrorLog.addEvents(['capture_failed'])
+					// @ts-expect-error
+					humanErrorLog.addSolutions(['try_again_contact_us'])
+					log.error('error', humanErrorLog.toString())
+					await errorTelemetry(humanErrorLog.toString())
+				}
+			})
+			.catch(async (saveError) => {
+				log.error('error', saveError)
+				await errorTelemetry(String(saveError))
+			})
+	}
 }
 
 export async function capture(error: any): Promise<void> {

@@ -100,7 +100,7 @@ test('should capture front-end bug in sveltekit example', async ({ page }) => {
   const consolePromise = await page.waitForEvent('console')
   const consoleArgs = await consolePromise.args();
   
-  expect(await consoleArgs[0]?.jsonValue()).toContain(`[🐛 post] ${getApiBase()}/api/v1/captures`)
+  expect(await consoleArgs[0]?.jsonValue()).toContain(`[POST] ${getApiBase()}/api/v1/captures`)
   await waitMs(3_000);
 
   // Check the API for the capture
