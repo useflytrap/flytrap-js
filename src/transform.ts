@@ -175,6 +175,7 @@ export const unpluginOptions: UnpluginOptions = {
 					transformedScriptTagContents.code
 				)
 
+				log.info('transform-code', `${id} transformed: `, wholeSourceFile.toString())
 				transformedFiles.add(id)
 				return {
 					code: wholeSourceFile.toString(),
@@ -183,7 +184,13 @@ export const unpluginOptions: UnpluginOptions = {
 			}
 
 			transformedFiles.add(id)
-			return flytrapTransformUff(ss.toString(), normalizeFilepath(pkgDirPath, id), config)
+			const transformResult = flytrapTransformUff(
+				ss.toString(),
+				normalizeFilepath(pkgDirPath, id),
+				config
+			)
+			log.info('transform-code', `${id} transformed: `, transformResult.code)
+			return transformResult
 		} catch (e) {
 			if (process.env.NODE_ENV === 'test') {
 				throw e

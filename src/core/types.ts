@@ -36,6 +36,7 @@ export type LogGroup =
 	| 'identify'
 	| 'capture'
 	| 'transform'
+	| 'transform-code'
 
 export type CaptureIgnore = string | RegExp | ((payload: CapturePayload) => boolean)
 
