@@ -85,8 +85,8 @@ importers:
         specifier: ^2.21.0
         version: 2.21.0
       '@trpc/server':
-        specifier: ^10.21.1
-        version: 10.21.1
+        specifier: ^10.45.0
+        version: 10.45.0
       '@types/babel__generator':
         specifier: ^7.6.6
         version: 7.6.6
@@ -1969,8 +1969,8 @@ packages:
     engines: {node: '>= 10'}
     dev: true
 
-  /@trpc/server@10.21.1:
-    resolution: {integrity: sha512-4E4upTD2/Aq0Dm9HW4nbKSoIlqbV/ajRqNl1MCFBd9FjTv47qq2ncmAWMbb0AIVh2UV87PJlTjpPNNecRm6g9Q==}
+  /@trpc/server@10.45.0:
+    resolution: {integrity: sha512-2Fwzv6nqpE0Ie/G7PeS0EVR89zLm+c1Mw7T+RAGtU807j4oaUx0zGkBXTu5u9AI+j+BYNN2GZxJcuDTAecbr1A==}
     dev: true
 
   /@tsconfig/node18@18.2.2:
