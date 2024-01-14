@@ -8,7 +8,12 @@ import { getLimitedCaptures } from './captureLimits'
 import { shouldIgnoreCapture } from './captureIgnores'
 import { formatBytes } from './util'
 import { clearCapturedCalls, clearCapturedFunctions, getUserId } from '../index'
-import { newSafeParse, newSafeStringify, removeCirculars } from './stringify'
+import {
+	newSafeParse,
+	newSafeStringify,
+	removeCirculars,
+	removeUnserializableValues
+} from './stringify'
 import { decryptCapture, encryptCapture } from './encryption'
 import { request } from './requestUtils'
 
@@ -92,6 +97,9 @@ export async function saveCapture(
 			})
 		)
 	}
+
+	calls = removeUnserializableValues(calls)
+	functions = removeUnserializableValues(functions)
 
 	const processCallsResult = newSafeStringify(calls).andThen(newSafeParse<CapturedCall[]>)
 	if (processCallsResult.err) {

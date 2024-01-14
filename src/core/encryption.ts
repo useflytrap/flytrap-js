@@ -73,16 +73,14 @@ export function decodeBase64(base64: string) {
 }
 
 export async function getCrypto() {
-	// For Web Workers and Browsers
-	if (typeof window !== 'undefined' && window.crypto) {
-		return Ok(window.crypto)
-	}
-
 	// For Web Workers where 'self' is defined
 	if (typeof self !== 'undefined' && 'crypto' in self) {
 		return Ok(self.crypto as Crypto)
 	}
-
+	// For Web Workers and Browsers
+	if (typeof window !== 'undefined' && window.crypto) {
+		return Ok(window.crypto)
+	}
 	// For Node.js
 	if (typeof globalThis !== 'undefined' && typeof process !== 'undefined') {
 		try {

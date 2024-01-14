@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, test } from 'vitest'
 import { addLinks, extractArgs, extractOutputs, reviveLinks } from '../src/core/stringify'
 import {
 	FLYTRAP_CLASS,

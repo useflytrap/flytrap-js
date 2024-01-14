@@ -228,6 +228,33 @@ export function superJsonRegisterCustom(superJsonInstance: typeof SuperJSON) {
 	)
 }
 
+export function removeUnserializableValues(callsOrFunctions: (CapturedCall | CapturedFunction)[]) {
+	for (let i = 0; i < callsOrFunctions.length; i++) {
+		for (let j = 0; j < callsOrFunctions[i].invocations.length; j++) {
+			const invocation = callsOrFunctions[i].invocations[j]
+			// Args
+			if (newSafeStringify(invocation.args).err) {
+				invocation.args = invocation.args.map(() => FLYTRAP_UNSERIALIZABLE_VALUE)
+			}
+
+			// Output
+			if (newSafeStringify(invocation.output).err) {
+				invocation.output = FLYTRAP_UNSERIALIZABLE_VALUE
+			}
+
+			// Error
+			if (newSafeStringify(invocation.error).err) {
+				invocation.error = {
+					name: FLYTRAP_UNSERIALIZABLE_VALUE,
+					message: FLYTRAP_UNSERIALIZABLE_VALUE,
+					stack: FLYTRAP_UNSERIALIZABLE_VALUE
+				}
+			}
+		}
+	}
+	return callsOrFunctions
+}
+
 export function newSafeStringify<T>(object: T) {
 	superJsonRegisterCustom(SuperJSON)
 
@@ -260,32 +287,6 @@ export function newSafeParse<T>(input: string) {
 			})
 		)
 	}
-}
-
-export function removeUnserializableValues(captures: (CapturedCall | CapturedFunction)[]) {
-	for (let i = 0; i < captures.length; i++) {
-		for (let j = 0; j < captures[i].invocations.length; j++) {
-			// Args
-			if (!isSuperJsonSerializable(captures[i].invocations[j].args)) {
-				captures[i].invocations[j].args = captures[i].invocations[j].args.map(
-					() => FLYTRAP_UNSERIALIZABLE_VALUE
-				)
-			}
-			// Output
-			if (!isSuperJsonSerializable(captures[i].invocations[j].output)) {
-				captures[i].invocations[j].output = FLYTRAP_UNSERIALIZABLE_VALUE
-			}
-			// Error
-			if (!isSuperJsonSerializable(captures[i].invocations[j].error)) {
-				captures[i].invocations[j].error = {
-					name: FLYTRAP_UNSERIALIZABLE_VALUE,
-					message: FLYTRAP_UNSERIALIZABLE_VALUE,
-					stack: FLYTRAP_UNSERIALIZABLE_VALUE
-				}
-			}
-		}
-	}
-	return captures
 }
 
 export function safeStringify<T>(object: T) {

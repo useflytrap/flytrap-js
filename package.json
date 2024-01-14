@@ -82,7 +82,6 @@
 		"@rollup/plugin-node-resolve": "^15.1.0",
 		"@rollup/plugin-replace": "^5.0.2",
 		"@supabase/supabase-js": "^2.21.0",
-		"@trpc/server": "^10.21.1",
 		"@types/babel__generator": "^7.6.6",
 		"@types/babel__traverse": "^7.18.3",
 		"@types/degit": "^2.8.3",
