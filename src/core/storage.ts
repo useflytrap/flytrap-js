@@ -115,8 +115,6 @@ export async function saveCapture(
 	calls = removeUnserializableValues(calls)
 	functions = removeUnserializableValues(functions)
 
-	console.log(4)
-
 	const processCallsResult = newSafeStringify(calls).andThen(newSafeParse<CapturedCall[]>)
 	if (processCallsResult.err) {
 		return processCallsResult
