@@ -19,10 +19,6 @@ export function getLimitedCaptures(
 		return parsedCaptureAmountLimit
 	}
 
-	// Sort functions and calls
-	functions = sortCapturesByTimestamp(functions)
-	calls = sortCapturesByTimestamp(calls)
-
 	const combinedFunctionsAndCalls = [...functions, ...calls]
 	const sortedCombined = sortCapturesByTimestamp(combinedFunctionsAndCalls)
 
@@ -78,21 +74,18 @@ export function getLimitedCaptures(
 			duplicateCalls.push(callEntry)
 
 			const captureSize = getCaptureSize(callEntry)
-			if (captureSize.err) {
-				return captureSize
+			if (captureSize.err === false) {
+				sizeCounter += captureSize.val
 			}
-
-			sizeCounter += captureSize.val
 		}
 		if (functionEntry) {
 			duplicateFunctions.push(functionEntry)
 
 			const captureSize = getCaptureSize(functionEntry)
-			if (captureSize.err) {
-				return captureSize
-			}
 
-			sizeCounter += captureSize.val
+			if (captureSize.err === false) {
+				sizeCounter += captureSize.val
+			}
 		}
 	}
 

@@ -229,10 +229,20 @@ export function parseCaptureAmountLimit(captureAmountLimit: CaptureAmountLimit) 
 
 export function sortCapturesByTimestamp(captures: (CapturedFunction | CapturedCall)[]) {
 	return captures.sort((a, b) => {
-		// Find the maximum timestamp in the invocations of a
-		const maxTimestampA = Math.max(...a.invocations.map((invoc) => invoc.timestamp))
-		// Find the maximum timestamp in the invocations of b
-		const maxTimestampB = Math.max(...b.invocations.map((invoc) => invoc.timestamp))
+		let maxTimestampA = -Infinity
+		let maxTimestampB = -Infinity
+
+		for (let i = 0; i < a.invocations.length; i++) {
+			if (a.invocations[i].timestamp > maxTimestampA) {
+				maxTimestampA = a.invocations[i].timestamp
+			}
+		}
+
+		for (let i = 0; i < b.invocations.length; i++) {
+			if (b.invocations[i].timestamp > maxTimestampB) {
+				maxTimestampB = b.invocations[i].timestamp
+			}
+		}
 		// Sort based on the maximum timestamps
 		return maxTimestampA - maxTimestampB
 	})

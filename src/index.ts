@@ -228,6 +228,7 @@ export async function capture(error: any): Promise<void> {
 		// @ts-expect-error
 		errorLog.addSolutions(['try_again_contact_us'])
 		log.error('error', errorLog.toString())
+		await errorTelemetry(errorLog.toString())
 	}
 }
 

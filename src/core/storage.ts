@@ -98,8 +98,24 @@ export async function saveCapture(
 		)
 	}
 
+	// Handle capture amount limits (by default limit at 1mb)
+	const limitedCapturesResult = getLimitedCaptures(
+		calls,
+		functions,
+		config?.captureAmountLimit ?? '1mb'
+	)
+
+	if (limitedCapturesResult.err) {
+		log.error('error', limitedCapturesResult.val.toString())
+	} else {
+		calls = limitedCapturesResult.val.calls
+		functions = limitedCapturesResult.val.functions
+	}
+
 	calls = removeUnserializableValues(calls)
 	functions = removeUnserializableValues(functions)
+
+	console.log(4)
 
 	const processCallsResult = newSafeStringify(calls).andThen(newSafeParse<CapturedCall[]>)
 	if (processCallsResult.err) {
@@ -130,20 +146,6 @@ export async function saveCapture(
 			)
 			functions[i].invocations[j].output = removeCirculars(functions[i].invocations[j].output)
 		}
-	}
-
-	// Handle capture amount limits (by default limit at 4mb)
-	const limitedCapturesResult = getLimitedCaptures(
-		calls,
-		functions,
-		config?.captureAmountLimit ?? '4mb'
-	)
-
-	if (limitedCapturesResult.err) {
-		log.error('error', limitedCapturesResult.val.toString())
-	} else {
-		calls = limitedCapturesResult.val.calls
-		functions = limitedCapturesResult.val.functions
 	}
 
 	if (!config.buildId) {
