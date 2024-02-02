@@ -55,12 +55,18 @@ export async function fetchCapture(captureId: string, secretApiKey: string, priv
 	return await decryptCapture(fetchCaptureResult.val, privateKey)
 }
 
+let isSavingCapture = false
+
 export async function saveCapture(
 	functions: CapturedFunction[],
 	calls: CapturedCall[],
 	error?: any,
 	config?: FlytrapConfig
 ) {
+	if (isSavingCapture === true) {
+		return Ok(undefined)
+	}
+	isSavingCapture = true
 	if (!config) {
 		config = getLoadedConfig()
 	}
@@ -80,6 +86,7 @@ export async function saveCapture(
 		})
 
 		log.error('error', troubleshootingErrorLog.toString())
+		isSavingCapture = false
 		return Err(troubleshootingErrorLog)
 	}
 
@@ -89,6 +96,7 @@ export async function saveCapture(
 		!config.projectId ||
 		empty(config.publicApiKey, config.projectId)
 	) {
+		isSavingCapture = false
 		return Err(
 			createHumanLog({
 				events: ['capture_failed'],
@@ -117,6 +125,7 @@ export async function saveCapture(
 
 	const processCallsResult = newSafeStringify(calls).andThen(newSafeParse<CapturedCall[]>)
 	if (processCallsResult.err) {
+		isSavingCapture = false
 		return processCallsResult
 	}
 
@@ -124,6 +133,7 @@ export async function saveCapture(
 		newSafeParse<CapturedFunction[]>
 	)
 	if (processFunctionsResult.err) {
+		isSavingCapture = false
 		return processFunctionsResult
 	}
 
@@ -147,6 +157,7 @@ export async function saveCapture(
 	}
 
 	if (!config.buildId) {
+		isSavingCapture = false
 		return Err(
 			createHumanLog({
 				events: ['capture_failed'],
@@ -167,6 +178,7 @@ export async function saveCapture(
 	)
 
 	if (encryptedCaptureResult.err) {
+		isSavingCapture = false
 		return encryptedCaptureResult
 	}
 
@@ -181,6 +193,7 @@ export async function saveCapture(
 	// Then payload gets stringified
 	const stringifiedPayload = newSafeStringify(encryptedCaptureResult.val)
 	if (stringifiedPayload.err) {
+		isSavingCapture = false
 		return stringifiedPayload
 	}
 
@@ -197,6 +210,7 @@ export async function saveCapture(
 	)
 
 	if (captureRequestResult.err) {
+		isSavingCapture = false
 		return captureRequestResult
 	}
 
@@ -210,5 +224,6 @@ export async function saveCapture(
 	clearCapturedFunctions()
 	clearCapturedCalls()
 
+	isSavingCapture = false
 	return captureRequestResult
 }

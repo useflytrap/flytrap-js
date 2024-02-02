@@ -18,3 +18,7 @@ browser/*
 # Replay
 replay/*
 !replay/package.json
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

@@ -19,7 +19,7 @@ export default defineConfig({
 		},
 		exclude: [
 			...configDefaults.exclude,
-			'e2e/*'
+			'e2e/**'
 		]
 	}
 })
