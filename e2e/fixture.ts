@@ -19,7 +19,7 @@ export type NextTestOptions = {
 
 export function createNextTest({
   path,
-  timeout = ms("2 minutes"),
+  timeout = ms("5 minutes"),
   port = 3000,
   dependencies,
   showStdout = false,
@@ -36,14 +36,16 @@ export function createNextTest({
   })
 
   test.setTimeout(timeout)
-  // baseTest.setTimeout(timeout)
+
+  const idOr = (id?: string) => id === undefined ? '' : `${id}: `;
 
   // Start Next.js dev server
   test.beforeAll(async ({}, testInfo) => {
     testInfo.setTimeout(timeout)
     tempTestPath = await createTempTestFolder(path)
-    if (id) {
-      console.log(id, "CREATED TEMP FOLDER")
+
+    if (debug) {
+      console.log(`${idOr(id)} Created temp folder`)
     }
 
     // Patch dependencies
@@ -51,8 +53,8 @@ export function createNextTest({
 
     // Run install
     await pnpmInstall(tempTestPath, showStdout)
-    if (id) {
-      console.log(id, "RAN PNPM INSTALL")
+    if (debug) {
+      console.log(`${idOr(id)} Finished "pnpm install"`)
     }
 
     // Start dev server
@@ -64,13 +66,13 @@ export function createNextTest({
       }
     })
 
-    if (id) {
-      console.log(id, "STARTED SERVER")
+    if (debug) {
+      console.log(`${idOr(id)} Started server`)
     }
 
     if (true) {
-      serverProcess.stdout?.on('data', (data: Buffer | string) => console.log(id, data.toString()))
-      serverProcess.stderr?.on('data', (data: Buffer | string) => console.error(id, data.toString()))
+      serverProcess.stdout?.on('data', (data: Buffer | string) => console.log(idOr(id), data.toString()))
+      serverProcess.stderr?.on('data', (data: Buffer | string) => console.error(idOr(id), data.toString()))
     }
     
     await new Promise<undefined>(resolve => {
@@ -80,8 +82,9 @@ export function createNextTest({
         }
       });
     });
-    if (id) {
-      console.log(id, "SERVER READY")
+
+    if (debug) {
+      console.log(`${idOr(id)} Server ready`)
     }
   })
 

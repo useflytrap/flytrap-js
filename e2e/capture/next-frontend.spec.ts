@@ -7,9 +7,12 @@ const { test } = createNextTest({
 	path: join(getDirname(import.meta.url), '..', '..', 'examples', 'with-nextjs'),
 	port: 3001,
   id: 'next-frontend',
-	dependencies: {
-		"useflytrap": `link:${join(getDirname(import.meta.url), '..', '..')}`
-	}
+  debug: true,
+  ...(process.env.CI === undefined && {
+    dependencies: {
+      "useflytrap": `link:${join(getDirname(import.meta.url), '..', '..')}`
+    }
+  })
 })
 
 test("captures frontend bug in next.js", async ({ page }) => {

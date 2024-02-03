@@ -6,9 +6,12 @@ import { getDirname } from "../../utils";
 const { test } = createNextTest({
 	path: join(getDirname(import.meta.url), 'app'),
 	port: 3004,
-	dependencies: {
-		"useflytrap": `link:${join(getDirname(import.meta.url), '..', '..', '..')}`
-	}
+	debug: true,
+	...(process.env.CI === undefined && {
+		dependencies: {
+			"useflytrap": `link:${join(getDirname(import.meta.url), '..', '..', '..')}`
+		}
+	})
 })
 
 test("flood of captures are ignored and doesn't affect app performance", async ({ page }) => {

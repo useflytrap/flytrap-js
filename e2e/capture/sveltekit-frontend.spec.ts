@@ -6,9 +6,12 @@ const { test } = createNextTest({
 	path: join(getDirname(import.meta.url), '..', '..', 'examples', 'with-sveltekit'),
 	port: 5173, // should be 3003
   id: 'sveltekit-frontend',
-	dependencies: {
-		"useflytrap": `link:${join(getDirname(import.meta.url), '..', '..')}`
-	}
+  debug: true,
+  ...(process.env.CI === undefined && {
+    dependencies: {
+      "useflytrap": `link:${join(getDirname(import.meta.url), '..', '..')}`
+    }
+  })
 })
 
 test("captures frontend bug in svelte kit", async ({ page }) => {

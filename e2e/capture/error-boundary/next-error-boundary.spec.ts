@@ -7,9 +7,12 @@ const { test } = createNextTest({
 	path: join(getDirname(import.meta.url), 'app'),
 	port: 3005,
 	id: 'error-boundary',
-	dependencies: {
-		"useflytrap": `link:${join(getDirname(import.meta.url), '..', '..', '..')}`
-	}
+	debug: true,
+	...(process.env.CI === undefined && {
+		dependencies: {
+			"useflytrap": `link:${join(getDirname(import.meta.url), '..', '..', '..')}`
+		}
+	})
 })
 
 test("server component error boundary sends captures", async ({ page }) => {

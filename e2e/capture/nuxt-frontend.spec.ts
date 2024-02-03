@@ -7,9 +7,12 @@ const { test } = createNextTest({
 	port: 3002,
 	serverReadyString: 'warmed up',
   id: 'nuxt-frontend',
-	dependencies: {
-		"useflytrap": `link:${join(getDirname(import.meta.url), '..', '..')}`
-	}
+  debug: true,
+  ...(process.env.CI === undefined && {
+    dependencies: {
+      "useflytrap": `link:${join(getDirname(import.meta.url), '..', '..')}`
+    }
+  })
 })
 
 test("captures frontend bug in nuxt", async ({ page }) => {
