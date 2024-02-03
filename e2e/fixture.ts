@@ -13,6 +13,8 @@ export type NextTestOptions = {
   serverReadyString?: string;
   showStdout?: boolean;
   timeout?: number;
+  id?: string;
+  debug?: boolean;
 } & Pick<PackageJson.PackageJsonStandard, 'dependencies'>;
 
 export function createNextTest({
@@ -21,7 +23,9 @@ export function createNextTest({
   port = 3000,
   dependencies,
   showStdout = false,
-  serverReadyString = 'ready'
+  serverReadyString = 'ready',
+  debug,
+  id
 }: NextTestOptions) {
   let serverProcess: ExecaChildProcess<string> | undefined;
   let tempTestPath: string | undefined;
@@ -36,16 +40,20 @@ export function createNextTest({
 
   // Start Next.js dev server
   test.beforeAll(async ({}, testInfo) => {
-    // console.log("TEST INFO", testInfo.timeout)
-    // testInfo.setTimeout(120_000_000)
     testInfo.setTimeout(timeout)
     tempTestPath = await createTempTestFolder(path)
+    if (id) {
+      console.log(id, "CREATED TEMP FOLDER")
+    }
 
     // Patch dependencies
     mergePackageJson(tempTestPath, { dependencies });
 
     // Run install
     await pnpmInstall(tempTestPath, showStdout)
+    if (id) {
+      console.log(id, "RAN PNPM INSTALL")
+    }
 
     // Start dev server
     serverProcess = execa("pnpm", ["dev"], {
@@ -56,9 +64,13 @@ export function createNextTest({
       }
     })
 
-    if (showStdout) {
-      serverProcess.stdout?.on('data', (data: Buffer | string) => console.log(data.toString()))
-      serverProcess.stderr?.on('data', (data: Buffer | string) => console.error(data.toString()))
+    if (id) {
+      console.log(id, "STARTED SERVER")
+    }
+
+    if (true) {
+      serverProcess.stdout?.on('data', (data: Buffer | string) => console.log(id, data.toString()))
+      serverProcess.stderr?.on('data', (data: Buffer | string) => console.error(id, data.toString()))
     }
     
     await new Promise<undefined>(resolve => {
@@ -68,6 +80,9 @@ export function createNextTest({
         }
       });
     });
+    if (id) {
+      console.log(id, "SERVER READY")
+    }
   })
 
   test.afterAll(async () => {

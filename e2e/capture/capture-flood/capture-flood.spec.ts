@@ -5,15 +5,11 @@ import { getDirname } from "../../utils";
 
 const { test } = createNextTest({
 	path: join(getDirname(import.meta.url), 'app'),
+	port: 3004,
 	dependencies: {
 		"useflytrap": `link:${join(getDirname(import.meta.url), '..', '..', '..')}`
 	}
 })
-
-// @todo: we need to install `useflytrap` by path
-// to test out the bug fix.
-// "useflytrap": "link:/Users/rasmus/Desktop/DEV/Web/flytrap-libs",
-
 
 test("flood of captures are ignored and doesn't affect app performance", async ({ page }) => {
 	await page.goto('/');

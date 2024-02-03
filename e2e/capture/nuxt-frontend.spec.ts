@@ -6,6 +6,7 @@ const { test } = createNextTest({
 	path: join(getDirname(import.meta.url), '..', '..', 'examples', 'with-nuxt'),
 	port: 3002,
 	serverReadyString: 'warmed up',
+  id: 'nuxt-frontend',
 	dependencies: {
 		"useflytrap": `link:${join(getDirname(import.meta.url), '..', '..')}`
 	}

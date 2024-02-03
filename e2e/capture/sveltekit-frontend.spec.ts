@@ -5,6 +5,7 @@ import { fetchCaptures, getApiBaseUrl, getDirname, getLatestCapture, getNextCons
 const { test } = createNextTest({
 	path: join(getDirname(import.meta.url), '..', '..', 'examples', 'with-sveltekit'),
 	port: 5173, // should be 3003
+  id: 'sveltekit-frontend',
 	dependencies: {
 		"useflytrap": `link:${join(getDirname(import.meta.url), '..', '..')}`
 	}
