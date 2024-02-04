@@ -45,6 +45,7 @@ export function mergePackageJson(tempTestPath: string, updatedPackageJson: Packa
 	const packageJson = JSON.parse(readFileSync(packageJsonPath).toString())
 
 	for (const [key, value] of Object.entries(updatedPackageJson)) {
+		if (value === undefined) continue
 		if (typeof value === "object") {
 			packageJson[key] = {
 				...packageJson[key],
