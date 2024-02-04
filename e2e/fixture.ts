@@ -19,7 +19,7 @@ export type NextTestOptions = {
 
 export function createNextTest({
   path,
-  timeout = ms("5 minutes"),
+  timeout = ms("1 minute"),
   port = 3000,
   dependencies,
   showStdout = false,
