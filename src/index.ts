@@ -239,9 +239,15 @@ export function identify(userId: string) {
 
 const addFunctionInvocation = (functionId: string, invocation: CaptureInvocation) => {
 	log.info('function-execution', `Executing function with ID "${functionId}"`)
-	const matchingExecutingFunction = _executingFunctions.find((execFn) => execFn.id === functionId)
+	// const matchingExecutingFunction = _executingFunctions.find((execFn) => execFn.id === functionId)
+	const matchingExecutingFunction = getFunctionById(functionId)
 	if (matchingExecutingFunction) {
 		matchingExecutingFunction.invocations.push(invocation)
+
+		// Only keep 10 latest invocations
+		while (matchingExecutingFunction.invocations.length > 10) {
+			matchingExecutingFunction.invocations.shift()
+		}
 		return
 	}
 
@@ -252,12 +258,20 @@ const addFunctionInvocation = (functionId: string, invocation: CaptureInvocation
 }
 
 function saveFunctionCall(opts: FlytrapCallOptions) {
-	const matchingFunctionCall = _functionCalls.find((call) => call.id === opts.id)
+	// const matchingFunctionCall = _functionCalls.find((call) => call.id === opts.id)
+	const matchingFunctionCall = getFunctionCallById(opts.id)
 	if (matchingFunctionCall) {
+		// Limit invocations
 		matchingFunctionCall.invocations.push({
 			...opts,
 			timestamp: Date.now()
 		})
+
+		// Only keep 10 latest invocations
+		while (matchingFunctionCall.invocations.length > 10) {
+			matchingFunctionCall.invocations.shift()
+		}
+
 		return
 	}
 
@@ -274,36 +288,66 @@ function saveFunctionCall(opts: FlytrapCallOptions) {
 
 function saveOutputForFunctionCall<T>(functionCallId: string, output: T) {
 	// @ts-ignore for some reason this isn't included
-	const functionCallIndex = _functionCalls.findLastIndex((call) => call.id === functionCallId)
+	// const functionCallIndex = _functionCalls.findLastIndex((call) => call.id === functionCallId)
+	const functionCall = getFunctionCallById(functionCallId)
 
-	if (functionCallIndex === -1) {
+	// console.log("function calls invocations length", _functionCalls.reduce((acc, curr) => acc + curr.invocations.length, 0))
+
+	if (functionCall === undefined) {
 		log.error('error', `Saving output for nonexistent function call with ID "${functionCallId}"`)
 		return
 	}
 
-	const lastInvocation = _functionCalls[functionCallIndex].invocations.at(-1)
+	/* if (functionCallIndex === -1) {
+		log.error('error', `Saving output for nonexistent function call with ID "${functionCallId}"`)
+		return
+	} */
+
+	const lastInvocation = functionCall.invocations.at(-1)
 	if (lastInvocation) lastInvocation.output = output
 }
 
 function saveOutputForFunction<T>(functionId: string, output: T) {
 	// @ts-ignore for some reason this isn't included
-	const functionIndex = _executingFunctions.findLastIndex((func) => func.id === functionId)
+	// const functionIndex = _executingFunctions.findLastIndex((func) => func.id === functionId)
+	const functionDef = getFunctionById(functionId)
 
-	if (functionIndex === -1) {
+	if (functionDef === undefined) {
 		log.error('error', `Saving output for nonexistent function with ID "${functionId}"`)
 		return
 	}
 
-	const lastInvocation = _executingFunctions[functionIndex].invocations.at(-1)
+	/* if (functionIndex === -1) {
+		log.error('error', `Saving output for nonexistent function with ID "${functionId}"`)
+		return
+	} */
+
+	// console.log("functions invocations length", _executingFunctions.reduce((acc, curr) => acc + curr.invocations.length, 0))
+
+	// const lastInvocation = _executingFunctions[functionIndex].invocations.at(-1)
+	const lastInvocation = functionDef.invocations.at(-1)
 	if (lastInvocation) lastInvocation.output = output
 }
 
 function getFunctionCallById(functionCallId: string) {
-	return _functionCalls.find((call) => call.id === functionCallId)
+	for (let i = 0; i < _functionCalls.length; i++) {
+		if (_functionCalls[i].id === functionCallId) {
+			return _functionCalls[i]
+		}
+	}
+	return undefined
+	// return _functionCalls.find((call) => call.id === functionCallId)
 }
 
 function getFunctionById(functionId: string) {
-	return _executingFunctions.find((func) => func.id === functionId)
+	for (let i = 0; i < _executingFunctions.length; i++) {
+		if (_executingFunctions[i].id === functionId) {
+			return _executingFunctions[i]
+		}
+	}
+
+	return undefined
+	// return _executingFunctions.find((func) => func.id === functionId)
 }
 
 // TODO: let's make overloaded calls like this for `capture`

@@ -83,3 +83,30 @@ export async function getNextConsoleLogs(page: Page) {
 
 	return consoleLogJsonValues.join('\n');
 }
+
+export function assertRelativePeformance(baseline: Record<string, number>, real: Record<string, number>, relativeTolerance = 0.005) {
+	if (Object.keys(real).length === 0) {
+		throw new Error(`Performance assertion failed because the benchmark doesn't contain any performance values.`)
+	}
+	for (const [key, baselineValue] of Object.entries(baseline)) {
+		const realValue = real[key];
+		// Relative difference
+		const relativeDifference = (realValue - baselineValue) / baselineValue;
+		if (relativeDifference > relativeTolerance) {
+			throw new Error(`Performance assertion failed for "${key}": real value is ${(relativeDifference * 100).toFixed(2)}% slower than the baseline. Allowed tolerance is ${(relativeTolerance * 100).toFixed(2)}%.`)
+		}
+	}
+}
+
+export function assertAbsolutePeformance(baseline: Record<string, number>, real: Record<string, number>, absoluteTolerance = 10) {
+	if (Object.keys(real).length === 0) {
+		throw new Error(`Performance assertion failed because the benchmark doesn't contain any performance values.`)
+	}
+	for (const [key, baselineValue] of Object.entries(baseline)) {
+		const realValue = real[key];
+		if (realValue > baselineValue + absoluteTolerance) {
+			throw new Error(`Performance assertion failed for "${key}": real value is ${(baselineValue + absoluteTolerance) - realValue} ms slower than the baseline. Allowed tolerance is ${absoluteTolerance} ms.`)
+		}
+	}
+}
+

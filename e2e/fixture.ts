@@ -15,6 +15,8 @@ export type NextTestOptions = {
   timeout?: number;
   id?: string;
   debug?: boolean;
+  production?: boolean;
+  skipTempdirCleanup?: boolean;
 } & Pick<PackageJson.PackageJsonStandard, 'dependencies'>;
 
 export function createNextTest({
@@ -24,8 +26,10 @@ export function createNextTest({
   dependencies,
   showStdout = false,
   serverReadyString = 'ready',
+  id,
   debug,
-  id
+  production,
+  skipTempdirCleanup
 }: NextTestOptions) {
   let serverProcess: ExecaChildProcess<string> | undefined;
   let tempTestPath: string | undefined;
@@ -45,7 +49,7 @@ export function createNextTest({
     tempTestPath = await createTempTestFolder(path)
 
     if (debug) {
-      console.log(`${idOr(id)} Created temp folder`)
+      console.log(`${idOr(id)} Created temp folder`, tempTestPath)
     }
 
     // Patch dependencies
@@ -57,14 +61,33 @@ export function createNextTest({
       console.log(`${idOr(id)} Finished "pnpm install"`)
     }
 
-    // Start dev server
-    serverProcess = execa("pnpm", ["dev"], {
-      cwd: tempTestPath,
-      env: {
-        ...process.env,
-        PORT: port.toString()
+    if (production) {
+      // Run build
+      await execa("pnpm", ['next', 'build'], {
+        cwd: tempTestPath,
+      })
+      if (debug) {
+        console.log(`${idOr(id)} Finished "pnpm next build"`)
       }
-    })
+
+      // Start production server
+      serverProcess = execa("pnpm", ["start"], {
+        cwd: tempTestPath,
+        env: {
+          ...process.env,
+          PORT: port.toString()
+        }
+      })
+    } else {
+      // Start dev server
+      serverProcess = execa("pnpm", ["dev"], {
+        cwd: tempTestPath,
+        env: {
+          ...process.env,
+          PORT: port.toString()
+        }
+      })
+    }
 
     if (debug) {
       console.log(`${idOr(id)} Started server`)
@@ -90,13 +113,15 @@ export function createNextTest({
 
   test.afterAll(async () => {
     serverProcess?.kill()
-    try {
-      if (tempTestPath) {
-        await wait(1000)
-        rmSync(tempTestPath, { recursive: true })
+    if (skipTempdirCleanup !== true) {
+      try {
+        if (tempTestPath) {
+          await wait(1000)
+          rmSync(tempTestPath, { recursive: true })
+        }
+      } catch (e) {
+        console.error(`Deleting temporary test folder failed. Path ${tempTestPath}`);
       }
-    } catch (e) {
-      console.error(`Deleting temporary test folder failed. Path ${tempTestPath}`);
     }
   })
 

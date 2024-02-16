@@ -104,6 +104,7 @@
     "jiti": "^1.18.2",
     "jsdom": "^22.1.0",
     "ms": "3.0.0-canary.1",
+    "next": "13.4.1",
     "prettier": "latest",
     "recast": "^0.22.0",
     "rollup": "3.19.1",

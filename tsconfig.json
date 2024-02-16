@@ -11,5 +11,5 @@
 			"useflytrap": ["./src/index"]
 		}
 	},
-	"exclude": ["docs", "examples"]
+	"exclude": ["docs", "examples", "e2e/capture/performance/app"]
 }
