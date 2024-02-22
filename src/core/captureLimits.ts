@@ -1,11 +1,69 @@
 import { Err, Ok } from 'ts-results'
-import { CaptureAmountLimit, CapturedCall, CapturedFunction } from './types'
+import { CaptureAmountLimit, CaptureInvocation, CapturedCall, CapturedFunction } from './types'
 import {
 	parseCaptureAmountLimit,
 	parseFilepathFromFunctionId,
 	sortCapturesByTimestamp
 } from './util'
 import { getCaptureSize } from './stringify'
+
+export function getSizeLimitedCaptures<T extends CapturedCall | CapturedFunction>(
+	callsOrFunctions: T[],
+	sizeLimitBytes: number
+) {
+	let currentSize = 0
+	let result: T[] = []
+
+	const callsOrFunctionsClone = callsOrFunctions.map((callOrFunc) => ({
+		id: callOrFunc.id,
+		invocations: [...callOrFunc.invocations]
+	}))
+
+	for (let i = 0; i < callsOrFunctions.length; i++) {
+		result.push({ id: callsOrFunctions[i].id, invocations: [] as T['invocations'] } as T)
+	}
+
+	let addedThisRound = false
+	do {
+		addedThisRound = false // Reset for the current round
+
+		for (let i = 0; i < callsOrFunctionsClone.length; i++) {
+			const call = callsOrFunctionsClone[i]
+			if (call.invocations.length > 0) {
+				// Instead of popping the last, we take the newest invocation directly
+				const invocation = call.invocations[call.invocations.length - 1] // Access the newest invocation
+				const invocationSize = getCaptureSize(invocation as any).unwrapOr(0)
+
+				if (currentSize + invocationSize <= sizeLimitBytes) {
+					// Insert the invocation in the correct order (newest first)
+					result[i].invocations.unshift(invocation) // Add the invocation to the beginning
+					call.invocations.pop() // Remove the newest invocation from the clone
+					currentSize += invocationSize
+					addedThisRound = true
+				}
+			}
+		}
+	} while (addedThisRound && currentSize < sizeLimitBytes)
+
+	// Filter out calls without invocations
+	result = result.filter((callOrFunc) => callOrFunc.invocations.length > 0)
+
+	const resultCalls: CapturedCall[] = []
+	const resultFunctions: CapturedFunction[] = []
+
+	for (let i = 0; i < result.length; i++) {
+		if (result[i].id.includes('-call-_')) {
+			resultCalls.push(result[i])
+		} else {
+			resultFunctions.push(result[i])
+		}
+	}
+
+	return Ok({
+		calls: resultCalls,
+		functions: resultFunctions
+	})
+}
 
 export function getLimitedCaptures(
 	calls: CapturedCall[],
@@ -59,35 +117,5 @@ export function getLimitedCaptures(
 	}
 
 	// Handle byte limits
-	const duplicateCalls: typeof calls = []
-	const duplicateFunctions: typeof functions = []
-
-	let sizeCounter = 0
-
-	for (let i = 0; i < Math.max(calls.length, functions.length); i++) {
-		if (sizeCounter >= parsedCaptureAmountLimit.val.sizeLimit) {
-			break
-		}
-		const callEntry = calls.at(-(i + 1))
-		const functionEntry = functions.at(-(i + 1))
-		if (callEntry) {
-			duplicateCalls.push(callEntry)
-
-			const captureSize = getCaptureSize(callEntry)
-			if (captureSize.err === false) {
-				sizeCounter += captureSize.val
-			}
-		}
-		if (functionEntry) {
-			duplicateFunctions.push(functionEntry)
-
-			const captureSize = getCaptureSize(functionEntry)
-
-			if (captureSize.err === false) {
-				sizeCounter += captureSize.val
-			}
-		}
-	}
-
-	return Ok({ calls: duplicateCalls, functions: duplicateFunctions })
+	return getSizeLimitedCaptures(sortedCombined, parsedCaptureAmountLimit.val.sizeLimit)
 }

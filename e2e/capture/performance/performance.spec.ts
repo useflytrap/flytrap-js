@@ -66,7 +66,7 @@ test("time-to-(mount | update | nested-update)", async ({ page }) => {
 	assertAbsolutePeformance(baseline, profilerEntries, 10);
 })
 
-test.only("time-to-click-handled", async ({ page }) => {
+test("time-to-click-handled", async ({ page }) => {
 	const baseline = {
 		'click-handled': 40.09999999962747,
 	};

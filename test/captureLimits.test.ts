@@ -1,5 +1,38 @@
 import { describe, expect, it } from 'vitest'
 import { parseCaptureAmountLimit, parseFilepathFromFunctionId } from '../src/core/util'
+import { CapturedCall } from '../src/core/types'
+import { getLimitedCaptures, getSizeLimitedCaptures } from '../src/core/captureLimits'
+
+const createData = (bytes: number) => {
+	return 'H'.repeat(bytes)
+}
+
+const callsFixture: CapturedCall[] = [
+	{
+		id: '/a.js-call-_a',
+		invocations: [1, 2].map((timestamp) => ({
+			args: [],
+			output: createData(2),
+			timestamp
+		}))
+	},
+	{
+		id: '/b.js-call-_b',
+		invocations: [3, 4, 5, 6, 7].map((timestamp) => ({
+			args: [],
+			output: createData(2),
+			timestamp
+		}))
+	},
+	{
+		id: '/c.js-call-_c',
+		invocations: [8, 9].map((timestamp) => ({
+			args: [],
+			output: createData(2),
+			timestamp
+		}))
+	}
+]
 
 describe('capture limits', () => {
 	it('parseCaptureAmountLimit', () => {
@@ -42,5 +75,80 @@ describe('capture limits', () => {
 			`Invalid function ID "src/components/ui/CapturedCall.tsx".`
 		)
 		expect(parseFilepathFromFunctionId(``).val).toBe(`Invalid function ID "".`)
+	})
+
+	it('saves everything when capture limit is more than data', () => {
+		const limitedResult = getSizeLimitedCaptures(callsFixture, 6_000).unwrap()
+		const { calls: newCalls } = limitedResult
+		expect(newCalls).toStrictEqual(callsFixture)
+	})
+
+	it('does capture limiting depth (functions & calls) first, instead of bredth first (invocations)', () => {
+		const SERIALIZATION_ADDON = 46 * 3
+		const limitedResult = getSizeLimitedCaptures(callsFixture, 6 + SERIALIZATION_ADDON).unwrap()
+		const { calls: newCalls } = limitedResult
+
+		expect(newCalls.length).toBe(3)
+		expect(newCalls).toStrictEqual([
+			{
+				id: '/a.js-call-_a',
+				invocations: [2].map((timestamp) => ({
+					args: [],
+					output: createData(2),
+					timestamp
+				}))
+			},
+			{
+				id: '/b.js-call-_b',
+				invocations: [7].map((timestamp) => ({
+					args: [],
+					output: createData(2),
+					timestamp
+				}))
+			},
+			{
+				id: '/c.js-call-_c',
+				invocations: [9].map((timestamp) => ({
+					args: [],
+					output: createData(2),
+					timestamp
+				}))
+			}
+		])
+
+		// Extra serialization bytes * num functions * num invocations
+		const SERIALIZATION_ADDON_SECOND = 46 * 3 * 2
+
+		const { calls: secondTestCaseCalls } = getSizeLimitedCaptures(
+			callsFixture,
+			12 + SERIALIZATION_ADDON_SECOND
+		).unwrap()
+		expect(secondTestCaseCalls.length).toBe(3)
+		expect(secondTestCaseCalls).toStrictEqual([
+			{
+				id: '/a.js-call-_a',
+				invocations: [1, 2].map((timestamp) => ({
+					args: [],
+					output: createData(2),
+					timestamp
+				}))
+			},
+			{
+				id: '/b.js-call-_b',
+				invocations: [6, 7].map((timestamp) => ({
+					args: [],
+					output: createData(2),
+					timestamp
+				}))
+			},
+			{
+				id: '/c.js-call-_c',
+				invocations: [8, 9].map((timestamp) => ({
+					args: [],
+					output: createData(2),
+					timestamp
+				}))
+			}
+		])
 	})
 })

@@ -542,7 +542,7 @@ describe('uff(Async) transform', () => {
 })
 
 it('loads config', async () => {
-	const config = await loadConfig()
+	const { generateBuildId, ...config } = (await loadConfig())!
 
 	expect(config).toEqual({
 		projectId: 'flytrap',
@@ -579,7 +579,7 @@ it('doesnt transform reserved words', () => {
 })
 
 // @todo: add this test back
-it.only('transforms .vue files', async () => {
+it('transforms .vue files', async () => {
 	const fixture = `
 	<script setup>
 	function foo() {
