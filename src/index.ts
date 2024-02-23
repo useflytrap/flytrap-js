@@ -41,9 +41,9 @@ export const clearCapturedCalls = () => {
 export type UfcReturnType<T, O extends FlytrapCallOptions> = T extends AnyFunction
 	? ReturnType<T>
 	: T extends object
-		? // @ts-expect-error
-			ReturnType<T[O['name']]>
-		: never
+	  ? // @ts-expect-error
+	    ReturnType<T[O['name']]>
+	  : never
 
 export function ufc<T, O extends FlytrapCallOptions>(
 	functionOrNamespace: T,
@@ -287,21 +287,12 @@ function saveFunctionCall(opts: FlytrapCallOptions) {
 }
 
 function saveOutputForFunctionCall<T>(functionCallId: string, output: T) {
-	// @ts-ignore for some reason this isn't included
-	// const functionCallIndex = _functionCalls.findLastIndex((call) => call.id === functionCallId)
 	const functionCall = getFunctionCallById(functionCallId)
-
-	// console.log("function calls invocations length", _functionCalls.reduce((acc, curr) => acc + curr.invocations.length, 0))
 
 	if (functionCall === undefined) {
 		log.error('error', `Saving output for nonexistent function call with ID "${functionCallId}"`)
 		return
 	}
-
-	/* if (functionCallIndex === -1) {
-		log.error('error', `Saving output for nonexistent function call with ID "${functionCallId}"`)
-		return
-	} */
 
 	const lastInvocation = functionCall.invocations.at(-1)
 	if (lastInvocation) lastInvocation.output = output
@@ -317,14 +308,6 @@ function saveOutputForFunction<T>(functionId: string, output: T) {
 		return
 	}
 
-	/* if (functionIndex === -1) {
-		log.error('error', `Saving output for nonexistent function with ID "${functionId}"`)
-		return
-	} */
-
-	// console.log("functions invocations length", _executingFunctions.reduce((acc, curr) => acc + curr.invocations.length, 0))
-
-	// const lastInvocation = _executingFunctions[functionIndex].invocations.at(-1)
 	const lastInvocation = functionDef.invocations.at(-1)
 	if (lastInvocation) lastInvocation.output = output
 }
@@ -336,7 +319,6 @@ function getFunctionCallById(functionCallId: string) {
 		}
 	}
 	return undefined
-	// return _functionCalls.find((call) => call.id === functionCallId)
 }
 
 function getFunctionById(functionId: string) {
@@ -347,7 +329,6 @@ function getFunctionById(functionId: string) {
 	}
 
 	return undefined
-	// return _executingFunctions.find((func) => func.id === functionId)
 }
 
 // TODO: let's make overloaded calls like this for `capture`

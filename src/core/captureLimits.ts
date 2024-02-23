@@ -11,16 +11,18 @@ export function getSizeLimitedCaptures<T extends CapturedCall | CapturedFunction
 	callsOrFunctions: T[],
 	sizeLimitBytes: number
 ) {
+	const callsOrFunctionsReversed = callsOrFunctions.slice().reverse()
+
 	let currentSize = 0
 	let result: T[] = []
 
-	const callsOrFunctionsClone = callsOrFunctions.map((callOrFunc) => ({
+	const callsOrFunctionsClone = callsOrFunctionsReversed.map((callOrFunc) => ({
 		id: callOrFunc.id,
 		invocations: [...callOrFunc.invocations]
 	}))
 
-	for (let i = 0; i < callsOrFunctions.length; i++) {
-		result.push({ id: callsOrFunctions[i].id, invocations: [] as T['invocations'] } as T)
+	for (let i = 0; i < callsOrFunctionsReversed.length; i++) {
+		result.push({ id: callsOrFunctionsReversed[i].id, invocations: [] as T['invocations'] } as T)
 	}
 
 	let addedThisRound = false

@@ -80,7 +80,7 @@ describe('capture limits', () => {
 	it('saves everything when capture limit is more than data', () => {
 		const limitedResult = getSizeLimitedCaptures(callsFixture, 6_000).unwrap()
 		const { calls: newCalls } = limitedResult
-		expect(newCalls).toStrictEqual(callsFixture)
+		expect(newCalls).toStrictEqual(callsFixture.slice().reverse())
 	})
 
 	it('does capture limiting depth (functions & calls) first, instead of bredth first (invocations)', () => {
@@ -91,8 +91,8 @@ describe('capture limits', () => {
 		expect(newCalls.length).toBe(3)
 		expect(newCalls).toStrictEqual([
 			{
-				id: '/a.js-call-_a',
-				invocations: [2].map((timestamp) => ({
+				id: '/c.js-call-_c',
+				invocations: [9].map((timestamp) => ({
 					args: [],
 					output: createData(2),
 					timestamp
@@ -107,8 +107,8 @@ describe('capture limits', () => {
 				}))
 			},
 			{
-				id: '/c.js-call-_c',
-				invocations: [9].map((timestamp) => ({
+				id: '/a.js-call-_a',
+				invocations: [2].map((timestamp) => ({
 					args: [],
 					output: createData(2),
 					timestamp
@@ -126,8 +126,8 @@ describe('capture limits', () => {
 		expect(secondTestCaseCalls.length).toBe(3)
 		expect(secondTestCaseCalls).toStrictEqual([
 			{
-				id: '/a.js-call-_a',
-				invocations: [1, 2].map((timestamp) => ({
+				id: '/c.js-call-_c',
+				invocations: [8, 9].map((timestamp) => ({
 					args: [],
 					output: createData(2),
 					timestamp
@@ -142,8 +142,8 @@ describe('capture limits', () => {
 				}))
 			},
 			{
-				id: '/c.js-call-_c',
-				invocations: [8, 9].map((timestamp) => ({
+				id: '/a.js-call-_a',
+				invocations: [1, 2].map((timestamp) => ({
 					args: [],
 					output: createData(2),
 					timestamp
