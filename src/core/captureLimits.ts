@@ -50,6 +50,24 @@ export function getSizeLimitedCaptures<T extends CapturedCall | CapturedFunction
 	// Filter out calls without invocations
 	result = result.filter((callOrFunc) => callOrFunc.invocations.length > 0)
 
+	// Add in calls or functions that contain invocations with errors, but don't already exist
+	for (let i = 0; i < callsOrFunctionsReversed.length; i++) {
+		for (let j = 0; j < callsOrFunctionsReversed[i].invocations.length; j++) {
+			const invocation = callsOrFunctionsReversed[i].invocations[j]
+			if (invocation.error) {
+				const matchingCallInResults = result.find(
+					(call) => call.id === callsOrFunctionsReversed[i].id
+				)
+				if (matchingCallInResults === undefined) {
+					result.push({
+						id: callsOrFunctionsReversed[i].id,
+						invocations: [invocation]
+					} as T)
+				}
+			}
+		}
+	}
+
 	const resultCalls: CapturedCall[] = []
 	const resultFunctions: CapturedFunction[] = []
 

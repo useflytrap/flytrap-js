@@ -212,7 +212,7 @@ export type SourceType = {
 export type CaptureInvocation = {
 	args: any[]
 	timestamp: number
-	error?: ErrorType
+	error?: any
 	output?: any
 }
 export type EncryptedCaptureInvocation = Omit<CaptureInvocation, 'args' | 'error' | 'output'> & {
