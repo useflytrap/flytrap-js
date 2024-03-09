@@ -1,4 +1,3 @@
-import { ParserOptions } from '@babel/parser'
 import { FlytrapConfig } from '../core/types'
 import { loadConfig as c12LoadConfig } from 'c12'
 import { createHumanLog } from '../core/errors'
@@ -19,12 +18,4 @@ export async function loadConfig(): Promise<FlytrapConfig | undefined> {
 	}
 
 	return loadedConfig.config ?? undefined
-}
-
-export function getParseConfig(config: ParserOptions = {}): ParserOptions {
-	return {
-		sourceType: 'module',
-		plugins: ['jsx', 'typescript'],
-		...config
-	}
 }

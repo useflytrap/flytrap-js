@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
+	_babelInterop,
 	addArtifactMarkings,
 	extractCurrentScope,
-	extractFunctionCallId
+	extractFunctionCallId,
+	getParseConfig
 } from '../src/transform/artifacts/artifacts'
 import babelTraverse from '@babel/traverse'
 import { parse } from '@babel/parser'
 import { flytrapTransformWithArtifacts } from '../src/transform/index'
 import { config } from 'dotenv'
-import { getParseConfig } from '../src/transform/config'
-import { _babelInterop } from '../src/transform/util'
 config()
 
 const largeFixture = `
@@ -180,11 +180,11 @@ it('generates values same as transform', () => {
 		'/file.js',
 		undefined,
 		true
-	)
+	).unwrap()
 	const functionIds = artifactMarkings.map((a) => a.functionOrCallId)
 
 	for (let i = 0; i < functionIds.length; i++) {
-		expect(code.code).toContain(functionIds[i] as string)
+		expect(code).toContain(functionIds[i] as string)
 	}
 })
 

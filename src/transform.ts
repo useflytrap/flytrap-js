@@ -3,14 +3,13 @@ import { UnpluginOptions, createUnplugin } from 'unplugin'
 import { parseURL, parseQuery } from 'ufo'
 import MagicString from 'magic-string'
 import { addFlytrapInit, addMissingFlytrapImports } from './transform/imports'
-import { flytrapTransformUff } from './transform/index'
 import { packageDirectorySync } from 'pkg-dir'
 import { loadConfig } from './transform/config'
 import { setFlytrapConfig } from './core/config'
 import { log } from './core/logging'
 import { empty, normalizeFilepath, tryCatchSync } from './core/util'
 import { readFileSync } from 'node:fs'
-import { excludeDirectoriesIncludeFilePath } from './transform/excludes'
+import { excludeDirectoriesIncludeFilePath } from './transform/directory-excludes'
 import { containsScriptTags, parseScriptTags } from './transform/parseScriptTags'
 import { calculateSHA256Checksum, getFileExtension } from './transform/util'
 import { Artifact, FlytrapConfig } from './core/types'
@@ -18,6 +17,7 @@ import { createHumanLog } from './core/errors'
 import { encrypt } from './core/encryption'
 import { randomUUID } from 'node:crypto'
 import { batchedArtifactsUploadByBuildId } from './transform/artifacts/batchedArtifactsUpload'
+import { flytrapTransformWithArtifacts } from './transform/index'
 
 const transformedFiles = new Set<string>([])
 
@@ -164,11 +164,11 @@ export const unpluginOptions: UnpluginOptions = {
 				scriptEndIndex &&
 				['.svelte', '.vue'].includes(getFileExtension(id))
 			) {
-				const transformedScriptTagContents = flytrapTransformUff(
+				const transformedScriptTagContents = flytrapTransformWithArtifacts(
 					ss.toString(),
 					normalizeFilepath(pkgDirPath, id),
 					config
-				)
+				).unwrap()
 				wholeSourceFile.overwrite(
 					scriptStartIndex,
 					scriptEndIndex,
@@ -184,11 +184,11 @@ export const unpluginOptions: UnpluginOptions = {
 			}
 
 			transformedFiles.add(id)
-			const transformResult = flytrapTransformUff(
+			const transformResult = flytrapTransformWithArtifacts(
 				ss.toString(),
 				normalizeFilepath(pkgDirPath, id),
 				config
-			)
+			).unwrap()
 			log.info('transform-code', `${id} transformed: `, transformResult.code)
 			return transformResult
 		} catch (e) {

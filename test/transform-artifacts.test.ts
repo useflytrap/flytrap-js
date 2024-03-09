@@ -1,4 +1,4 @@
-import { flytrapTransformUff } from '../src/transform/index'
+import { flytrapTransformWithArtifacts } from '../src/transform/index'
 import { describe, expect, it } from 'vitest'
 
 describe('useFlytrapFunction', () => {
@@ -206,6 +206,6 @@ export function toOneLine(code: string) {
 }
 
 export function transform(code: string) {
-	const { code: transformedCode } = flytrapTransformUff(code, '/file.js')
+	const { code: transformedCode } = flytrapTransformWithArtifacts(code, '/file.js').unwrap()
 	return toOneLine(transformedCode)
 }

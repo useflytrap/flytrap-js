@@ -2,14 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { parse } from '@babel/parser'
 import babelTraverse from '@babel/traverse'
 import { findIgnoredImports, shouldIgnoreCall } from '../src/transform/packageIgnores'
-import {
-	excludeDirectoriesIncludeFilePath,
-	shouldIgnoreFunctionName
-} from '../src/transform/excludes'
+import { excludeDirectoriesIncludeFilePath } from '../src/transform/directory-excludes'
 import { CapturePayload } from '../src/core/types'
 import { shouldIgnoreCapture } from '../src/core/captureIgnores'
-import { getParseConfig } from '../src/transform/config'
-import { _babelInterop } from '../src/transform/util'
+import { _babelInterop, getParseConfig } from '../src/transform/artifacts/artifacts'
+import { shouldIgnoreFunctionName } from '../src/transform/function-excludes'
 
 describe('excludeDirectories', () => {
 	it('excludeDirectoriesIncludeFilePath', () => {

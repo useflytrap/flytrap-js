@@ -98,6 +98,42 @@ export default [
 			},
 		],
 	},
+	// Build artifacts transforms
+	{
+		input: ["src/transform/index.ts"],
+		plugins: [nodeResolve({
+			preferBuiltins: false,
+			resolveOnly: RESOLVED_PACKAGES
+		}), json(), esbuild(), commonjs()],
+		output: [
+			{
+				dir: "transform/artifacts",
+				entryFileNames: "[name].mjs",
+				format: "esm",
+				exports: "named",
+				sourcemap: true,
+			},
+			{
+				dir: "transform/artifacts",
+				entryFileNames: "[name].cjs",
+				format: "cjs",
+				exports: "named",
+				sourcemap: true,
+			},
+		],
+	},
+	{
+		input: ["src/transform/index.ts"],
+		plugins: [dts()],
+		output: [
+			{
+				dir: "transform/artifacts",
+				entryFileNames: "index.d.ts",
+				format: "esm",
+				exports: "named",
+			},
+		],
+	},
 	// Build transform plugin
 	{
 		input: ["src/transform.ts"],

@@ -41,9 +41,9 @@ export const clearCapturedCalls = () => {
 export type UfcReturnType<T, O extends FlytrapCallOptions> = T extends AnyFunction
 	? ReturnType<T>
 	: T extends object
-	  ? // @ts-expect-error
-	    ReturnType<T[O['name']]>
-	  : never
+		? // @ts-expect-error
+			ReturnType<T[O['name']]>
+		: never
 
 export function ufc<T, O extends FlytrapCallOptions>(
 	functionOrNamespace: T,

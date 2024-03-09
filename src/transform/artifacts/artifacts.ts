@@ -13,14 +13,26 @@ import {
 } from '@babel/types'
 import { ArtifactMarking, FlytrapConfig } from '../../core/types'
 import { getRequiredExportsForCapture } from '../imports'
-import { getParseConfig } from '../config'
-import { _babelInterop } from '../util'
 import { parseCode } from '../parser'
 import { Ok } from 'ts-results'
+import type { ParserOptions } from '@babel/parser'
 
-function getLineNumber(node: Node) {
+export function getParseConfig(config: ParserOptions = {}): ParserOptions {
+	return {
+		sourceType: 'module',
+		plugins: ['jsx', 'typescript'],
+		...config
+	}
+}
+
+/**
+ * An interop function to make babel's exports work
+ * @param fn default export from `@babel/traverse` or `@babel/generator`
+ * @returns the correct traverse function
+ */
+export function _babelInterop<T>(fn: T): T {
 	// @ts-ignore
-	return node.loc?.start?.line ?? node.body?.loc?.start?.line ?? node.callee?.loc?.start?.line ?? -1
+	return fn.default ?? fn
 }
 
 export function extractParams(identifiers: Identifier[]) {

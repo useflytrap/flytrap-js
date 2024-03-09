@@ -1,9 +1,9 @@
 import { ParserOptions, parse as babelParse } from '@babel/parser'
-import { getParseConfig } from './config'
 import { ParseErrorSpecification } from '../core/types'
 import { formatBabelParseError } from './formatErrors'
 import { createHumanLog } from '../core/errors'
 import { Err, Ok } from 'ts-results'
+import { getParseConfig } from './artifacts/artifacts'
 
 export function parseCode(code: string, fileNamePath?: string, config?: ParserOptions) {
 	try {

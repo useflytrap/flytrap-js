@@ -2,7 +2,7 @@ import { findStaticImports, parseStaticImport } from 'mlly'
 import { NodePath } from '@babel/traverse'
 import { CallExpression, Expression, V8IntrinsicIdentifier } from '@babel/types'
 import generate from '@babel/generator'
-import { _babelInterop } from './util'
+import { _babelInterop } from './artifacts/artifacts'
 
 const reservedWords = [
 	'await',

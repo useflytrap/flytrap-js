@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { flytrapTransformUff, getCalleeAndAccessorKey } from '../src/transform/index'
+import { flytrapTransformWithArtifacts, getCalleeAndAccessorKey } from '../src/transform/index'
 import { addAsync, toOneLine } from './testUtils'
 import { parseCode } from '../src/transform/parser'
 import generate from '@babel/generator'
@@ -105,11 +105,11 @@ describe('functions', () => {
 	for (const [suiteName, suiteFixtures] of Object.entries(functionTransformFixtures)) {
 		it(`transforms ${suiteName}`, () => {
 			for (let i = 0; i < suiteFixtures.length; i++) {
-				const { code } = flytrapTransformUff(suiteFixtures[i].fixture, '/file.js', {
+				const { code } = flytrapTransformWithArtifacts(suiteFixtures[i].fixture, '/file.js', {
 					transformOptions: {
 						disableTransformation: ['call-expression']
 					}
-				})
+				}).unwrap()
 				expect(toOneLine(code)).toBe(toOneLine(suiteFixtures[i].expected))
 			}
 		})
@@ -195,11 +195,11 @@ describe('calls', () => {
 	for (const [suiteName, suiteFixtures] of Object.entries(callTransformFixtures)) {
 		it(`transforms ${suiteName}`, () => {
 			for (let i = 0; i < suiteFixtures.length; i++) {
-				const { code } = flytrapTransformUff(suiteFixtures[i].fixture, '/file.js', {
+				const { code } = flytrapTransformWithArtifacts(suiteFixtures[i].fixture, '/file.js', {
 					transformOptions: {
 						disableTransformation: ['arrow-function', 'function-declaration', 'function-expression']
 					}
-				})
+				}).unwrap()
 				expect(toOneLine(code)).toBe(toOneLine(suiteFixtures[i].expected))
 			}
 		})
@@ -379,11 +379,11 @@ describe('function declaration hoisting', () => {
 	for (const [suiteName, suiteFixtures] of Object.entries(functionHoistingFixture)) {
 		it(suiteName, () => {
 			for (let i = 0; i < suiteFixtures.length; i++) {
-				const { code } = flytrapTransformUff(suiteFixtures[i].fixture, '/file.js', {
+				const { code } = flytrapTransformWithArtifacts(suiteFixtures[i].fixture, '/file.js', {
 					transformOptions: {
 						disableTransformation: ['call-expression']
 					}
-				})
+				}).unwrap()
 
 				expect(toOneLine(code)).toBe(toOneLine(suiteFixtures[i].expected))
 			}

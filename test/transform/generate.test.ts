@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { tryCatchSync } from '../../src/core/util'
-import { flytrapTransformUff } from '../../src/transform/index'
+import { flytrapTransformWithArtifacts } from '../../src/transform/index'
 
 export const generatedPath = join(__dirname, 'generated-fixtures')
 
@@ -67,7 +67,8 @@ function transformFixture(code: string) {
 			transformLocations[i].start,
 			transformLocations[i].end
 		)
-		const transformedCode = flytrapTransformUff(contentToTransform, '/file.js').code
+		const transformedCode = flytrapTransformWithArtifacts(contentToTransform, '/file.js').unwrap()
+			.code
 		s.update(transformLocations[i].start, transformLocations[i].end, transformedCode)
 	}
 

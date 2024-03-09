@@ -9,13 +9,3 @@ export function calculateSHA256Checksum(code: string): string {
 	hash.update(code)
 	return hash.digest('hex')
 }
-
-/**
- * An interop function to make babel's exports work
- * @param fn default export from `@babel/traverse` or `@babel/generator`
- * @returns the correct traverse function
- */
-export function _babelInterop<T>(fn: T): T {
-	// @ts-ignore
-	return fn.default ?? fn
-}
