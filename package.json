@@ -16,6 +16,11 @@
       "require": "./transform/index.cjs",
       "types": "./transform/index.d.ts"
     },
+    "./transform/artifacts": {
+      "import": "./transform/artifacts/index.mjs",
+      "require": "./transform/artifacts/index.cjs",
+      "types": "./transform/artifacts/index.d.ts"
+    },
     "./browser": {
       "import": "./browser/index.mjs",
       "require": "./browser/index.cjs",
