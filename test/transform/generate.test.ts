@@ -1,7 +1,7 @@
 // Generate tests using Flytrap
 
 import MagicString from 'magic-string'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, expect, it } from 'vitest'
 import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { tryCatchSync } from '../../src/core/util'

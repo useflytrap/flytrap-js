@@ -29,28 +29,32 @@ import {
 	ExportDefaultDeclaration,
 	ExportNamedDeclaration,
 	RestElement,
-	Pattern,
-	Expression,
-	V8IntrinsicIdentifier
+	Pattern
 } from '@babel/types'
 import generate from '@babel/generator'
-
-import { getCoreExports } from './imports'
 import {
 	_babelInterop,
 	extractCurrentScope,
 	extractFunctionCallId,
-	extractFunctionCallName,
 	extractFunctionId,
 	extractFunctionName
 } from './artifacts/artifacts'
-import { findIgnoredImports, shouldIgnoreCall } from './packageIgnores'
 import { ArtifactMarking, FlytrapConfig } from '../core/types'
 import { parseCode } from './parser'
 import { createHumanLog } from '../core/errors'
 import { log } from '../core/logging'
 import { Err, Ok } from 'ts-results'
 import { shouldIgnoreFunctionName } from './function-excludes'
+import { shouldIgnoreCall } from './call-ignores'
+import * as flytrapExports from '../index'
+
+function getRequiredExportsForCapture(): string[] {
+	return ['uff', 'ufc', 'setFlytrapConfig']
+}
+
+function getCoreExports(): string[] {
+	return Object.keys(flytrapExports)
+}
 
 export function getCalleeAndAccessorKey(node: MemberExpression | Identifier) {
 	if (!isMemberExpression(node)) {
@@ -128,6 +132,7 @@ export function flytrapTransformWithArtifacts(
 	code: string,
 	filePath: string,
 	config?: Partial<FlytrapConfig>,
+	findIgnoredImports?: (code: string, packageIgnores: string[]) => string[],
 	returnArtifacts = false
 ) {
 	const parseResult = parseCode(code, filePath, config?.babel?.parserOptions)
@@ -157,9 +162,10 @@ export function flytrapTransformWithArtifacts(
 		return Ok([startIndex, endIndex])
 	}
 
-	const ignoredImports = config?.packageIgnores
-		? findIgnoredImports(code, config.packageIgnores)
-		: undefined
+	const ignoredImports =
+		config?.packageIgnores && findIgnoredImports
+			? findIgnoredImports(code, config.packageIgnores)
+			: undefined
 
 	try {
 		_babelInterop(babelTraverse)(ast, {

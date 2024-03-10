@@ -10,6 +10,7 @@ import babelTraverse from '@babel/traverse'
 import { parse } from '@babel/parser'
 import { flytrapTransformWithArtifacts } from '../src/transform/index'
 import { config } from 'dotenv'
+import { findIgnoredImports } from '../src/transform/package-ignores'
 config()
 
 const largeFixture = `
@@ -179,6 +180,7 @@ it('generates values same as transform', () => {
 		pageCodeFixture,
 		'/file.js',
 		undefined,
+		findIgnoredImports,
 		true
 	).unwrap()
 	const functionIds = artifactMarkings.map((a) => a.functionOrCallId)

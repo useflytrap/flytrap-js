@@ -1,4 +1,3 @@
-import { findStaticImports, parseStaticImport } from 'mlly'
 import { NodePath } from '@babel/traverse'
 import { CallExpression, Expression, V8IntrinsicIdentifier } from '@babel/types'
 import generate from '@babel/generator'
@@ -57,25 +56,6 @@ const reservedWords = [
 	// For now, all `require()` get ignored because of NodeJS
 	'require'
 ]
-
-export function findIgnoredImports(code: string, packageIgnores: string[]) {
-	const ignoredImports: string[] = []
-	const statements = findStaticImports(code).filter((staticImport) => {
-		return packageIgnores.some((packageName) => staticImport.specifier.includes(packageName))
-	})
-	for (let i = 0; i < statements.length; i++) {
-		const imports = parseStaticImport(statements[i])
-		if (imports.defaultImport) {
-			ignoredImports.push(imports.defaultImport)
-		}
-		if (imports.namedImports) {
-			for (const [, importedName] of Object.entries(imports.namedImports)) {
-				ignoredImports.push(importedName)
-			}
-		}
-	}
-	return ignoredImports
-}
 
 function getFunctionPath(node: Expression | V8IntrinsicIdentifier): string {
 	return _babelInterop(generate)(node).code

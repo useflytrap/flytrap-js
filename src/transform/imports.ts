@@ -2,17 +2,12 @@ import MagicString from 'magic-string'
 import { findStaticImports, parseStaticImport } from 'mlly'
 import { FLYTRAP_PACKAGE_NAME } from '../core/config'
 import { FlytrapConfig } from '../core/types'
-import * as flytrapExports from '../index'
 import { parseCode } from './parser'
 import { extname } from '../core/util'
 import { log } from '../core/logging'
 
 export function getRequiredExportsForCapture(): string[] {
 	return ['uff', 'ufc', 'setFlytrapConfig']
-}
-
-export function getCoreExports(): string[] {
-	return Object.keys(flytrapExports)
 }
 
 export function findStartingIndex(s: MagicString, fileNamePath?: string) {

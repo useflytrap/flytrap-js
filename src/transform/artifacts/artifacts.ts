@@ -12,10 +12,14 @@ import {
 	VariableDeclarator
 } from '@babel/types'
 import { ArtifactMarking, FlytrapConfig } from '../../core/types'
-import { getRequiredExportsForCapture } from '../imports'
+
 import { parseCode } from '../parser'
 import { Ok } from 'ts-results'
 import type { ParserOptions } from '@babel/parser'
+
+export function getRequiredExportsForCapture(): string[] {
+	return ['uff', 'ufc', 'setFlytrapConfig']
+}
 
 export function getParseConfig(config: ParserOptions = {}): ParserOptions {
 	return {

@@ -18,6 +18,7 @@ import { encrypt } from './core/encryption'
 import { randomUUID } from 'node:crypto'
 import { batchedArtifactsUploadByBuildId } from './transform/artifacts/batchedArtifactsUpload'
 import { flytrapTransformWithArtifacts } from './transform/index'
+import { findIgnoredImports } from './transform/package-ignores'
 
 const transformedFiles = new Set<string>([])
 
@@ -167,7 +168,8 @@ export const unpluginOptions: UnpluginOptions = {
 				const transformedScriptTagContents = flytrapTransformWithArtifacts(
 					ss.toString(),
 					normalizeFilepath(pkgDirPath, id),
-					config
+					config,
+					findIgnoredImports
 				).unwrap()
 				wholeSourceFile.overwrite(
 					scriptStartIndex,
